@@ -8,13 +8,16 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "replay": "tsx src/engine/replay.ts"
+    "replay": "tsx src/engine/replay.ts",
+    "qwen:preflight": "node scripts/qwen-preflight.mjs",
+    "qwen:usage": "node scripts/qwen-usage.mjs"
   },
   "dependencies": {
     "decimal.js": "^10.6.0",
     "next": "16.3.5",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

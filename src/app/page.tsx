@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SoundingLine } from "@/components/SoundingLine";
+import { AnalystPanel } from "@/components/AnalystPanel";
 import type { SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
@@ -193,6 +194,8 @@ export default function Page() {
                   <SoundingLine side={side} levels={resp!.levels} mid={res.referenceMid!} qty={res.leg.qty} levelsConsumed={res.leg.levelsConsumed} />
                 </div>
               )}
+
+              {res.ok && <AnalystPanel key={`${symbol}-${mode}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} onConstraints={(c) => { if (c.takerFeeBps !== null && userFee === "") setUserFee(String(c.takerFeeBps)); }} onAmount={(a) => { setAmount(a); setTimeout(() => run({ amount: a }), 0); }} />}
 
               <details className="rounded-md border rule bg-paper-2/40 p-4">
                 <summary className="mono text-[11px] uppercase tracking-[0.18em] cursor-pointer">receipt · {res.receipt.receipt_sha256?.slice(0, 16)} · raw book {res.receipt.raw_sha256.slice(0, 16)}</summary>

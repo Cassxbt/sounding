@@ -1,0 +1,35 @@
+{
+  "symbol": "RHIMSUSDT",
+  "code": "HIMS",
+  "issuer": "Hims & Hers Health, Inc.",
+  "source_kind": "recorded_first_party",
+  "recorded_utc": "2026-09-20T10:30:00Z",
+  "records": [
+    {
+      "id": "hims-cao-departure-2026",
+      "issuer": "Hims & Hers Health, Inc.",
+      "kind": "corporate_event",
+      "title": "Chief Accounting Officer Irene Becklund announces departure from the company",
+      "effective_date_ny": "2026-10-09",
+      "time_ny": null,
+      "time_known": false,
+      "source_url": "https://investors.hims.com/news/news-details/2026/Hims--Hers-Chief-Accounting-Officer-Irene-Becklund-Announces-Departure-from-the-Company/default.aspx",
+      "source_type": "issuer press release",
+      "retrieved_utc": "2026-09-20T10:30:00Z",
+      "note": "Departure effective October 9; release gives no time of day. Not an earnings event; not a market catalyst claim."
+    },
+    {
+      "id": "hims-events-calendar-2026-09-20",
+      "issuer": "Hims & Hers Health, Inc.",
+      "kind": "calendar_check",
+      "title": "Official IR events calendar lists no upcoming named event",
+      "effective_date_ny": null,
+      "time_ny": null,
+      "time_known": false,
+      "source_url": "https://investors.hims.com/events",
+      "source_type": "issuer IR site",
+      "retrieved_utc": "2026-09-20T10:30:00Z",
+      "note": "Absence of a listed event is not evidence that none will occur."
+    }
+  ]
+}
