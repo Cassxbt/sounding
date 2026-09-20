@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f3eee2;
+  --paper-2: #e9e2d0;
+  --ink: #14213d;
+  --ink-2: #3b4664;
+  --ink-3: #7a819a;
+  --rule: #c9c0a8;
+  --within: #1f6f5a;
+  --within-bg: #dcece4;
+  --over: #c2410c;
+  --over-bg: #f8dfd0;
+  --warn: #8a6d00;
+  --warn-bg: #f3e9bf;
+  --sea: #1b3a6b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-within: var(--within);
+  --color-within-bg: var(--within-bg);
+  --color-over: var(--over);
+  --color-over-bg: var(--over-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-sea: var(--sea);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+  --font-sans: var(--font-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html { background: var(--paper); }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(27, 58, 107, 0.08), transparent 60%),
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(20, 33, 61, 0.05) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(20, 33, 61, 0.05) 39px 40px),
+    var(--paper);
+  min-height: 100vh;
 }
+.display { font-family: var(--font-display), Georgia, serif; font-variation-settings: "opsz" 144, "SOFT" 60; }
+.mono { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.rule { border-color: var(--rule); }
+.fade-up { animation: fadeUp 480ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none; } }
+.lead-drop { animation: leadDrop 900ms cubic-bezier(.3,.9,.3,1) both; transform-origin: top; }
+@keyframes leadDrop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
