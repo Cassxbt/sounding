@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { BookCapture } from "../types";
+import type { BookCapture, InstrumentSpec } from "../types";
 import type { StockInfo } from "../eligibility";
 import type { Calendar, MarketStates } from "../session";
 
@@ -14,3 +14,4 @@ export const states = () => load<{ states: MarketStates }>("market-states-202609
 export const calendar = () => load<Calendar>("calendar-20260920.json");
 /** capture instant of the rHIMS fixture: 2026-09-20T09:02:35.800Z (Sunday) */
 export const T_RHIMS = new Date(1789894955800);
+export const instruments = () => load<{ rows: InstrumentSpec[] }>("instruments-20260923.json").rows;

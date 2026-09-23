@@ -29,16 +29,23 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
       if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "no_fill_possible; cannot satisfy a must-be-flat deadline" });
       else admissible.push({ kind: k, reason: "hypothetical; only if filled; cancelled at the session switch" });
     } else if (k === "requote_at_switch") {
-      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= nextSwitch(res)) excluded.push({ kind: k, reason: "the switch is not before your deadline" });
-      else admissible.push({ kind: k, reason: "sessions remain before the deadline; nothing promised about cost then" });
+      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= nextSwitch(res)) excluded.push({ kind: k, reason: "the next session is not before your deadline" });
+      else if (c.mustBeFlat && c.hardDeadlineNy) admissible.push({ kind: k, reason: "reassess at the next session; a later chance to exit, not an exit; nothing promised about cost then" });
+      else admissible.push({ kind: k, reason: "reassess at the next session; nothing promised about cost then" });
     }
   }
   let clarification: string | null = null;
   if (res.feeSensitive && !feeKnown) clarification = "What is your actual taker fee in bps? The verdict flips between the 10 and 20 bps scenarios.";
   else if (timeUnknownOnDeadline.length) clarification = "The event on your deadline day has no published time. Must you be flat before the session opens that day, or by its close?";
 
-  const rec = admissible.find((a) => a.kind === "immediate_cross")?.kind ?? admissible.find((a) => a.kind === "requote_at_switch")?.kind ?? admissible[0]?.kind ?? null;
-  const binding = res.feeSensitive && !feeKnown ? "fee scenario (verdict flips at 20 bps)" : c.mustBeFlat && c.hardDeadlineNy ? `hard deadline ${c.hardDeadlineNy} (must be flat)` : `ceiling ${res.ceilingBps} bps on this snapshot`;
+  const hardExit = c.mustBeFlat && !!c.hardDeadlineNy;
+  // Under a hard exit only a full-size route that is within ceiling now can be recommended; re-quote is a plan step.
+  const rec = admissible.find((a) => a.kind === "immediate_cross")?.kind
+    ?? (hardExit ? null : admissible.find((a) => a.kind === "requote_at_switch")?.kind ?? admissible[0]?.kind ?? null);
+  const noRoute = hardExit && !rec && !clarification;
+  const binding = res.feeSensitive && !feeKnown ? "fee scenario (verdict flips at 20 bps)"
+    : noRoute ? `no priced route exits the full position within ${res.ceilingBps} bps on this snapshot; reassess at the next session`
+    : hardExit ? `hard deadline ${c.hardDeadlineNy} (must be flat)` : `ceiling ${res.ceilingBps} bps on this snapshot`;
   const evidence = pack.records.map((r) => ({ recordId: r.id, relevant: relevant.includes(r.id), reason: relevant.includes(r.id) ? `${r.kind} dated ${r.effective_date_ny}${r.time_known ? "" : ", time not published"}` : "not dated or not within horizon" }));
   const pre = res.leg?.bpsPreFee ?? "—";
   const fees = (res.fees ?? []).map((f) => `${f.allInBps ?? "—"} at ${f.feeBps}`).join(", ");

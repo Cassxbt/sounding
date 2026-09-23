@@ -85,7 +85,7 @@ export function buyWithBudget(raw: RawOrderbook, quoteBudget: string, mid: Decim
   if (exhausted || shares.eq(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: shares.toFixed(6), cash: spent.toFixed(2), thinTop: false, ...base };
   const vwap = spent.div(shares);
   const bps = vwap.minus(mid).div(mid).mul(10000);
-  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
+  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
 }
 
 /** Sell base shares: walk bids for the full quantity. */
@@ -96,35 +96,41 @@ export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): Le
   if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), thinTop: false, ...base };
   const vwap = cash.div(qty);
   const bps = mid.minus(vwap).div(mid).mul(10000);
-  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
+  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
 }
 
-/** Largest sell quantity whose pre-fee+fee cost stays within the ceiling, by bisection over visible depth. */
-export function largestSellWithin(raw: RawOrderbook, mid: Decimal, ceilingBps: number, feeBps: number): Decimal | null {
+/** true when the exact all-in cost of this leg is at or under the ceiling */
+export const withinCeiling = (leg: LegCost, feeBps: number, ceilingBps: number) =>
+  leg.status === "OK" && D(leg.bpsPreFeeExact!).plus(feeBps).lte(ceilingBps);
+
+/**
+ * Largest sell quantity at the symbol's quantity precision whose exact all-in cost stays within the ceiling
+ * and whose proceeds meet the minimum order amount. Bisection on exact cost, then floor and re-check.
+ */
+export function largestSellWithin(raw: RawOrderbook, mid: Decimal, ceilingBps: number, feeBps: number, qtyDp: number, minOrderAmount: Decimal): Decimal | null {
   const total = raw.data.bids.reduce((s, [, q]) => s.plus(q), D(0));
   if (total.eq(0)) return null;
-  const within = (q: Decimal) => {
-    const r = sellShares(raw, q.toString(), mid);
-    return r.status === "OK" && D(r.bpsPreFee!).plus(feeBps).lte(ceilingBps);
-  };
-  if (!within(D(raw.data.bids[0][1]).div(100))) return null;
+  const ok = (q: Decimal) => { const r = sellShares(raw, q.toString(), mid); return withinCeiling(r, feeBps, ceilingBps) && D(r.cash).gte(minOrderAmount); };
   let lo = D(0), hi = total;
-  for (let i = 0; i < 60; i++) { const m = lo.plus(hi).div(2); if (within(m)) lo = m; else hi = m; }
-  return lo.toDecimalPlaces(6, Decimal.ROUND_DOWN);
+  for (let i = 0; i < 80; i++) { const m = lo.plus(hi).div(2); if (withinCeiling(sellShares(raw, m.toString(), mid), feeBps, ceilingBps)) lo = m; else hi = m; }
+  let q = lo.toDecimalPlaces(qtyDp, Decimal.ROUND_DOWN);
+  const step = D(10).pow(-qtyDp);
+  for (let i = 0; i < 1000 && q.gt(0) && !withinCeiling(sellShares(raw, q.toString(), mid), feeBps, ceilingBps); i++) q = q.minus(step);
+  return q.gt(0) && ok(q) ? q : null;
 }
 
-export function largestBuyWithin(raw: RawOrderbook, mid: Decimal, ceilingBps: number, feeBps: number): Decimal | null {
+/** Largest USDT budget (at quote precision) whose exact all-in cost stays within the ceiling and meets the minimum. */
+export function largestBuyWithin(raw: RawOrderbook, mid: Decimal, ceilingBps: number, feeBps: number, quoteDp: number, minOrderAmount: Decimal): Decimal | null {
   const total = notional(raw.data.asks);
   if (total.eq(0)) return null;
-  const within = (b: Decimal) => {
-    const r = buyWithBudget(raw, b.toString(), mid);
-    return r.status === "OK" && D(r.bpsPreFee!).plus(feeBps).lte(ceilingBps);
-  };
-  if (!within(D(1))) return null;
   let lo = D(0), hi = total;
-  for (let i = 0; i < 60; i++) { const m = lo.plus(hi).div(2); if (within(m)) lo = m; else hi = m; }
-  return lo.toDecimalPlaces(2, Decimal.ROUND_DOWN);
+  for (let i = 0; i < 80; i++) { const m = lo.plus(hi).div(2); if (withinCeiling(buyWithBudget(raw, m.toString(), mid), feeBps, ceilingBps)) lo = m; else hi = m; }
+  const b = lo.toDecimalPlaces(Math.min(quoteDp, 2), Decimal.ROUND_DOWN);
+  return b.gte(minOrderAmount) && withinCeiling(buyWithBudget(raw, b.toString(), mid), feeBps, ceilingBps) ? b : null;
 }
+
+/** Number of decimal places in a decimal string ("178.412132" -> 6). */
+export const decimals = (v: string) => (v.includes(".") ? v.split(".")[1].replace(/0+$/, "").length : 0);
 
 export function loadCapture(fx: BookCapture): BookCapture {
   const h = rawHash(fx.raw);

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
   const u = await universe(mode);
   const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
-  const result = sound({ capture, intent, ceilingBps: Number(b.ceilingBps) || 50, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, userFeeBps: b.userFeeBps === undefined || b.userFeeBps === null ? undefined : Number(b.userFeeBps), previousBpsPreFee: b.previousBpsPreFee });
+  const result = sound({ capture, intent, ceilingBps: Number(b.ceilingBps) || 50, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: b.userFeeBps === undefined || b.userFeeBps === null ? undefined : Number(b.userFeeBps), previousBpsPreFee: b.previousBpsPreFee });
   const levels = { asks: capture.raw.data.asks.slice(0, 40), bids: capture.raw.data.bids.slice(0, 40) };
   return NextResponse.json({ result, levels, universe: { source: u.source, fetched_utc: u.fetched_utc }, capture: { ...capture, raw: undefined } });
 }

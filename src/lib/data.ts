@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { BookCapture, RawOrderbook } from "@/engine/types";
+import type { BookCapture, InstrumentSpec, RawOrderbook } from "@/engine/types";
 import type { StockInfo } from "@/engine/eligibility";
 import type { Calendar, MarketStates } from "@/engine/session";
 import { rawHash } from "@/engine/book";
@@ -15,12 +15,13 @@ export const FIXTURES: Record<string, string> = {
 };
 export const recordedCapture = (symbol: string): BookCapture | null => (FIXTURES[symbol] ? read<BookCapture>(FIXTURES[symbol]) : null);
 
-export interface Universe { stockInfo: StockInfo[]; states: MarketStates; calendar: Calendar; source: "live" | "recorded"; fetched_utc: string }
+export interface Universe { stockInfo: StockInfo[]; states: MarketStates; calendar: Calendar; instruments: InstrumentSpec[]; source: "live" | "recorded"; fetched_utc: string }
 
 const recordedUniverse = (): Universe => ({
   stockInfo: read<{ data: StockInfo[] }>("stock-info-20260920.json").data,
   states: read<{ states: MarketStates }>("market-states-20260920.json").states,
   calendar: read<Calendar>("calendar-20260920.json"),
+  instruments: read<{ rows: InstrumentSpec[] }>("instruments-20260923.json").rows,
   source: "recorded", fetched_utc: "2026-09-20T04:04:00Z",
 });
 
@@ -37,12 +38,15 @@ export async function universe(mode: "live" | "recorded"): Promise<Universe> {
   if (mode === "recorded") return recordedUniverse();
   if (cache && Date.now() - cache.at < 600_000) return cache.u;
   try {
-    const [si, st, cal] = await Promise.all([
+    const [si, st, cal, ins] = await Promise.all([
       getJson<{ data: StockInfo[] }>("/api/v3/reality/market/stock-info"),
       getJson<{ data: MarketStates }>("/api/v3/reality/market/states"),
       getJson<{ data: Calendar }>("/api/v3/reality/market/calendar"),
+      getJson<{ data: InstrumentSpec[] }>("/api/v3/market/instruments?category=SPOT", 15000),
     ]);
-    cache = { at: Date.now(), u: { stockInfo: si.data, states: st.data, calendar: cal.data, source: "live", fetched_utc: new Date().toISOString() } };
+    const reality = new Set(si.data.map((x) => x.symbol));
+    const instruments = ins.data.filter((x) => reality.has(x.symbol));
+    cache = { at: Date.now(), u: { stockInfo: si.data, states: st.data, calendar: cal.data, instruments, source: "live", fetched_utc: new Date().toISOString() } };
     return cache.u;
   } catch {
     return recordedUniverse();

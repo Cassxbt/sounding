@@ -10,8 +10,9 @@ interface Universe { source: string; fetched_utc: string; total: number; eligibl
 interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe: { source: string; fetched_utc: string }; capture: Record<string, unknown> }
 
 const PRESETS = [
-  { id: "hims-1", label: "Turn 1 · sell 178.412132 rHIMS, ceiling 50", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50, note: "5,000 USDT at mid. Must be flat before the CAO transition effective Oct 9 (no time stated) — hard deadline Oct 8." },
+  { id: "hims-1", label: "Turn 1 · sell 178.4121 rHIMS, ceiling 50", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, note: "5,000 USDT at mid. Must be flat before the CAO transition effective Oct 9 (no time stated) — hard deadline Oct 8." },
   { id: "hims-2", label: "Turn 2 · make it 35 shares", symbol: "RHIMSUSDT", side: "sell", amount: "35", ceiling: 50, note: "Same book, same ceiling. Only the size changed." },
+  { id: "hims-precision", label: "rHIMS · sell 178.412132 (6 dp, refused)", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50, note: "rHIMS accepts 4 decimal places. Sounding refuses and suggests a valid size instead of silently rounding." },
   { id: "spy-1k", label: "rSPY · buy 1,000 USDT (thin top)", symbol: "RSPYUSDT", side: "buy", amount: "1000", ceiling: 20, note: "Displayed spread 0.1 bps; the first ask is a ~$150 pin." },
   { id: "spmo-25k", label: "rSPMO · buy 25,000 USDT (insufficient depth)", symbol: "RSPMOUSDT", side: "buy", amount: "25000", ceiling: 50, note: "The visible book cannot cover the order." },
 ] as const;
@@ -148,6 +149,11 @@ export default function Page() {
                 <div className="rounded-md border-2 border-over bg-over-bg/60 p-5">
                   <div className="mono text-[11px] uppercase tracking-[0.18em] text-over">refused · {res.gate}</div>
                   <p className="mt-2 text-ink-2">{res.gateDetail}</p>
+                  {res.suggestion && (
+                    <button onClick={() => { const a = res.suggestion!.baseQty ?? res.suggestion!.quoteBudget!; setAmount(a); run({ amount: a }); }} className="mt-3 mono text-[11px] uppercase tracking-[0.18em] underline">
+                      use {res.suggestion.baseQty ?? `${res.suggestion.quoteBudget} USDT`} instead · {res.suggestion.reason}
+                    </button>
+                  )}
                 </div>
               )}
 

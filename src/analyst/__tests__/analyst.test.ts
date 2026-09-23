@@ -5,12 +5,12 @@ import { templateAnalysis } from "../template";
 import { validate } from "../rules";
 import { EMPTY_CONSTRAINTS } from "..";
 import type { EvidencePack } from "../schema";
-import { calendar, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
+import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
 
 const evidence = (): EvidencePack => JSON.parse(readFileSync("fixtures/evidence/RHIMSUSDT.json", "utf8"));
-const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), historical: true, now: T_RHIMS });
+const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
 const C = (o: Partial<typeof EMPTY_CONSTRAINTS>) => ({ ...EMPTY_CONSTRAINTS, ...o });
-const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50, userFeeBps: fee });
+const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: fee });
 const turn2 = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 50 });
 
 describe("template analyst on the lead demo", () => {
@@ -38,6 +38,14 @@ describe("template analyst on the lead demo", () => {
     expect(out.recommendation).toBe("immediate_cross");
     expect(out.changedBecause).toMatch(/changed from none to immediate_cross/);
     expect(validate(out, turn2(), evidence())).toEqual([]);
+  });
+  it("hard exit with nothing within ceiling -> no recommendation, says no priced route exits", () => {
+    // 50 bps ceiling, 20 bps stated fee: full size is over; re-quote must not become the recommendation
+    const res = turn1(20);
+    const out = templateAnalysis(res, evidence(), C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true, takerFeeBps: 20 }));
+    expect(out.recommendation).toBeNull();
+    expect(out.bindingConstraint).toMatch(/no priced route exits the full position/);
+    expect(validate(out, res, evidence())).toEqual([]);
   });
   it("turn 3: deadline removed -> resting limit and partial become admissible (on the fee-sensitive book)", () => {
     const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
@@ -71,6 +79,14 @@ describe("validator catches compliant-but-bad answers", () => {
     const out = templateAnalysis(turn1(), evidence(), C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true }));
     const bad = { ...out, clarification: null, recommendation: "immediate_cross" as const };
     expect(validate(bad, turn1(), evidence()).map((v) => v.rule)).toContain("fee_sensitive_needs_fee");
+  });
+  it("recommending re-quote under a hard exit", () => {
+    const bad = { ...base(), recommendation: "requote_at_switch" as const };
+    expect(validate(bad, turn1(8), evidence()).map((v) => v.rule)).toContain("hard_constraint");
+  });
+  it("describing re-quote as satisfying the hard exit (Qwen's turn-1 wording)", () => {
+    const bad = { ...base(), admissible: base().admissible.map((a) => a.kind === "requote_at_switch" ? { ...a, reason: "Defers to next US session; still before Oct 8 deadline, preserving must-be-flat constraint" } : a) };
+    expect(validate(bad, turn1(8), evidence()).map((v) => v.rule)).toContain("overclaim_plan_step");
   });
   it("promise language in a reason", () => {
     const bad = { ...base(), admissible: [{ kind: "requote_at_switch" as const, reason: "guarantees fill certainty at the open" }] };

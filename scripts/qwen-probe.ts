@@ -5,10 +5,10 @@ import { SYSTEM, buildUserPrompt, EMPTY_CONSTRAINTS } from "../src/analyst";
 import { AnalystOutputSchema } from "../src/analyst/schema";
 async function main() {
 const fx = JSON.parse(readFileSync("fixtures/rhims-20260920T090235Z.json", "utf8"));
-const ctx = { stockInfo: JSON.parse(readFileSync("fixtures/stock-info-20260920.json", "utf8")).data, states: JSON.parse(readFileSync("fixtures/market-states-20260920.json", "utf8")).states, calendar: JSON.parse(readFileSync("fixtures/calendar-20260920.json", "utf8")) };
-const res = sound({ capture: fx, intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50, now: new Date(Number(fx.exchange_ts)), historical: true, ...ctx });
+const ctx = { stockInfo: JSON.parse(readFileSync("fixtures/stock-info-20260920.json", "utf8")).data, states: JSON.parse(readFileSync("fixtures/market-states-20260920.json", "utf8")).states, calendar: JSON.parse(readFileSync("fixtures/calendar-20260920.json", "utf8")), instruments: JSON.parse(readFileSync("fixtures/instruments-20260923.json", "utf8")).rows };
+const res = sound({ capture: fx, intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, now: new Date(Number(fx.exchange_ts)), historical: true, ...ctx });
 const ev = JSON.parse(readFileSync("fixtures/evidence/RHIMSUSDT.json", "utf8"));
-const user = buildUserPrompt(res, ev, EMPTY_CONSTRAINTS, [{ role: "user", text: "Sell 178.412132 rHIMS now. Ceiling 50 bps all-in. I hold this on the GLP-1 thesis; I must be flat before the CAO transition takes effect on October 9, so hard deadline October 8." }]);
+const user = buildUserPrompt(res, ev, EMPTY_CONSTRAINTS, [{ role: "user", text: "Sell 178.4121 rHIMS now. Ceiling 50 bps all-in. I hold this on the GLP-1 thesis; I must be flat before the CAO transition takes effect on October 9, so hard deadline October 8." }]);
 const variant = process.argv[2] ?? "default";
 const extra: Record<string, unknown> = variant === "nothink" ? { enable_thinking: false } : variant === "lowreason" ? { reasoning_effort: "low" } : {};
 const { qwenAnalyze } = await import("../src/analyst/qwen");

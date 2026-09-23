@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { sound, rawHash, validateBook, buyWithBudget, sellShares } from "..";
 import { D } from "../types";
-import { calendar, rhims, rspmo, rspy, states, stockInfo, T_RHIMS } from "./helpers";
+import { calendar, instruments, rhims, rspmo, rspy, states, stockInfo, T_RHIMS } from "./helpers";
 
-const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), historical: true, now: T_RHIMS });
+const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
 
 describe("fixture integrity", () => {
   it("rHIMS raw hash matches the census hash the partner froze", () => {
@@ -16,7 +16,7 @@ describe("fixture integrity", () => {
 describe("rHIMS sell-side costs (partner-verified numbers)", () => {
   const mid = () => { const v = validateBook(rhims().raw); if (!v.valid) throw new Error(); return v.mid; };
   it.each([
-    ["178.412132", "31.89", "4984.06"],
+    ["178.4121", "31.89", "4984.05"],
     ["35", "14.41", "979.46"],
     ["42", "14.68", "1175.32"],
     ["12", "12.49", "335.88"],
@@ -30,8 +30,8 @@ describe("rHIMS sell-side costs (partner-verified numbers)", () => {
 });
 
 describe("lead demo: fee-sensitive verdict then size flip", () => {
-  it("178.412132 sh, ceiling 50 -> WITHIN at 0/10, OVER at 20, FEE_SENSITIVE", () => {
-    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50 });
+  it("178.4121 sh, ceiling 50 -> WITHIN at 0/10, OVER at 20, FEE_SENSITIVE", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50 });
     expect(r.ok).toBe(true);
     expect(r.session).toBe("weekend_mm");
     expect(r.weekendTradable).toBe(true);
@@ -47,7 +47,8 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     // largest within 50 bps at the 20 bps fee scenario must itself be within, and smaller than the request
     const chk = sellShares(rhims().raw, largest.qty!, D("28.025"));
     expect(D(chk.bpsPreFee!).plus(20).lte(50)).toBe(true);
-    expect(D(largest.qty!).lt("178.412132")).toBe(true);
+    expect(largest.qty).toBe("147.8609"); // true max at RHIMS quantityPrecision=4 (partner replay: 147.860953 at 6 dp)
+    expect(D(chk.bpsPreFeeExact!).plus(20).lte(50)).toBe(true);
     expect(r.alternatives!.find((a) => a.kind === "resting_limit")!.tradeoffs).toContain("cancel_at_session_switch (Bitget Stock 2.0 FAQ)");
     expect(r.receipt.receipt_sha256).toHaveLength(64);
     expect(r.receipt.raw_sha256).toBe(rhims().raw_sha256);
@@ -59,7 +60,7 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     expect(r.alternatives!.map((a) => a.kind)).not.toContain("largest_within_ceiling");
   });
   it("user-entered fee is added as a fourth labeled scenario", () => {
-    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50, userFeeBps: 8 });
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
     const u = r.fees!.find((f) => f.source === "user")!;
     expect(u.feeBps).toBe(8); expect(u.allInBps).toBe("39.89"); expect(u.verdict).toBe("WITHIN_CEILING_ON_THIS_SNAPSHOT");
   });
@@ -118,11 +119,44 @@ describe("gates", () => {
     expect(fresh.ok).toBe(true);
   });
   it("stability: >10 bps move between snapshots -> UNSTABLE_QUOTE", () => {
-    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50, previousBpsPreFee: "10.00" });
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, previousBpsPreFee: "10.00" });
     expect(r.gate).toBe("UNSTABLE_QUOTE");
   });
   it("tampered raw -> throws (hash mismatch)", () => {
     const t = rhims(); t.raw.data.bids[0][1] = "999";
     expect(() => sound({ ...ctx(), capture: t, intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 })).toThrow(/hash/);
+  });
+});
+
+describe("exchange constraints and exact ceiling comparisons (2026-09-23 cross-check)", () => {
+  it("6-dp quantity on a 4-dp symbol is refused with a valid suggestion, never silently floored", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.412132" }, ceilingBps: 50 });
+    expect(r.ok).toBe(false);
+    expect(r.gate).toBe("INVALID_QUANTITY_PRECISION");
+    expect(r.suggestion?.baseQty).toBe("178.4121");
+    expect(r.leg).toBeUndefined();
+  });
+  it("order value below minOrderAmount is refused", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "0.2" }, ceilingBps: 50 });
+    expect(r.gate).toBe("BELOW_MIN_ORDER");
+    const b = sound({ ...ctx(), capture: rspy(), intent: { side: "buy", quoteBudget: "5" }, ceilingBps: 50 });
+    expect(b.gate).toBe("BELOW_MIN_ORDER"); expect(b.suggestion?.quoteBudget).toBe("10");
+  });
+  it("negative or non-numeric sizes are refused", () => {
+    expect(sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "-5" }, ceilingBps: 50 }).gate).toBe("INVALID_QUANTITY_PRECISION");
+  });
+  it("missing instrument metadata refuses rather than guessing precision", () => {
+    expect(sound({ ...ctx(), instruments: [], capture: rhims(), intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 }).gate).toBe("INVALID_INSTRUMENT");
+  });
+  it("the verdict compares exact cost, not the 2-dp display (147.9279 shows 50.00 but costs 50.0048)", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "147.9279" }, ceilingBps: 50 });
+    const at20 = r.fees!.find((f) => f.feeBps === 20)!;
+    expect(at20.allInBps).toBe("50.00");
+    expect(D(r.leg!.bpsPreFeeExact!).plus(20).gt(50)).toBe(true);
+    expect(at20.verdict).toBe("OVER_CEILING_ON_THIS_SNAPSHOT");
+  });
+  it("re-quote is labelled as reassess-only", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50 });
+    expect(r.alternatives!.find((a) => a.kind === "requote_at_switch")!.tradeoffs).toContain("reassess only: does not by itself satisfy a hard exit");
   });
 });

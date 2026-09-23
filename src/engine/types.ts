@@ -45,7 +45,22 @@ export type GateCode =
   | "INVALID_BOOK"
   | "NO_EXECUTABLE_QUOTE"
   | "FRESHNESS_UNKNOWN"
-  | "UNSTABLE_QUOTE";
+  | "UNSTABLE_QUOTE"
+  | "INVALID_QUANTITY_PRECISION"
+  | "BELOW_MIN_ORDER";
+
+/** Exchange order constraints for one symbol, from GET /api/v3/market/instruments. */
+export interface InstrumentSpec {
+  symbol: string;
+  quantityPrecision: string;
+  pricePrecision: string;
+  quotePrecision: string;
+  minOrderQty: string;
+  minOrderAmount: string;
+  maxMarketOrderAmount?: string;
+  status: string;
+  isReality?: string;
+}
 
 export type CostVerdict =
   | "WITHIN_CEILING_ON_THIS_SNAPSHOT"
@@ -59,8 +74,10 @@ export interface LegCost {
   /** quote cash: spend for buy, proceeds for sell (pre-fee) */
   cash: string;
   vwap?: string;
-  /** one-leg cost vs reference mid, pre-fee, basis points */
+  /** one-leg cost vs reference mid, pre-fee, basis points, rounded for display */
   bpsPreFee?: string;
+  /** same cost at full precision; every ceiling comparison uses this, never the display value */
+  bpsPreFeeExact?: string;
   levelsConsumed: number;
   /** visible quote notional on the consumed side */
   visibleNotional: string;
@@ -96,6 +113,9 @@ export interface SoundingResult {
   weekendTradable?: boolean;
   intent: Intent;
   ceilingBps: number;
+  /** a valid size to use instead, when a precision or minimum gate refused the order */
+  suggestion?: { baseQty?: string; quoteBudget?: string; reason: string };
+  spec?: InstrumentSpec;
   referenceMid?: string;
   leg?: LegCost;
   fees?: FeeScenario[];

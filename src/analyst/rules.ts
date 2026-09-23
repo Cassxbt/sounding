@@ -57,6 +57,11 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
       v.push({ rule: "hard_constraint", detail: `re-quote at switch (${sw}) is not before the deadline ${c.hardDeadlineNy}` });
   }
   if (out.recommendation === "largest_within_ceiling" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "a partial size does not make the trader flat" });
+  if (out.recommendation === "requote_at_switch" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "re-quoting later is a chance to exit, not an exit; it cannot be the recommendation under a hard deadline" });
+  // only reasons for ADMITTING a plan step can overclaim; exclusion reasons explain why it falls short
+  const requoteClaims = out.admissible.filter((a) => a.kind === "requote_at_switch" || a.kind === "largest_within_ceiling").map((a) => a.reason).join(" ");
+  if (c.mustBeFlat && c.hardDeadlineNy && /\bsatisf(?:y|ies|ying)\b|makes? you flat|meets? (?:the|your) (?:hard )?(?:deadline|exit)|preserv\w* (?:the )?must.?be.?flat/i.test(requoteClaims))
+    v.push({ rule: "overclaim_plan_step", detail: "a re-quote or partial size was described as satisfying the hard exit" });
 
   // evidence typing: only issuer-matched, dated records may be marked relevant
   const { relevant, timeUnknownOnDeadline } = relevantEvidenceIds(pack, c);

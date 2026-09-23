@@ -14,7 +14,7 @@ interface Props {
 }
 
 const DEMO_TURNS = [
-  "Sell 178.412132 rHIMS now. Ceiling 50 bps all-in. I hold this on the GLP-1 thesis; I must be flat before the CAO transition takes effect on October 9, so hard deadline October 8.",
+  "Sell 178.4121 rHIMS now. Ceiling 50 bps all-in. I hold this on the GLP-1 thesis; I must be flat before the CAO transition takes effect on October 9, so hard deadline October 8.",
   "My taker fee is 8 bps.",
   "Make it 35 shares.",
   "Actually I can hold through the transition.",

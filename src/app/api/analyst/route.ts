@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   // Both arms start from the deterministic extraction; the model may refine it, the template uses it as-is.
   const constraints: Constraints = extracted.constraints;
   const userFee = extracted.constraints.takerFeeBps ?? b.userFeeBps ?? constraints.takerFeeBps ?? undefined;
-  const result = sound({ capture, intent, ceilingBps: Number(b.ceilingBps) || 50, now: historical ? new Date(Number(capture.exchange_ts)) : new Date(), historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, userFeeBps: userFee === null ? undefined : userFee });
+  const result = sound({ capture, intent, ceilingBps: Number(b.ceilingBps) || 50, now: historical ? new Date(Number(capture.exchange_ts)) : new Date(), historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee === null ? undefined : userFee });
   if (!result.ok) return NextResponse.json({ result, analyst: null, note: `engine refused: ${result.gate}` });
   const code = u.stockInfo.find((s) => s.symbol === b.symbol)?.code ?? b.symbol.replace(/^R|USDT$/g, "");
   const evidence = await evidenceFor(b.symbol, code, mode);

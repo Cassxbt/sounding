@@ -11,6 +11,7 @@ const ctx = {
   stockInfo: JSON.parse(readFileSync("fixtures/stock-info-20260920.json", "utf8")).data,
   states: JSON.parse(readFileSync("fixtures/market-states-20260920.json", "utf8")).states,
   calendar: JSON.parse(readFileSync("fixtures/calendar-20260920.json", "utf8")),
+  instruments: JSON.parse(readFileSync("fixtures/instruments-20260923.json", "utf8")).rows,
 };
 const r = sound({ capture, intent, ceilingBps: Number(ceiling ?? 50), now: new Date(Number(capture.exchange_ts)), historical: true, ...ctx });
-console.log(JSON.stringify({ ok: r.ok, gate: r.gate, session: r.session, mid: r.referenceMid, leg: r.leg, fees: r.fees, feeSensitive: r.feeSensitive, alternatives: r.alternatives, receipt_sha256: r.receipt.receipt_sha256 }, null, 1));
+console.log(JSON.stringify({ ok: r.ok, gate: r.gate, gateDetail: r.gateDetail, suggestion: r.suggestion, session: r.session, mid: r.referenceMid, leg: r.leg, fees: r.fees, feeSensitive: r.feeSensitive, alternatives: r.alternatives, receipt_sha256: r.receipt.receipt_sha256 }, null, 1));
