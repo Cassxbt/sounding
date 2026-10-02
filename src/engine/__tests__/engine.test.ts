@@ -59,6 +59,19 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     expect(r.feeSensitive).toBe(false);
     expect(r.alternatives!.map((a) => a.kind)).not.toContain("largest_within_ceiling");
   });
+  it("a stated fee decides: not fee-sensitive, no partial-size alternative when it fits", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
+    expect(r.feeSensitive).toBe(false);
+    expect(r.alternatives!.map((a) => a.kind)).not.toContain("largest_within_ceiling");
+  });
+  it("a stated fee that breaches the ceiling sizes the partial at that fee, not the 20 bps scenario", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 48, userFeeBps: 17 });
+    const largest = r.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
+    expect(largest.tradeoffs[0]).toMatch(/your 17 bps fee/);
+    const chk = sellShares(rhims().raw, largest.qty!, D("28.025"));
+    expect(D(chk.bpsPreFeeExact!).plus(17).lte(48)).toBe(true);
+    expect(D(largest.qty!).gt("147.8609")).toBe(true); // larger than the 20 bps worst-case clip
+  });
   it("user-entered fee is added as a fourth labeled scenario", () => {
     const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
     const u = r.fees!.find((f) => f.source === "user")!;

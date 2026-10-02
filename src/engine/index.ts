@@ -105,19 +105,22 @@ export function sound(i: SoundingInput): SoundingResult {
     const allIn = D(leg.bpsPreFeeExact!).plus(s.feeBps);
     return { ...s, allInBps: allIn.toFixed(2), verdict: withinCeiling(leg, s.feeBps, i.ceilingBps) ? "WITHIN_CEILING_ON_THIS_SNAPSHOT" : "OVER_CEILING_ON_THIS_SNAPSHOT" };
   });
+  // Once the trader states their fee, that fee decides; the scenarios stay visible as context only.
   const verdictSet = new Set(fees.filter((f) => f.source === "scenario").map((f) => f.verdict));
-  const feeSensitive = verdictSet.size > 1;
+  const userFeeRow = fees.find((f) => f.source === "user");
+  const feeSensitive = !userFeeRow && verdictSet.size > 1;
+  const decidingVerdicts = userFeeRow ? [userFeeRow] : fees;
 
   const alternatives: Alternative[] = [];
   if (leg.status === "OK") {
     alternatives.push({ kind: "immediate_cross", qty: leg.qty, allInBpsByFee: Object.fromEntries(fees.map((f) => [f.feeBps, f.allInBps!])), tradeoffs: ["market or marketable-limit; Bitget UI offers both on weekends; acceptance and fill not promised", "conditional on this snapshot"] });
   }
-  if (fees.some((f) => f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT")) {
-    const worstFee = Math.max(...scenarios.map((s) => s.feeBps));
+  if (decidingVerdicts.some((f) => f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT")) {
+    const worstFee = i.userFeeBps !== undefined ? i.userFeeBps : Math.max(...scenarios.map((s) => s.feeBps));
     const q = i.intent.side === "sell"
       ? largestSellWithin(cap.raw, v.mid, i.ceilingBps, worstFee, qtyDp, D(spec.minOrderAmount))
       : largestBuyWithin(cap.raw, v.mid, i.ceilingBps, worstFee, quoteDp, D(spec.minOrderAmount));
-    if (q && q.gt(0)) alternatives.push({ kind: "largest_within_ceiling", qty: q.toString(), tradeoffs: [`largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at the ${worstFee} bps fee scenario`, "partial exposure change", "does not make you flat or fully filled"] });
+    if (q && q.gt(0)) alternatives.push({ kind: "largest_within_ceiling", qty: q.toString(), tradeoffs: [`largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, "partial exposure change", "does not make you flat or fully filled"] });
   }
   const limitPx = i.intent.side === "sell" ? v.bestAsk : v.bestBid;
   alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", ...(sess.state === "weekend_mm" || sess.state === "holiday_mm" ? ["cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] : [])] });
