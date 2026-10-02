@@ -8,6 +8,7 @@ import { extractConstraints } from "@/analyst/extract";
 import type { AnalystOutput, Constraints } from "@/analyst/schema";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 interface Body {
   symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live";

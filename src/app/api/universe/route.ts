@@ -3,6 +3,7 @@ import { universe } from "@/lib/data";
 import { classifySession } from "@/engine/session";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 export async function GET(req: Request) {
   const mode = new URL(req.url).searchParams.get("mode") === "live" ? "live" : "recorded";
   const u = await universe(mode);

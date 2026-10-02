@@ -4,6 +4,7 @@ import type { Intent } from "@/engine/types";
 import { liveCapture, recordedCapture, universe } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live"; previousBpsPreFee?: string }
 

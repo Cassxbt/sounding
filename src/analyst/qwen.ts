@@ -7,7 +7,9 @@ export const QWEN = {
   baseUrl: process.env.BITGET_QWEN_BASE_URL ?? "https://hackathon.bitgetops.com/v1",
   model: process.env.BITGET_QWEN_MODEL ?? "qwen3.8-max",
 };
-export const USAGE_LOG = join(process.cwd(), "data", "qwen-usage.jsonl");
+// Serverless filesystems are read-only outside /tmp; locally the log lives in ./data.
+const LOG_DIR = process.env.VERCEL ? "/tmp" : join(process.cwd(), "data");
+export const USAGE_LOG = join(LOG_DIR, "qwen-usage.jsonl");
 
 export function qwenAvailable(): boolean { return Boolean(process.env.BITGET_QWEN_API_KEY); }
 
@@ -16,7 +18,7 @@ export interface QwenUsage { prompt_tokens?: number; completion_tokens?: number;
 /** Every call appends one line: when, what for, tokens, latency, outcome. No prompt text, no key. */
 export function logUsage(entry: { purpose: string; usage?: QwenUsage; ms: number; status: number | string; model: string }) {
   try {
-    mkdirSync(join(process.cwd(), "data"), { recursive: true });
+    mkdirSync(LOG_DIR, { recursive: true });
     appendFileSync(USAGE_LOG, JSON.stringify({ at: new Date().toISOString(), ...entry }) + "\n");
   } catch { /* logging must never break a request */ }
 }
