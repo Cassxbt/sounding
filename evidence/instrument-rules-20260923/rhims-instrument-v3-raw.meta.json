@@ -1,0 +1,7 @@
+{
+ "url": "https://api.bitget.com/api/v3/market/instruments?category=SPOT&symbol=RHIMSUSDT",
+ "request_start_utc": "2026-09-23T16:01:37.532+00:00",
+ "rtt_ms": 809,
+ "sha256": "1a38b24428057e410d1d8252f6c8238f748607d3bf75635bfe9da15f1744f022",
+ "bytes": 561
+}

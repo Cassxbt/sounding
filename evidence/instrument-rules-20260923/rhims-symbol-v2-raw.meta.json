@@ -1,0 +1,7 @@
+{
+ "url": "https://api.bitget.com/api/v2/spot/public/symbols?symbol=RHIMSUSDT",
+ "request_start_utc": "2026-09-23T16:01:36.415+00:00",
+ "rtt_ms": 1115,
+ "sha256": "0dc6f7400483625930ab5874a1dfbe4fa5ce46808da37da0d2fdad27f41d5184",
+ "bytes": 542
+}

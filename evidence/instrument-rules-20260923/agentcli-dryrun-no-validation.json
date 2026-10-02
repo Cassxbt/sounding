@@ -1,0 +1,1 @@
+{"endpoint":"POST /api/v3/trade/place-order","requestTime":"2026-09-23T15:52:41.262Z","data":{"dryRun":true,"operationId":"placeOrder","method":"POST","path":"/api/v3/trade/place-order","riskLevel":"write","wouldSend":{"category":"SPOT","symbol":"RHIMSUSDT","side":"hold","orderType":"market","qty":"-5","clientOid":"5987ed8a-a149-4dac-ab12-5a4d2504158b"}}}
