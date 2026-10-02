@@ -39,30 +39,35 @@ const OUTPUT_INSTRUCTIONS = `Respond with ONLY a JSON object with exactly these 
 ${JSON.stringify(EXAMPLE_OUTPUT, null, 1)}
 "kind" and "recommendation" values must be one of: immediate_cross, largest_within_ceiling, resting_limit, requote_at_switch. Use null where the example says "or null".`;
 
-export async function qwenAnalyze(system: string, user: string, purpose = "analyst"): Promise<{ parsed: AnalystOutput | null; raw: string; usage?: QwenUsage }> {
+/** One JSON-mode chat call to the Bitget Qwen endpoint. Logs usage; throws on network/HTTP failure. */
+export async function qwenJson(system: string, user: string, purpose: string, timeoutMs: number): Promise<{ json: unknown; raw: string; usage?: QwenUsage }> {
   const key = process.env.BITGET_QWEN_API_KEY;
   if (!key) throw new Error("BITGET_QWEN_API_KEY not set");
   const body = {
     model: QWEN.model, temperature: 0, response_format: { type: "json_object" },
     // Bitget's gateway times out at ~120 s and qwen3.8-max thinking on this prompt exceeds it; thinking off answers in ~15 s.
     enable_thinking: process.env.BITGET_QWEN_THINKING === "on",
-    messages: [
-      { role: "system", content: `${system}\n\n${OUTPUT_INSTRUCTIONS}` },
-      { role: "user", content: user },
-    ],
+    messages: [{ role: "system", content: system }, { role: "user", content: user }],
   };
   const t0 = Date.now();
   let r: Response;
   try {
-    r = await fetch(`${QWEN.baseUrl}/chat/completions`, { method: "POST", signal: AbortSignal.timeout(90_000), headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(body) });
+    r = await fetch(`${QWEN.baseUrl}/chat/completions`, { method: "POST", signal: AbortSignal.timeout(timeoutMs), headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(body) });
   } catch (e) { logUsage({ purpose, ms: Date.now() - t0, status: "network", model: QWEN.model }); throw e; }
   if (!r.ok) { logUsage({ purpose, ms: Date.now() - t0, status: r.status, model: QWEN.model }); throw new Error(`qwen ${r.status}: ${(await r.text()).slice(0, 300)}`); }
   const j = (await r.json()) as { choices?: { message?: { content?: string } }[]; usage?: QwenUsage; model?: string };
   logUsage({ purpose, usage: j.usage, ms: Date.now() - t0, status: r.status, model: j.model ?? QWEN.model });
   const raw = j.choices?.[0]?.message?.content ?? "";
-  const text = raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
-  try {
-    const parsed = AnalystOutputSchema.safeParse(JSON.parse(text));
-    return { parsed: parsed.success ? parsed.data : null, raw, usage: j.usage };
-  } catch { return { parsed: null, raw, usage: j.usage }; }
+  try { return { json: JSON.parse(raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")), raw, usage: j.usage }; }
+  catch { return { json: null, raw, usage: j.usage }; }
+}
+
+// Both calls share one 60 s serverless budget: intake ~20 s, analysis ~30 s, engine and I/O the rest.
+export const INTAKE_TIMEOUT_MS = 20_000;
+export const ANALYST_TIMEOUT_MS = 30_000;
+
+export async function qwenAnalyze(system: string, user: string, purpose = "analyst"): Promise<{ parsed: AnalystOutput | null; raw: string; usage?: QwenUsage }> {
+  const { json, raw, usage } = await qwenJson(`${system}\n\n${OUTPUT_INSTRUCTIONS}`, user, purpose, ANALYST_TIMEOUT_MS);
+  const parsed = json ? AnalystOutputSchema.safeParse(json) : null;
+  return { parsed: parsed?.success ? parsed.data : null, raw, usage };
 }
