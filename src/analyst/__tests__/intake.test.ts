@@ -26,7 +26,7 @@ describe("code readers for trader phrasing", () => {
 
 describe("checked intake", () => {
   const text = "out of HIMS before the 8th, I pay 0.08% taker, keep it under half a percent, must be flat";
-  it("accepts model values that code confirms from the cited span (the devil's-advocate paraphrase)", () => {
+  it("accepts model values that code confirms from the cited span (a paraphrase the regex reader misses)", () => {
     const f = checkFields([
       { name: "takerFeeBps", value: 8, span: "I pay 0.08% taker" },
       { name: "ceilingBps", value: 50, span: "keep it under half a percent" },

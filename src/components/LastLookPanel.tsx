@@ -13,7 +13,7 @@ const STATUS: Record<LastLookResult["status"], { label: string; cls: string }> =
   VOID_GATE: { label: "void · gate", cls: "bg-over-bg text-over border-over" },
 };
 
-/** Night Desk's rule, applied at the moment the trader confirms: re-walk the book; the decision stands only if nothing material moved. */
+/** Applied at the moment the trader confirms: re-walk the book; the decision stands only if nothing material moved. */
 export function LastLookPanel({ original, mode, confirmFixture, confirmNote }: Props) {
   const [look, setLook] = useState<LastLookResult | null>(null);
   const [err, setErr] = useState<string | null>(null);

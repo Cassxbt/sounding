@@ -6,14 +6,14 @@ import { calendar, instruments, rhims, rspmo, rspy, states, stockInfo, T_RHIMS }
 const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
 
 describe("fixture integrity", () => {
-  it("rHIMS raw hash matches the census hash the partner froze", () => {
+  it("rHIMS raw hash matches the frozen census hash", () => {
     const fx = rhims();
     expect(rawHash(fx.raw)).toBe("51c18dc6b2926c4f65acc545686b03d5b548eac7fe33a3c139c0a8b50a8a2b2a");
     expect(fx.raw_sha256).toBe(rawHash(fx.raw));
   });
 });
 
-describe("rHIMS sell-side costs (partner-verified numbers)", () => {
+describe("rHIMS sell-side costs (independently replayed numbers)", () => {
   const mid = () => { const v = validateBook(rhims().raw); if (!v.valid) throw new Error(); return v.mid; };
   it.each([
     ["178.4121", "31.89", "4984.05"],
@@ -47,7 +47,7 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     // largest within 50 bps at the 20 bps fee scenario must itself be within, and smaller than the request
     const chk = sellShares(rhims().raw, largest.qty!, D("28.025"));
     expect(D(chk.bpsPreFee!).plus(20).lte(50)).toBe(true);
-    expect(largest.qty).toBe("147.8609"); // true max at RHIMS quantityPrecision=4 (partner replay: 147.860953 at 6 dp)
+    expect(largest.qty).toBe("147.8609"); // true max at RHIMS quantityPrecision=4 (independent replay: 147.860953 at 6 dp)
     expect(D(chk.bpsPreFeeExact!).plus(20).lte(50)).toBe(true);
     expect(r.alternatives!.find((a) => a.kind === "resting_limit")!.tradeoffs).toContain("cancel_at_session_switch (Bitget Stock 2.0 FAQ)");
     expect(r.receipt.receipt_sha256).toHaveLength(64);

@@ -5,8 +5,7 @@ import { D } from "./types";
 
 /**
  * Last Look: the decision a trader confirms is re-checked on a fresh book before it stands.
- * Night Desk (Bitget S1 1st) cancelled on anomaly; here the anomaly is any material change between
- * the sounding the trader read and the book at the moment they confirm.
+ * The anomaly is any material change between the sounding the trader read and the book at the moment they confirm.
  */
 
 export { DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS, decidingRow };

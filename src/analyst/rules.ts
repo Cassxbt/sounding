@@ -27,7 +27,7 @@ export function relevantEvidenceIds(pack: EvidencePack, c: Constraints): { relev
 }
 
 /**
- * Tighten-only (Killswitch: "a gate may reject or shrink, never enlarge"). The checked intake is the floor:
+ * Tighten-only (a gate may reject or shrink, never enlarge). The checked intake is the floor:
  * the analyst may make a stated constraint stricter, never drop or relax it. Its constraints carry into the next
  * turn, so this is also what stops a limit from being loosened between turns.
  */
