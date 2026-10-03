@@ -17,3 +17,7 @@ Held and asked back (safe): "on or before October 20" (P15) and "10月12日（�
 Debatable gold, flagged by the writer before the run: P17 "by next Friday" said on a Saturday, P34 "月底之前", P23/P33/P36 bare 前, P18 "by the 2nd", P08 "have to" as must-be-flat.
 
 These results are published unchanged. Fixes informed by them are evaluated on a fresh blind set (v2); this set is re-run afterwards as a development set only.
+
+## Development re-run at f7ae45a (not a held-out number)
+
+Same 40 prompts after the deadline fixes: Qwen arm 129/138 stated limits correct, **0 wrong values** (was 5), 6 asked back (was 3). The asks showed the model still proposing a past Friday for "by fri", so code's reading is now used when the model's date is past or looser (6bef5d2 and the next commit). The held-out number comes from a fresh blind set (v2).

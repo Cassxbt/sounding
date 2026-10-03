@@ -76,10 +76,13 @@ describe("deadlines: code must confirm the date", () => {
     expect(f[0].status).toBe("conflict");
     expect(f[0].note).toMatch(/already passed/);
   });
-  it("the model's past weekday date is caught by code (eval v1 P02)", () => {
+  it("the model's past weekday date is replaced by code's reading (eval v1 P02)", () => {
     const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-02", span: "out by fri" }], "sell 250 rNVDA, out by fri hard", SAT);
-    expect(f[0].status).toBe("conflict");
-    expect(f[0].note).toMatch(/2026-10-09/);
+    expect(f[0]).toMatchObject({ status: "accepted", source: "code", value: "2026-10-09" });
+  });
+  it("code's stricter date is used; a looser code date is asked back", () => {
+    expect(checkFields([{ name: "hardDeadlineNy", value: "2026-10-07", span: "周三前" }], "周三前必须出", SAT)[0]).toMatchObject({ status: "accepted", value: "2026-10-06" });
+    expect(checkFields([{ name: "hardDeadlineNy", value: "2026-10-05", span: "by Oct 9" }], "out by Oct 9", SAT)[0].status).toBe("conflict");
   });
   it("'not before' is an earliest date, not a deadline", () => {
     const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-07", span: "not before the 8th" }], "Selling 90 rGOOGL but not before the 8th", SAT);

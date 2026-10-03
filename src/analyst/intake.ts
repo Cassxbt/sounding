@@ -81,6 +81,9 @@ function checkDeadline(value: string | number | boolean, span: string, today: st
   const c = readDate(span, today);
   if (!c) return { ...base, status: "conflict", note: "code cannot confirm a date from these words" };
   if (c < today) return { ...base, status: "conflict", note: `this date has already passed (code reads ${c})` };
+  // Code is authoritative on a date it can read; its reading is used when the model's is past or later (looser).
+  if (c !== String(value) && (String(value) < today || c < String(value)))
+    return { ...base, value: c, source: "code", status: "accepted", note: `model read ${String(value)}; code's reading used` };
   if (c !== String(value)) return { ...base, status: "conflict", note: `code reads ${c}` };
   return { ...base, value: c, source: "model+code", status: "accepted" };
 }
