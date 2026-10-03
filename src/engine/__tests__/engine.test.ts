@@ -173,3 +173,16 @@ describe("exchange constraints and exact ceiling comparisons (2026-09-23 cross-c
     expect(r.alternatives!.find((a) => a.kind === "requote_at_switch")!.tradeoffs).toContain("reassess only: does not by itself satisfy a hard exit");
   });
 });
+
+describe("worst-fee contrast on the same book", () => {
+  const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
+  it("within at your fee, over at the worst scenario: names the largest size that fits at the worst fee", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
+    expect(r.worstCase).toMatchObject({ feeBps: 20, allInBps: "51.89", verdict: "OVER_CEILING_ON_THIS_SNAPSHOT", clipQty: "147.8609", remainder: "30.5512" });
+    expect((r.receipt.outputs as { worstCase?: unknown }).worstCase).toEqual(r.worstCase);
+  });
+  it("no contrast when the worst scenario is also within, or when no fee is stated", () => {
+    expect(sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 50, userFeeBps: 8 }).worstCase).toBeUndefined();
+    expect(sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50 }).worstCase).toBeUndefined();
+  });
+});

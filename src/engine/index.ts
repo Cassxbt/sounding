@@ -5,7 +5,7 @@ import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type Mar
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.3.1";
+export const ENGINE_VERSION = "sounding-engine/0.3.2";
 export const DEFAULT_FEE_SCENARIOS_BPS = [0, 10, 20];
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
 import { STABILITY_BPS } from "./decision";
@@ -135,13 +135,23 @@ export function sound(i: SoundingInput): SoundingResult {
       });
     }
   }
+  // Personalization made visible: the same book at the worst fee scenario, sized to the ceiling there.
+  let worstCase: SoundingResult["worstCase"];
+  const worstRow = fees.filter((f) => f.source === "scenario").sort((a, b) => b.feeBps - a.feeBps)[0];
+  if (userFeeRow?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" && worstRow && worstRow.verdict === "OVER_CEILING_ON_THIS_SNAPSHOT") {
+    const q = i.intent.side === "sell"
+      ? largestSellWithin(cap.raw, v.mid, i.ceilingBps, worstRow.feeBps, qtyDp, D(spec.minOrderAmount))
+      : largestBuyWithin(cap.raw, v.mid, i.ceilingBps, worstRow.feeBps, quoteDp, D(spec.minOrderAmount));
+    const full = D(i.intent.side === "sell" ? i.intent.baseQty : i.intent.quoteBudget);
+    worstCase = { feeBps: worstRow.feeBps, allInBps: worstRow.allInBps!, verdict: worstRow.verdict, ...(q && q.gt(0) ? { clipQty: q.toString(), remainder: full.minus(q).toString() } : {}) };
+  }
   const limitPx = i.intent.side === "sell" ? v.bestAsk : v.bestBid;
   alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", ...(sess.state === "weekend_mm" || sess.state === "holiday_mm" ? ["cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] : [])] });
   alternatives.push({ kind: "requote_at_switch", tradeoffs: [nextSwitchHint(sess), "reassess only: does not by itself satisfy a hard exit", "nothing promised about future cost or availability"] });
 
   const nextSession = nextSessionNy(sess, i.calendar);
-  const outputs = { referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession };
-  return { ok: true, ...base, spec, weekendTradable: elig.weekendTradable, referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession, receipt: receiptFor(i, sess.state, undefined, outputs) };
+  const outputs = { referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession, ...(worstCase ? { worstCase } : {}) };
+  return { ok: true, ...base, spec, weekendTradable: elig.weekendTradable, referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, worstCase, nextSessionNy: nextSession, receipt: receiptFor(i, sess.state, undefined, outputs) };
 }
 
 export { buyWithBudget, sellShares, validateBook, rawHash } from "./book";

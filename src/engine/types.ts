@@ -123,6 +123,8 @@ export interface SoundingResult {
   fees?: FeeScenario[];
   feeSensitive?: boolean;
   alternatives?: Alternative[];
+  /** When your stated fee is within the ceiling but the worst fee scenario is not: the same book at that fee, and the largest size that fits there */
+  worstCase?: { feeBps: number; allInBps: string; verdict: CostVerdict; clipQty?: string; remainder?: string };
   /** NY date of the next session a re-quote could use; see nextSessionNy */
   nextSessionNy?: string | null;
   freshness: {
