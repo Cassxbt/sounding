@@ -50,7 +50,7 @@ export async function runAnalyst(args: { result: SoundingResult; evidence: Evide
   try {
     const { parsed } = await qwenAnalyze(SYSTEM, buildUserPrompt(result, evidence, constraints, turns, previous));
     if (!parsed) return { output: template, producedBy: "template", provider: "qwen", model, violations: [{ rule: "parse_failed", detail: "model output did not parse" }] };
-    const violations = validate(parsed, result, evidence);
+    const violations = validate(parsed, result, evidence, constraints);
     if (violations.length) {
       const fallback = templateAnalysis(result, evidence, parsed.constraints, previous);
       return { output: fallback, producedBy: "template", provider: "qwen", model, violations, modelOutputRejected: parsed };

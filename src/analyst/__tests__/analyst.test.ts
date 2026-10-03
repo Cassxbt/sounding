@@ -88,6 +88,14 @@ describe("validator catches compliant-but-bad answers", () => {
     const bad = { ...base(), admissible: base().admissible.map((a) => a.kind === "requote_at_switch" ? { ...a, reason: "Defers to next US session; still before Oct 8 deadline, preserving must-be-flat constraint" } : a) };
     expect(validate(bad, turn1(8), evidence()).map((v) => v.rule)).toContain("overclaim_plan_step");
   });
+  it("tighten-only: the analyst may not relax a stated fee, deadline or must-be-flat", () => {
+    const stated = C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true, takerFeeBps: 8 });
+    const looser = { ...base(), constraints: { ...base().constraints, takerFeeBps: 5, mustBeFlat: false, hardDeadlineNy: "2026-10-20" } };
+    const rules = validate(looser, turn1(8), evidence(), stated).filter((x) => x.rule === "loosened_constraint");
+    expect(rules).toHaveLength(3);
+    const stricter = { ...base(), constraints: { ...base().constraints, hardDeadlineNy: "2026-10-06" } };
+    expect(validate(stricter, turn1(8), evidence(), stated).map((x) => x.rule)).not.toContain("loosened_constraint");
+  });
   it("promise language in a reason", () => {
     const bad = { ...base(), admissible: [{ kind: "requote_at_switch" as const, reason: "guarantees fill certainty at the open" }] };
     expect(validate(bad, turn1(8), evidence()).map((v) => v.rule)).toContain("promise_language");

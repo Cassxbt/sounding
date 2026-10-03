@@ -6,7 +6,7 @@ import { liveCapture, recordedCapture, universe } from "@/lib/data";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live"; previousBpsPreFee?: string }
+interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live"; previousBpsPreFee?: string; fixture?: string }
 
 export async function POST(req: Request) {
   const b = (await req.json()) as Body;
@@ -15,8 +15,8 @@ export async function POST(req: Request) {
   const mode = b.mode === "live" ? "live" : "recorded";
   let capture, historical: boolean;
   if (mode === "recorded") {
-    capture = recordedCapture(b.symbol); historical = true;
-    if (!capture) return NextResponse.json({ error: `no recorded fixture for ${b.symbol}; use live mode` }, { status: 404 });
+    capture = recordedCapture(b.fixture ?? b.symbol); historical = true;
+    if (!capture || capture.symbol !== b.symbol) return NextResponse.json({ error: `no recorded fixture for ${b.symbol}; use live mode` }, { status: 404 });
   } else {
     try { capture = await liveCapture(b.symbol); historical = false; }
     catch (e) { return NextResponse.json({ error: `live book unavailable: ${(e as Error).message}` }, { status: 502 }); }

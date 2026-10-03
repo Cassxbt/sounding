@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SoundingLine } from "@/components/SoundingLine";
 import { AnalystPanel } from "@/components/AnalystPanel";
+import { LastLookPanel } from "@/components/LastLookPanel";
 import type { SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
@@ -28,7 +29,7 @@ export default function Page() {
   const [uni, setUni] = useState<Universe | null>(null);
   const [symbol, setSymbol] = useState("RHIMSUSDT");
   const [side, setSide] = useState<"buy" | "sell">("sell");
-  const [amount, setAmount] = useState("178.412132");
+  const [amount, setAmount] = useState("178.4121");
   const [ceiling, setCeiling] = useState(50);
   const [userFee, setUserFee] = useState<string>("");
   const [note, setNote] = useState<string>(PRESETS[0].note);
@@ -37,6 +38,7 @@ export default function Page() {
   const [busy, setBusy] = useState(false);
   const [prevBps, setPrevBps] = useState<string | undefined>();
   const [age, setAge] = useState(0);
+  const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
 
   useEffect(() => { fetch(`/api/universe?mode=${mode}`).then((r) => r.json()).then(setUni).catch(() => setUni(null)); }, [mode]);
   useEffect(() => {
@@ -53,9 +55,11 @@ export default function Page() {
 
   const expired = !!resp && !resp.result.freshness.historical && age > 5000;
 
-  async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number }>) {
+  async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string }>) {
     setBusy(true); setErr(null);
-    const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: userFee === "" ? undefined : Number(userFee), mode, previousBpsPreFee: mode === "live" ? prevBps : undefined };
+    const fx = over?.fixture !== undefined ? over.fixture : fixture.sound;
+    const fee = over?.userFee !== undefined ? over.userFee : userFee;
+    const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: fee === "" ? undefined : Number(fee), mode, previousBpsPreFee: mode === "live" ? prevBps : undefined, fixture: mode === "recorded" ? fx : undefined };
     const r = await fetch("/api/sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json();
     setBusy(false);
@@ -64,8 +68,10 @@ export default function Page() {
     if (j.result?.leg?.bpsPreFee) setPrevBps(j.result.leg.bpsPreFee);
   }
   function preset(p: (typeof PRESETS)[number]) {
-    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setNote(p.note); setMode("recorded");
-    setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling }), 0);
+    const fx = "fixture" in p ? { sound: p.fixture as string, confirm: (p as { confirmFixture?: string }).confirmFixture, confirmNote: (p as { confirmNote?: string }).confirmNote } : {};
+    const fee = "userFee" in p ? String(p.userFee) : "";
+    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setNote(p.note); setMode("recorded"); setFixture(fx); setUserFee(fee);
+    setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling, fixture: fx.sound ?? "", userFee: fee }), 0);
   }
 
   const res = resp?.result;
@@ -200,6 +206,8 @@ export default function Page() {
                   <SoundingLine side={side} levels={resp!.levels} mid={res.referenceMid!} qty={res.leg.qty} levelsConsumed={res.leg.levelsConsumed} />
                 </div>
               )}
+
+              {res.ok && <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />}
 
               {res.ok && <AnalystPanel key={`${symbol}-${mode}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} onConstraints={(c) => { if (c.takerFeeBps !== null && userFee === "") setUserFee(String(c.takerFeeBps)); }} onAmount={(a) => { setAmount(a); setTimeout(() => run({ amount: a }), 0); }} />}
 

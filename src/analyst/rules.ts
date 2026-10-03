@@ -41,8 +41,28 @@ export function relevantEvidenceIds(pack: EvidencePack, c: Constraints): { relev
   return { relevant, timeUnknownOnDeadline };
 }
 
-export function validate(out: AnalystOutput, res: SoundingResult, pack: EvidencePack): RuleViolation[] {
+/**
+ * Tighten-only (Killswitch: "a gate may reject or shrink, never enlarge"). The checked intake is the floor:
+ * the analyst may make a stated constraint stricter, never drop or relax it. Its constraints carry into the next
+ * turn, so this is also what stops a limit from being loosened between turns.
+ */
+export function loosened(stated: Constraints, proposed: Constraints): RuleViolation[] {
   const v: RuleViolation[] = [];
+  if (stated.takerFeeBps !== null && proposed.takerFeeBps !== stated.takerFeeBps)
+    v.push({ rule: "loosened_constraint", detail: `stated taker fee ${stated.takerFeeBps} bps became ${proposed.takerFeeBps}` });
+  if (stated.mustBeFlat && !proposed.mustBeFlat)
+    v.push({ rule: "loosened_constraint", detail: "a stated must-be-flat requirement was dropped" });
+  if (stated.hardDeadlineNy && (!proposed.hardDeadlineNy || proposed.hardDeadlineNy > stated.hardDeadlineNy))
+    v.push({ rule: "loosened_constraint", detail: `stated deadline ${stated.hardDeadlineNy} became ${proposed.hardDeadlineNy ?? "none"}` });
+  if (stated.exclusiveExposure && !proposed.exclusiveExposure)
+    v.push({ rule: "loosened_constraint", detail: "exclusive exposure was dropped" });
+  if (!stated.proxyConsent && proposed.proxyConsent)
+    v.push({ rule: "loosened_constraint", detail: "proxy consent was added without the trader giving it" });
+  return v;
+}
+
+export function validate(out: AnalystOutput, res: SoundingResult, pack: EvidencePack, stated?: Constraints): RuleViolation[] {
+  const v: RuleViolation[] = stated ? loosened(stated, out.constraints) : [];
   const kinds = new Set((res.alternatives ?? []).map((a) => a.kind));
   const c = out.constraints;
 
