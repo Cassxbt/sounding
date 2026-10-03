@@ -17,6 +17,8 @@ describe("deletion test: every sponsor input is load-bearing", () => {
   it("removing Qwen: the regex reader misses the fee and the deadline, and a trade that fits is refused", async () => {
     const t = await deletionTest();
     expect(t.regexRead).toMatchObject({ fee: null, deadline: null });
-    expect(t.rows.find((r) => r.id === "qwen")!.without).toMatchObject({ ok: true, allInBps: "51.89", within: false });
+    const q = t.rows.find((r) => r.id === "qwen")!;
+    expect(q.with).toMatchObject({ ok: true, allInBps: "39.89", within: true });
+    expect(q.without).toMatchObject({ ok: true, allInBps: "51.89", within: false });
   });
 });
