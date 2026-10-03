@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ArrowUp, Code, Eye, MinusCircle, Quotes, SealCheck, ShieldWarning, Sliders, CheckCircle, CircleNotch, Scales, Files } from "@phosphor-icons/react";
+import { Mark } from "./ui/Mark";
 import type { AnalystOutput, Constraints, EvidencePack } from "@/analyst/schema";
 import type { FieldName, Intake, IntakeField } from "@/analyst/intake";
 
@@ -14,18 +17,26 @@ interface Props {
   /** recorded book the page is showing, so the analyst reads the same one */
   fixture?: string;
   seed?: string;
+  /** instrument and side controls, shown inside the composer */
+  prefix?: ReactNode;
   /** size, ceiling and fee the engine used for this turn, when the trader's words changed them; the page re-sounds on them so Last Look confirms the same terms */
   onTerms?: (t: { amount: string; ceiling: number; userFee: string }) => void;
 }
 
 const DEMO_TURNS = [
-  "Sell 178.4121 rHIMS now. Ceiling 50 bps all-in. I hold this on the GLP-1 thesis; I must be flat before the CAO transition takes effect on October 9, so hard deadline October 8.",
-  "My taker fee is 8 bps.",
+  "Sell 178.4121 rHIMS. I pay 0.08% taker, keep it under half a percent all-in, and I must be out before the 8th.",
   "Make it 35 shares.",
   "Actually I can hold through the transition.",
 ];
 
-export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fixture, onTerms }: Props) {
+/** One phrasing per language a Bitget trader is likely to type; each fills the composer, nothing is sent until they press send. */
+const EXAMPLES: { label: string; text: string }[] = [
+  { label: "English", text: DEMO_TURNS[0] },
+  { label: "中文", text: "卖出178.4121股rHIMS，吃单手续费千分之0.8，总成本不超过千分之五，8号之前必须清仓。" },
+  { label: "Mixed", text: "sell 178.4121 rHIMS, taker 万8, all-in 不超过 50bp, before the 8th 必须 flat" },
+];
+
+export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fixture, prefix, onTerms }: Props) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState(DEMO_TURNS[0]);
   const [state, setState] = useState<{ resp: AnalystResp; evidence: EvidencePack; constraints: Constraints } | null>(null);
@@ -36,6 +47,9 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
   // A reply that arrives after the panel was reset (new symbol, side or mode) must not re-sound the page.
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => pending.current?.abort(), []);
+  const reduce = useReducedMotion();
+  const thread = useRef<HTMLDivElement>(null);
+  useEffect(() => { thread.current?.lastElementChild?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" }); }, [turns.length, reduce]);
 
   async function send(text: string) {
     if (!text.trim()) return;
@@ -77,110 +91,192 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
   }
 
   const out = state?.resp.output;
+  const replaced = state?.resp.producedBy === "template" && state.resp.violations.length > 0;
   return (
-    <section className="rounded-md border rule bg-paper-2/30 p-5 space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3">analyst · which priced alternative serves your thesis?</div>
-          <p className="text-[12px] text-ink-3 mt-1">The engine's numbers are fixed. The analyst reads your constraints and dated evidence, rules alternatives in or out, and asks one question when a missing constraint changes the answer. Every answer is checked against structural rules; a violating model answer is replaced by the template and flagged.</p>
-        </div>
-        <div className="flex gap-2 mono text-[11px] uppercase tracking-[0.18em]">
-          {(["model", "template"] as const).map((m) => <button key={m} onClick={() => setArm(m)} className={`px-2 py-1 rounded ${arm === m ? "bg-ink text-paper" : "text-ink-3"}`}>{m}</button>)}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {turns.map((t, i) => (
-          <div key={i} className={`text-sm leading-6 ${t.role === "user" ? "text-ink" : "text-ink-2 border-l-2 border-sea pl-3"}`}>
-            <span className="mono text-[10px] uppercase tracking-[0.18em] text-ink-3 mr-2">{t.role === "user" ? "you" : "analyst"}</span>{t.text}
+    <div className="space-y-6">
+      <form
+        onSubmit={(e) => { e.preventDefault(); send(input); }}
+        className="group rounded-[22px] border rule bg-paper-2/80 p-2 shadow-[0_30px_80px_-40px_oklch(0%_0_0/0.8)] transition-colors duration-[var(--dur-short)] focus-within:border-sea/60"
+      >
+        <label htmlFor="say" className="sr-only">Your order, in your own words</label>
+        <textarea
+          id="say"
+          rows={3}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(input); } }}
+          placeholder="Say the order: size, your fee, your ceiling, your deadline. English or 中文."
+          className="block w-full resize-none bg-transparent px-3 pt-3 pb-2 text-[17px] leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
+        />
+        <div className="flex flex-wrap items-center gap-2 px-1 pb-1">
+          {prefix}
+          <div role="radiogroup" aria-label="Reader" className="ml-auto flex rounded-full bg-paper p-0.5 text-[11px]">
+            {([["model", "Qwen"], ["template", "baseline"]] as const).map(([m, label]) => (
+              <button type="button" key={m} role="radio" aria-checked={arm === m} onClick={() => setArm(m)} className={`rounded-full px-2.5 py-1 transition-colors duration-[var(--dur-micro)] ${arm === m ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink-2"}`}>{label}</button>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="flex gap-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} className="flex-1 rounded border rule bg-paper px-3 py-2 text-sm" placeholder="Tell the analyst your constraints…" />
-        <button disabled={busy} className="rounded bg-ink text-paper px-4 mono text-[11px] uppercase tracking-[0.18em] disabled:opacity-50">{busy ? "…" : "send"}</button>
+          <button
+            type="submit"
+            disabled={busy || !input.trim()}
+            aria-label={busy ? "Reading" : "Send"}
+            className="inline-flex size-10 items-center justify-center rounded-full bg-ink text-paper transition-[transform,opacity] duration-[var(--dur-micro)] hover:-translate-y-px active:translate-y-0 disabled:opacity-40 disabled:hover:translate-y-0"
+          >
+            {busy ? <CircleNotch size={18} className="animate-spin" /> : <ArrowUp size={18} weight="bold" />}
+          </button>
+        </div>
       </form>
-      {err && <div className="mono text-[12px] text-over">{err}</div>}
 
-      {out && state && (
-        <div className="grid gap-5 md:grid-cols-2 fade-up">
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <Tag label={`produced by ${state.resp.producedBy}${state.resp.producedBy === "model" ? ` · ${state.resp.provider} · ${state.resp.model}` : ""}`} />
-              {state.resp.violations.map((v, i) => <Tag key={i} label={`rule: ${v.rule}`} cls="bg-over-bg text-over" title={v.detail} />)}
-              <Tag label={`binding: ${out.bindingConstraint}`} cls="bg-warn-bg text-warn" />
-            </div>
-            <div>
-              <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">recommendation</div>
-              <div className="display text-3xl">{out.recommendation ? out.recommendation.replace(/_/g, " ") : out.clarification ? "waiting on your answer" : "none satisfies every hard constraint"}</div>
-              {out.changedBecause && <div className="text-[12px] text-ink-2 mt-1">{out.changedBecause}</div>}
-            </div>
-            <ConstraintCard c={state.constraints} prov={prov} ceiling={ceiling} amount={amount} side={side} />
-          </div>
-          <div className="space-y-3">
-            <List title="admissible" items={out.admissible} cls="text-within" />
-            <List title="excluded" items={out.excluded} cls="text-over" />
-            <div>
-              <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">evidence · {state.evidence.source_kind.replace(/_/g, " ")}</div>
-              <ul className="space-y-1 text-[12px]">
-                {state.evidence.records.map((r) => {
-                  const use = out.evidence.find((e) => e.recordId === r.id);
-                  return (
-                    <li key={r.id} className={use?.relevant ? "text-ink" : "text-ink-3"}>
-                      <span className="mono">{use?.relevant ? "●" : "○"}</span> {r.title} — {r.effective_date_ny ?? "undated"}{r.effective_date_ny && !r.time_known ? ", time not published" : ""} · <a className="underline" href={r.source_url} target="_blank" rel="noreferrer">{r.source_type}</a>
-                      {use && <div className="text-ink-3 pl-4">{use.reason}</div>}
-                    </li>
-                  );
-                })}
-                {state.evidence.records.length === 0 && <li className="text-ink-3">no evidence available for this instrument; the analyst reasons on constraints only</li>}
-              </ul>
-            </div>
-          </div>
+      {turns.length === 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="eyebrow mr-1">try</span>
+          {EXAMPLES.map((x) => (
+            <button key={x.label} type="button" onClick={() => setInput(x.text)} className="rounded-full border border-rule-soft px-3 py-1.5 text-[13px] text-ink-2 transition-colors duration-[var(--dur-micro)] hover:border-rule hover:text-ink">
+              {x.label}
+            </button>
+          ))}
         </div>
       )}
-    </section>
-  );
-}
 
-function Tag({ label, cls, title }: { label: string; cls?: string; title?: string }) {
-  return <span title={title} className={`mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 rounded ${cls ?? "bg-paper-2 text-ink-2"}`}>{label}</span>;
-}
-function List({ title, items, cls }: { title: string; items: { kind: string; reason: string }[]; cls: string }) {
-  return (
-    <div>
-      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">{title}</div>
-      {items.length === 0 ? <div className="text-[12px] text-ink-3">none</div> : (
-        <ul className="space-y-1 text-[12px]">{items.map((a, i) => <li key={i}><span className={`mono ${cls}`}>{a.kind.replace(/_/g, " ")}</span> <span className="text-ink-2">— {a.reason}</span></li>)}</ul>
+      {turns.length > 0 && (
+        <div ref={thread} className="space-y-3" aria-live="polite">
+          <AnimatePresence initial={false}>
+            {turns.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduce ? 0.15 : 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className={t.role === "user" ? "flex justify-end" : "flex gap-3"}
+              >
+                {t.role === "user" ? (
+                  <p className="max-w-[88%] rounded-2xl rounded-br-md bg-paper-3 px-4 py-2.5 text-[15px] leading-relaxed text-ink">{t.text}</p>
+                ) : (
+                  <>
+                    <span className="mt-1 text-ink-2"><Mark size={18} /></span>
+                    <p className="min-w-0 text-[15px] leading-relaxed text-ink-2">{t.text}</p>
+                  </>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {busy && <div className="flex items-center gap-3 pl-1 text-[13px] text-ink-3"><CircleNotch size={14} className="animate-spin" /> reading your words, then walking the book</div>}
+        </div>
+      )}
+      {err && <div className="rounded-xl bg-over-bg px-4 py-3 text-[14px] text-over">{err}</div>}
+
+      {out && state && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-5">
+          <ConstraintCard c={state.constraints} prov={prov} ceiling={ceiling} amount={amount} side={side} />
+
+          <div className="rounded-[18px] border border-rule-soft bg-paper-2/50 p-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow">the analyst rules</span>
+              <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-paper px-2.5 py-1 mono text-[10px] text-ink-3">
+                {state.resp.producedBy === "model" ? <>{state.resp.model} · checked</> : replaced ? <>template · model answer replaced</> : <>template</>}
+              </span>
+            </div>
+            <div className="display mt-3 text-[30px] leading-tight text-ink">
+              {out.recommendation ? ROUTE[out.recommendation] : out.clarification ? "One question first." : "No route meets every hard limit."}
+            </div>
+            <p className="mt-2 text-[14px] leading-relaxed text-ink-2">{out.bindingConstraint}</p>
+            {out.changedBecause && <p className="mt-1 text-[13px] text-ink-3">{out.changedBecause}</p>}
+            {replaced && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl bg-warn-bg/70 px-3 py-2 text-[13px] text-warn">
+                <ShieldWarning size={16} className="mt-0.5 shrink-0" />
+                <span>The model&rsquo;s answer broke {state.resp.violations.map((v) => v.rule.replace(/_/g, " ")).join(", ")}; it was replaced by the deterministic template.</span>
+              </div>
+            )}
+            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <Ruling title="admissible" items={out.admissible} ok />
+              <Ruling title="excluded" items={out.excluded} />
+            </div>
+            {state.evidence.records.length > 0 && (
+              <div className="mt-5 border-t border-rule-soft pt-4">
+                <div className="eyebrow mb-2 flex items-center gap-1.5"><Files size={13} /> dated evidence · {state.evidence.source_kind.replace(/_/g, " ")}</div>
+                <ul className="space-y-1.5 text-[13px]">
+                  {state.evidence.records.map((r) => {
+                    const use = out.evidence.find((e) => e.recordId === r.id);
+                    return (
+                      <li key={r.id} className={use?.relevant ? "text-ink-2" : "text-ink-3"}>
+                        <span className={`mr-2 inline-block size-1.5 -translate-y-0.5 rounded-full ${use?.relevant ? "bg-sea" : "bg-rule"}`} />
+                        {r.title} · {r.effective_date_ny ?? "undated"}{r.effective_date_ny && !r.time_known ? ", time not published" : ""} · <a className="underline decoration-rule underline-offset-2 hover:decoration-ink-3" href={r.source_url} target="_blank" rel="noreferrer">{r.source_type}</a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
+        </motion.div>
       )}
     </div>
   );
 }
+
+function Ruling({ title, items, ok }: { title: string; items: { kind: string; reason: string }[]; ok?: boolean }) {
+  return (
+    <div>
+      <div className="eyebrow mb-2">{title}</div>
+      {items.length === 0 ? <div className="text-[13px] text-ink-3">none</div> : (
+        <ul className="space-y-2.5">
+          {items.map((a, i) => (
+            <li key={i} className="flex gap-2 text-[13px] leading-snug">
+              {ok ? <CheckCircle size={16} weight="fill" className="mt-px shrink-0 text-within" /> : <MinusCircle size={16} className="mt-px shrink-0 text-ink-3" />}
+              <span><span className="text-ink">{ROUTE[a.kind] ?? a.kind}</span> <span className="text-ink-3">· {a.reason}</span></span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const ROUTE: Record<string, string> = { immediate_cross: "Cross now, full size", largest_within_ceiling: "The largest size that fits", resting_limit: "Rest a limit order", requote_at_switch: "Re-sound at the next session" };
 const same = (f: IntakeField | undefined, v: unknown) => (f && Number(f.value) === Number(v) ? f : undefined);
-const SOURCE: Record<IntakeField["source"], string> = { "model+code": "code-confirmed", model: "model-read · words verified", code: "code-read" };
+const SOURCE: Record<IntakeField["source"], { label: string; icon: ReactNode }> = {
+  "model+code": { label: "code-confirmed", icon: <SealCheck size={14} weight="fill" className="text-within" /> },
+  model: { label: "model-read · words verified", icon: <Eye size={14} className="text-sea" /> },
+  code: { label: "code-read", icon: <Code size={14} className="text-within" /> },
+};
 
 function ConstraintCard({ c, prov, ceiling, amount, side }: { c: Constraints; prov: { fields: Provenance; held: IntakeField[]; reader: Intake["reader"] | null }; ceiling: number; amount: string; side: "buy" | "sell" }) {
   const rows: { k: string; v: string; f?: IntakeField }[] = [
     // A quote is shown only beside the value it produced; a later form edit shows as "set in the form".
     { k: "size", v: `${amount} ${side === "buy" ? "USDT" : "sh"}`, f: same(prov.fields[side === "buy" ? "sizeQuoteUsdt" : "sizeShares"], amount) },
-    { k: "ceiling", v: `${ceiling} bps all-in`, f: same(prov.fields.ceilingBps, ceiling) },
+    { k: "ceiling", v: `${ceiling} bps`, f: same(prov.fields.ceilingBps, ceiling) },
     { k: "taker fee", v: c.takerFeeBps === null ? "unknown" : `${c.takerFeeBps} bps`, f: same(prov.fields.takerFeeBps, c.takerFeeBps) },
-    { k: "hard deadline (NY)", v: c.hardDeadlineNy ?? "—", f: prov.fields.hardDeadlineNy },
-    { k: "must be flat", v: String(c.mustBeFlat), f: prov.fields.mustBeFlat },
+    { k: "deadline (NY)", v: c.hardDeadlineNy ?? "—", f: prov.fields.hardDeadlineNy },
+    { k: "must be flat", v: c.mustBeFlat ? "yes" : "no", f: prov.fields.mustBeFlat },
     { k: "thesis", v: c.thesis ?? "—", f: prov.fields.thesis },
   ];
   return (
-    <div>
-      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">what you stated · carried across turns</div>
-      <table className="text-[12px]"><tbody>{rows.map(({ k, v, f }) => (
-        <tr key={k} className="align-top">
-          <td className="text-ink-3 pr-3 py-0.5 whitespace-nowrap">{k}</td>
-          <td className="mono pr-3 whitespace-nowrap">{v}</td>
-          <td className="text-ink-2">{f ? <>&ldquo;{f.span}&rdquo; <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-3">{SOURCE[f.source]}</span></> : <span className="text-ink-3">{prov.reader === "regex" ? "read by the regex baseline; no cited words" : v === "—" || v === "unknown" || v === "false" ? "not stated" : "set in the form"}</span>}</td>
-        </tr>
-      ))}</tbody></table>
+    <div className="rounded-[18px] border border-rule-soft bg-paper-2/50 p-5">
+      <div className="eyebrow mb-3 flex items-center gap-1.5"><Scales size={13} /> what you said · what the engine used</div>
+      <ul className="divide-y divide-rule-soft">
+        {rows.map(({ k, v, f }) => (
+          <li key={k} className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2.5 sm:grid-cols-[110px_120px_minmax(0,1fr)] sm:items-baseline">
+            <span className="text-[13px] text-ink-3">{k}</span>
+            <span className="mono text-[13px] text-ink">{v}</span>
+            <span className="col-span-2 flex min-w-0 items-start gap-1.5 text-[13px] text-ink-2 sm:col-span-1">
+              {f ? (
+                <>
+                  <Quotes size={13} weight="fill" className="mt-0.5 shrink-0 text-ink-3" />
+                  <span className="min-w-0"><span className="text-ink">{f.span}</span> <span className="ml-1 inline-flex items-center gap-1 whitespace-nowrap mono text-[10px] text-ink-3">{SOURCE[f.source].icon}{SOURCE[f.source].label}</span></span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-ink-3">
+                  {prov.reader === "regex" ? <><Code size={13} /> regex baseline, no cited words</> : v === "—" || v === "unknown" || v === "no" ? "not stated" : <><Sliders size={13} /> set by hand</>}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
       {prov.held.map((f, i) => (
-        <div key={i} className="text-[12px] text-warn mt-1">{f.status === "conflict" ? "held, not used" : "ignored"}: {f.name} from &ldquo;{f.span}&rdquo; ({f.note})</div>
+        <div key={i} className="mt-3 flex items-start gap-2 rounded-xl bg-warn-bg/70 px-3 py-2 text-[13px] text-warn">
+          <ShieldWarning size={15} className="mt-0.5 shrink-0" />
+          <span>{f.status === "conflict" ? "Held, not used" : "Ignored"}: {f.name} from &ldquo;{f.span}&rdquo; ({f.note})</span>
+        </div>
       ))}
     </div>
   );

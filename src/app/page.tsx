@@ -1,30 +1,50 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { ArrowDown, CaretDown, Clock, DownloadSimple, Hourglass, Lightning, Play, Scissors, Sliders } from "@phosphor-icons/react";
+import { Nav } from "@/components/Nav";
+import { DecisionCard } from "@/components/DecisionCard";
 import { SoundingLine } from "@/components/SoundingLine";
 import { AnalystPanel } from "@/components/AnalystPanel";
 import { LastLookPanel } from "@/components/LastLookPanel";
-import type { SoundingResult } from "@/engine/types";
+import { HowItDecides } from "@/components/HowItDecides";
+import { Proof } from "@/components/Proof";
+import { Reveal } from "@/components/ui/Reveal";
+import { Mark } from "@/components/ui/Mark";
+import { decidingRow } from "@/engine/decision";
+import type { Alternative, SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
 interface Universe { source: string; fetched_utc: string; total: number; eligibleCount: number; eligible: { symbol: string; code: string; name: string }[]; session: { state: string; detail: string; ny: { tzName: string; weekday: string; date: string } }; now_utc: string }
 interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe: { source: string; fetched_utc: string }; capture: Record<string, unknown> }
+interface Preset { id: string; label: string; outcome: string; tone: "within" | "over" | "warn"; symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee?: number; fixture?: string; confirmFixture?: string; confirmNote?: string }
 
-const PRESETS = [
-  { id: "hims-1", label: "Turn 1 · sell 178.4121 rHIMS, ceiling 50", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, note: "5,000 USDT at mid. Must be flat before the CAO transition effective Oct 9 (no time stated) — hard deadline Oct 8." },
-  { id: "hims-2", label: "Turn 2 · make it 35 shares", symbol: "RHIMSUSDT", side: "sell", amount: "35", ceiling: 50, note: "Same book, same ceiling. Only the size changed." },
-  { id: "ll-stands", label: "Last Look · confirm 21 s later (stands)", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", note: "Read on the Saturday book at 01:19:55 UTC, fee 8 bps. Confirm re-walks the real book captured 21 s later.", confirmNote: "Recorded demo: the confirm walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you click." },
-  { id: "ll-void", label: "Last Look · confirm a decision read on Sep 20 (void)", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", note: "A decision read on the 2026-09-20 book, confirmed against the 2026-10-03 book: the stale decision Last Look exists to stop.", confirmNote: "Recorded demo: confirming the Sep 20 decision against a real capture taken 12.7 days later." },
-  { id: "hims-precision", label: "rHIMS · sell 178.412132 (6 dp, refused)", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50, note: "rHIMS accepts 4 decimal places. Sounding refuses and suggests a valid size instead of silently rounding." },
-  { id: "spy-1k", label: "rSPY · buy 1,000 USDT (thin top)", symbol: "RSPYUSDT", side: "buy", amount: "1000", ceiling: 20, note: "Displayed spread 0.1 bps; the first ask is a ~$150 pin." },
-  { id: "spmo-25k", label: "rSPMO · buy 25,000 USDT (insufficient depth)", symbol: "RSPMOUSDT", side: "buy", amount: "25000", ceiling: 50, note: "The visible book cannot cover the order." },
-] as const;
+const PRESETS: Preset[] = [
+  { id: "lead", label: "Sell 178.4121 rHIMS at your 8 bps fee", outcome: "within", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8 },
+  { id: "hims-1", label: "The same order, fee not stated", outcome: "asks for the fee", tone: "warn", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50 },
+  { id: "ll-stands", label: "Re-check on a book 21 s later", outcome: "stands", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the re-check walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you press it." },
+  { id: "ll-void", label: "Re-check a decision 12.7 days old", outcome: "void", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the Sep 20 decision re-checked against a real capture taken 12.7 days later." },
+  { id: "hims-precision", label: "Sell 178.412132 rHIMS (6 decimals)", outcome: "refused", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50 },
+  { id: "spy-1k", label: "Buy rSPY with 1,000 USDT", outcome: "thin top", tone: "warn", symbol: "RSPYUSDT", side: "buy", amount: "1000", ceiling: 20 },
+  { id: "spmo-25k", label: "Buy rSPMO with 25,000 USDT", outcome: "book too thin", tone: "over", symbol: "RSPMOUSDT", side: "buy", amount: "25000", ceiling: 50 },
+];
 
-const VERDICT: Record<string, { label: string; cls: string }> = {
-  WITHIN_CEILING_ON_THIS_SNAPSHOT: { label: "within ceiling · this snapshot", cls: "bg-within-bg text-within" },
-  OVER_CEILING_ON_THIS_SNAPSHOT: { label: "over ceiling · this snapshot", cls: "bg-over-bg text-over" },
-  INSUFFICIENT_VISIBLE_DEPTH: { label: "insufficient visible depth", cls: "bg-warn-bg text-warn" },
+const ALT: Record<Alternative["kind"], { icon: typeof Lightning; title: string }> = {
+  immediate_cross: { icon: Lightning, title: "Cross now, full size" },
+  largest_within_ceiling: { icon: Scissors, title: "The largest size that fits" },
+  resting_limit: { icon: Hourglass, title: "Rest a limit order" },
+  requote_at_switch: { icon: Clock, title: "Re-sound at the next session" },
 };
+
+/** Engine tradeoff codes in the words a trader would use; anything unmapped keeps its own text. */
+const plain = (t: string) => t
+  .replace(/^no_fill_possible$/, "may not fill at all")
+  .replace(/^cancel_at_session_switch/, "cancelled at the session switch")
+  .replace(/^band eligibility unverified$/, "price-band eligibility not verified")
+  .replace(/_/g, " ");
+
+const FIXTURE_FILES: Record<string, string> = { RHIMSUSDT: "rhims-20260920T090235Z", RSPYUSDT: "rspy-20260920T0902Z", RSPMOUSDT: "rspmo-20260920T0902Z" };
 
 export default function Page() {
   const [mode, setMode] = useState<Mode>("recorded");
@@ -33,20 +53,21 @@ export default function Page() {
   const [side, setSide] = useState<"buy" | "sell">("sell");
   const [amount, setAmount] = useState("178.4121");
   const [ceiling, setCeiling] = useState(50);
-  const [userFee, setUserFee] = useState<string>("");
-  const [note, setNote] = useState<string>(PRESETS[0].note);
+  const [userFee, setUserFee] = useState<string>("8");
+  const [active, setActive] = useState("lead");
   const [resp, setResp] = useState<Resp | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [prevBps, setPrevBps] = useState<string | undefined>();
   const [age, setAge] = useState(0);
+  const [terms, setTerms] = useState(false);
   const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
+  const reduce = useReducedMotion();
 
   useEffect(() => { fetch(`/api/universe?mode=${mode}`).then((r) => r.json()).then(setUni).catch(() => setUni(null)); }, [mode]);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("task");
-    const p = PRESETS.find((x) => x.id === id);
-    if (p) preset(p);
+    preset(PRESETS.find((x) => x.id === id) ?? PRESETS[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
@@ -69,172 +90,256 @@ export default function Page() {
     setResp(j); setAge(0);
     if (j.result?.leg?.bpsPreFee) setPrevBps(j.result.leg.bpsPreFee);
   }
-  function preset(p: (typeof PRESETS)[number]) {
-    const fx = "fixture" in p ? { sound: p.fixture as string, confirm: (p as { confirmFixture?: string }).confirmFixture, confirmNote: (p as { confirmNote?: string }).confirmNote } : {};
-    const fee = "userFee" in p ? String(p.userFee) : "";
-    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setNote(p.note); setMode("recorded"); setFixture(fx); setUserFee(fee);
+  function preset(p: Preset) {
+    const fx = p.fixture ? { sound: p.fixture, confirm: p.confirmFixture, confirmNote: p.confirmNote } : {};
+    const fee = p.userFee !== undefined ? String(p.userFee) : "";
+    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setMode("recorded"); setFixture(fx); setUserFee(fee); setActive(p.id);
     setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling, fixture: fx.sound ?? "", userFee: fee }), 0);
+  }
+  function switchMode(m: Mode) {
+    setMode(m); setFixture({}); setActive("");
+    setTimeout(() => run({ fixture: "" }), 0);
   }
 
   const res = resp?.result;
-  const replayCmd = useMemo(() => res ? `pnpm replay fixtures/${symbol === "RHIMSUSDT" ? "rhims-20260920T090235Z" : symbol === "RSPYUSDT" ? "rspy-20260920T0902Z" : "rspmo-20260920T0902Z"}.json ${side} ${amount} ${ceiling}` : "", [res, symbol, side, amount, ceiling]);
+  const code = uni?.eligible.find((s) => s.symbol === symbol)?.code ?? symbol.replace(/^R|USDT$/g, "");
+  const d = res ? decidingRow(res) : undefined;
+  const replayCmd = useMemo(() => (res && FIXTURE_FILES[symbol] ? `pnpm replay fixtures/${FIXTURE_FILES[symbol]}.json ${side} ${amount} ${ceiling}${userFee ? ` ${userFee}` : ""}` : ""), [res, symbol, side, amount, ceiling, userFee]);
+  const freshness = !res ? "" : res.freshness.historical ? `recorded · ${new Date(Number(res.receipt.exchange_ts)).toISOString().slice(0, 16).replace("T", " ")}Z` : expired ? "live · expired, re-sound" : `live · ${(age / 1000).toFixed(1)} s old`;
+
+  const controls = (
+    <>
+      <Pill label="Side">
+        <select aria-label="Side" value={side} onChange={(e) => { const s = e.target.value as "buy" | "sell"; setSide(s); setActive(""); run({ side: s }); }} className="appearance-none bg-transparent pr-5 focus:outline-none">
+          <option value="sell">Sell</option><option value="buy">Buy</option>
+        </select>
+      </Pill>
+      <Pill label="Instrument">
+        <select aria-label="Instrument" value={symbol} onChange={(e) => { setSymbol(e.target.value); setFixture({}); setActive(""); run({ symbol: e.target.value, fixture: "" }); }} className="max-w-[9.5rem] appearance-none bg-transparent pr-5 focus:outline-none">
+          {(uni?.eligible ?? [{ symbol, code, name: "" }]).map((s) => <option key={s.symbol} value={s.symbol}>r{s.code}</option>)}
+        </select>
+      </Pill>
+      <button type="button" onClick={() => setTerms((t) => !t)} aria-expanded={terms} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] transition-colors duration-[var(--dur-micro)] ${terms ? "border-rule bg-paper-3 text-ink" : "border-rule-soft text-ink-3 hover:text-ink-2"}`}>
+        <Sliders size={13} /> by hand
+      </button>
+      {terms && (
+        <div className="grid w-full basis-full grid-cols-3 gap-2 px-1 pt-2">
+          <Field label={side === "sell" ? "Shares" : "USDT"} value={amount} onChange={setAmount} />
+          <Field label="Ceiling, bps" value={String(ceiling)} onChange={(v) => setCeiling(Number(v) || 0)} />
+          <Field label="Your fee, bps" value={userFee} onChange={setUserFee} placeholder="unknown" />
+          <button type="button" onClick={() => { setActive(""); run(); }} className="col-span-3 rounded-full border border-rule py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">Sound these terms</button>
+        </div>
+      )}
+    </>
+  );
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10 md:py-14">
-      <header className="flex flex-wrap items-end justify-between gap-6 border-b rule pb-6">
-        <div>
-          <h1 className="display text-5xl md:text-6xl leading-none tracking-tight">Sounding</h1>
-          <p className="mt-3 max-w-xl text-ink-2">Take a sounding before you trade. Session access and real cost at your size, for Bitget rTokens. Nothing here is a fill, a forecast or a promise.</p>
-        </div>
-        <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 text-right leading-5">
-          {uni ? (<>
-            <div>{uni.eligibleCount} of {uni.total} rTokens weekend-tradable</div>
-            <div>{uni.session.state.replace("_", " ")} · NY {uni.session.ny.weekday} {uni.session.ny.tzName}</div>
-            <div>{uni.source} universe · {uni.fetched_utc.slice(0, 16).replace("T", " ")}Z</div>
-          </>) : "loading universe…"}
-        </div>
-      </header>
+    <>
+      <Nav mode={mode} onMode={switchMode} eligible={uni?.eligibleCount} total={uni?.total} session={uni?.session.state} />
 
-      <section className="grid gap-10 md:grid-cols-[360px_1fr] mt-10">
-        <aside className="space-y-6">
-          <div>
-            <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-2">Saved tasks · recorded 2026-09-20</div>
-            <div className="flex flex-col gap-2">
-              {PRESETS.map((p) => (
-                <button key={p.id} onClick={() => preset(p)} className="text-left rounded-md border rule bg-paper-2/60 hover:bg-paper-2 px-3 py-2 transition-colors">
-                  <div className="text-sm">{p.label}</div>
-                </button>
-              ))}
-            </div>
+      <main className="mx-auto max-w-6xl px-4 sm:px-6">
+        <section className="grid gap-10 pt-14 pb-16 sm:pt-20 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-14">
+          <div className="min-w-0">
+            <motion.h1
+              initial={{ opacity: 0, y: reduce ? 0 : 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="display text-[52px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]"
+            >
+              Say the order.<br />Get one answer.
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.12 }}
+              className="mt-6 max-w-[34rem] text-[17px] leading-relaxed text-ink-2"
+            >
+              Sounding walks the real Bitget book for your exact size, then holds it to your fee, your ceiling and your deadline. One decision, or a named refusal with the largest size that fits.
+            </motion.p>
+            <motion.div initial={{ opacity: 0, y: reduce ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} className="mt-9">
+              <AnalystPanel
+                key={`${symbol}-${side}-${mode}-${fixture.sound ?? ""}`}
+                symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} fixture={fixture.sound}
+                prefix={controls}
+                onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setActive(""); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }}
+              />
+            </motion.div>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); run(); }} className="space-y-3 rounded-md border rule p-4 bg-paper-2/40">
-            <div className="flex gap-2 mono text-[11px] uppercase tracking-[0.18em]">
-              {(["recorded", "live"] as Mode[]).map((m) => (
-                <button type="button" key={m} onClick={() => setMode(m)} className={`px-2 py-1 rounded ${mode === m ? "bg-ink text-paper" : "text-ink-3"}`}>{m}</button>
-              ))}
-            </div>
-            <label className="block text-sm">Instrument
-              <select value={symbol} onChange={(e) => setSymbol(e.target.value)} className="mono mt-1 w-full rounded border rule bg-paper px-2 py-1.5">
-                {(uni?.eligible ?? [{ symbol: "RHIMSUSDT", code: "HIMS", name: "" }]).map((s) => <option key={s.symbol} value={s.symbol}>{s.symbol} · {s.code}</option>)}
-              </select>
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-sm">Side
-                <select value={side} onChange={(e) => setSide(e.target.value as "buy" | "sell")} className="mono mt-1 w-full rounded border rule bg-paper px-2 py-1.5"><option value="sell">sell shares</option><option value="buy">buy with USDT</option></select>
-              </label>
-              <label className="text-sm">{side === "sell" ? "Shares" : "USDT budget"}
-                <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="mono mt-1 w-full rounded border rule bg-paper px-2 py-1.5" />
-              </label>
-              <label className="text-sm">Ceiling (bps all-in)
-                <input type="number" value={ceiling} onChange={(e) => setCeiling(Number(e.target.value))} className="mono mt-1 w-full rounded border rule bg-paper px-2 py-1.5" />
-              </label>
-              <label className="text-sm">Your taker fee (bps)
-                <input value={userFee} onChange={(e) => setUserFee(e.target.value)} placeholder="unknown" inputMode="decimal" className="mono mt-1 w-full rounded border rule bg-paper px-2 py-1.5" />
-              </label>
-            </div>
-            <button disabled={busy} className="w-full rounded bg-ink text-paper py-2 mono text-[12px] uppercase tracking-[0.18em] disabled:opacity-50">{busy ? "sounding…" : "take a sounding"}</button>
-            <p className="text-[12px] text-ink-3 leading-5">Typed intent: sell is in shares, buy is a USDT budget. "Sell 5,000 USDT of X" is ambiguous and not accepted.</p>
-          </form>
-          {note && <p className="text-sm text-ink-2 border-l-2 border-sea pl-3">{note}</p>}
-        </aside>
-
-        <div className="space-y-8">
-          {err && <div className="rounded-md bg-over-bg text-over px-4 py-3 mono text-sm">{err}</div>}
-          {!res && !err && <div className="text-ink-3">Pick a saved task or take a live sounding.</div>}
-
-          {res && (
-            <div className="fade-up space-y-8">
-              <div className="flex flex-wrap items-center gap-3">
-                <Chip label={res.session.replace("_", " ")} title={res.sessionDetail} />
-                {res.weekendTradable !== undefined && <Chip label={res.weekendTradable ? "weekendTradable = yes" : "weekendTradable = no"} cls={res.weekendTradable ? "bg-within-bg text-within" : "bg-over-bg text-over"} />}
-                <Chip label={res.freshness.historical ? `recorded · exchange ts ${new Date(Number(res.receipt.exchange_ts)).toISOString().replace("T", " ").slice(0, 23)}Z` : expired ? "live · expired — resound" : `live · book age ${(age / 1000).toFixed(1)} s`} cls={expired ? "bg-over-bg text-over" : undefined} />
-                {res.feeSensitive && <Chip label="FEE_SENSITIVE" cls="bg-warn-bg text-warn" />}
-                {res.leg?.thinTop && <Chip label="thin top" cls="bg-warn-bg text-warn" title="first level < 25% of the order, next level ≥ 3 bps away, VWAP penalty ≥ 2 bps — a display flag, not a safety threshold" />}
-              </div>
-
-              {!res.ok && (
-                <div className="rounded-md border-2 border-over bg-over-bg/60 p-5">
-                  <div className="mono text-[11px] uppercase tracking-[0.18em] text-over">refused · {res.gate}</div>
-                  <p className="mt-2 text-ink-2">{res.gateDetail}</p>
-                  {res.suggestion && (
-                    <button onClick={() => { const a = res.suggestion!.baseQty ?? res.suggestion!.quoteBudget!; setAmount(a); run({ amount: a }); }} className="mt-3 mono text-[11px] uppercase tracking-[0.18em] underline">
-                      use {res.suggestion.baseQty ?? `${res.suggestion.quoteBudget} USDT`} instead · {res.suggestion.reason}
+          <motion.aside initial={{ opacity: 0, y: reduce ? 0 : 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }} className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
+            {err && <div className="rounded-2xl bg-over-bg px-4 py-3 text-[14px] text-over">{err}</div>}
+            {res ? <DecisionCard res={res} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} /> : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/50" />}
+            <div className="rounded-[22px] border border-rule-soft p-2">
+              <div className="eyebrow px-3 pt-2 pb-1">recorded cases</div>
+              <ul>
+                {PRESETS.map((p) => (
+                  <li key={p.id}>
+                    <button onClick={() => preset(p)} aria-current={active === p.id} className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors duration-[var(--dur-micro)] ${active === p.id ? "bg-paper-3" : "hover:bg-paper-2"}`}>
+                      <Play size={12} weight={active === p.id ? "fill" : "regular"} className="shrink-0 text-ink-3 group-hover:text-ink-2" />
+                      <span className="min-w-0 flex-1 truncate text-[14px] text-ink-2 group-hover:text-ink">{p.label}</span>
+                      <span className={`whitespace-nowrap mono text-[10px] ${p.tone === "within" ? "text-within" : p.tone === "over" ? "text-over" : "text-warn"}`}>{p.outcome}</span>
                     </button>
-                  )}
-                </div>
-              )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.aside>
+        </section>
 
-              {res.ok && res.leg && (
-                <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-                  <div className="space-y-6">
-                    <div>
-                      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3">{side === "sell" ? "sell" : "buy"} · one leg · pre-fee vs mid {res.referenceMid}</div>
-                      <div className="display text-6xl leading-none mt-2">{res.leg.status === "OK" ? res.leg.bpsPreFee : "—"}<span className="text-2xl text-ink-3 ml-2">bps</span></div>
-                      <div className="mono text-sm text-ink-2 mt-2">
-                        {res.leg.status === "OK" ? <>{side === "sell" ? "proceeds" : "spend"} {res.leg.cash} USDT · {res.leg.qty} sh · vwap {res.leg.vwap} · {res.leg.levelsConsumed} levels</> : <>visible {side === "sell" ? "bid" : "ask"} depth {res.leg.visibleNotional} USDT cannot cover this order</>}
+        {res?.ok && res.leg && resp && (
+          <section id="walk" className="grid gap-10 border-t border-rule-soft py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <Reveal>
+                <h2 className="display text-[40px] leading-[1.05] text-ink sm:text-[52px]">Watch it sink through the book.</h2>
+                <p className="mt-5 max-w-md text-[16px] leading-relaxed text-ink-2">
+                  {side === "sell" ? "Selling takes the bids, best first." : "Buying takes the asks, best first."} The deeper the order reaches, the worse its average price. Your verdict is two depths compared: where the average lands, and how deep your ceiling lets it go once your fee is paid.
+                </p>
+              </Reveal>
+              {res.leg.status === "OK" && (
+                <Reveal delay={0.08}>
+                  <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-rule-soft pt-6">
+                    <Fact k="levels taken" v={String(res.leg.levelsConsumed)} />
+                    <Fact k="average price" v={res.leg.vwap ?? "—"} />
+                    <Fact k={side === "sell" ? "proceeds" : "spend"} v={`${res.leg.cash} USDT`} />
+                    <Fact k="walking cost" v={`${res.leg.bpsPreFee} bps`} />
+                  </dl>
+                  {res.leg.thinTop && <p className="mt-5 text-[14px] text-warn">Thin top: the best level holds under a quarter of this order, so the quoted spread says little about your price.</p>}
+                </Reveal>
+              )}
+              <a href="#last-look" className="mt-8 hidden items-center gap-2 text-[14px] text-ink-3 transition-colors hover:text-ink lg:inline-flex">Then re-check it <ArrowDown size={14} /></a>
+            </div>
+            <SoundingLine
+              side={side}
+              levels={resp.levels}
+              mid={res.referenceMid!}
+              qty={res.leg.qty}
+              levelsConsumed={res.leg.levelsConsumed}
+              avgBps={res.leg.status === "OK" ? res.leg.bpsPreFee : undefined}
+              budgetBps={d ? res.ceilingBps - d.feeBps : undefined}
+              feeBps={d?.feeBps}
+            />
+          </section>
+        )}
+
+        {res?.ok && res.alternatives && (
+          <section className="border-t border-rule-soft py-20">
+            <Reveal>
+              <h2 className="display max-w-2xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Every route it priced, and what each costs you.</h2>
+            </Reveal>
+            <ul className="mt-10 grid gap-3 md:grid-cols-2">
+              {res.alternatives.map((a, i) => {
+                const A = ALT[a.kind];
+                const priced = a.kind === "largest_within_ceiling" ? `≤ ${res.ceilingBps} bps, sized to your ceiling` : a.allInBpsByFee ? Object.entries(a.allInBpsByFee).filter(([f]) => !d || Number(f) === d.feeBps).map(([f, b]) => `${b} bps at ${f} bps fee`).join("") : a.price ? `at ${a.price}` : "not priced now";
+                return (
+                  <Reveal as="li" key={a.kind} delay={i * 0.05} className="rounded-[20px] border border-rule-soft bg-paper-2/40 p-5 sm:p-6">
+                    <div className="flex items-start gap-4">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-paper-3 text-ink-2"><A.icon size={18} weight="light" /></span>
+                      <div className="min-w-0">
+                        <div className="text-[16px] text-ink">{A.title}</div>
+                        <div className="mono mt-1 text-[12px] text-sea">{a.qty ? `${a.qty} ${side === "buy" && a.kind === "largest_within_ceiling" ? "USDT" : "sh"} · ` : ""}{priced}</div>
+                        <ul className="mt-3 space-y-1 text-[13px] leading-snug text-ink-3">{a.tradeoffs.map((t, j) => <li key={j}>{plain(t)}</li>)}</ul>
                       </div>
                     </div>
-                    <table className="w-full text-sm">
-                      <thead><tr className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 text-left"><th className="py-1 pr-4 font-normal whitespace-nowrap">fee / leg</th><th className="pr-4 font-normal">all-in</th><th className="font-normal whitespace-nowrap">verdict vs {res.ceilingBps} bps</th></tr></thead>
-                      <tbody>
-                        {res.fees!.map((f) => (
-                          <tr key={`${f.source}-${f.feeBps}`} className="border-t rule">
-                            <td className="mono py-2 pr-4">{f.feeBps} bps{f.source === "user" && <span className="text-ink-3"> · yours</span>}</td>
-                            <td className="mono pr-4">{f.allInBps ?? "—"}</td>
-                            <td><span className={`mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 rounded whitespace-nowrap ${VERDICT[f.verdict].cls}`}>{VERDICT[f.verdict].label}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {res.feeSensitive && <p className="text-sm text-warn">The verdict depends on your actual fee. Enter your taker rate; nothing here defaults to a rate.</p>}
-                    <div>
-                      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-2">priced alternatives</div>
-                      <ul className="space-y-2">
-                        {res.alternatives!.map((a, i) => (
-                          <li key={i} className="rounded border rule bg-paper-2/40 px-3 py-2">
-                            <div className="text-sm">
-                              <span className="mono">{a.kind.replace(/_/g, " ")}</span>
-                              {a.qty && <span className="mono text-ink-2"> · {a.qty} {side === "buy" && a.kind === "largest_within_ceiling" ? "USDT" : "sh"}</span>}
-                              {a.price && <span className="mono text-ink-2"> · at {a.price}</span>}
-                              {a.allInBpsByFee && <span className="mono text-ink-2"> · {a.kind === "largest_within_ceiling" ? Object.keys(a.allInBpsByFee).map((f) => `≤ ${res.ceilingBps}@${f} (sized to your ceiling)`).join("") : Object.entries(a.allInBpsByFee).map(([f, b]) => `${b}@${f}`).join(" / ")}</span>}
-                            </div>
-                            <div className="text-[12px] text-ink-3 mt-1">{a.tradeoffs.join(" · ")}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                  <SoundingLine side={side} levels={resp!.levels} mid={res.referenceMid!} qty={res.leg.qty} levelsConsumed={res.leg.levelsConsumed} />
+                  </Reveal>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        <section id="last-look" className="border-t border-rule-soft py-20">
+          <Reveal>
+            <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">The slippage you accepted is the slippage you confirm.</h2>
+          </Reveal>
+          <div className="mt-10">
+            {res?.ok && d?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" && (mode === "live" || fixture.confirm) ? (
+              <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />
+            ) : (
+              <div className="flex flex-wrap items-center gap-4 rounded-[22px] border border-rule-soft p-5 sm:p-7">
+                <p className="min-w-0 flex-1 text-[15px] leading-relaxed text-ink-2">Last Look re-walks a fresh book when you confirm a decision that is within your ceiling. On a recorded book it needs a later capture; two are saved.</p>
+                <div className="flex flex-wrap gap-2">
+                  {PRESETS.filter((p) => p.confirmFixture).map((p) => (
+                    <button key={p.id} onClick={() => { preset(p); document.getElementById("last-look")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); }} className="rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">{p.label}</button>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+        </section>
 
-              {res.ok && <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />}
+        <section className="border-t border-rule-soft py-20">
+          <Reveal>
+            <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">It refuses in order, and says which rule.</h2>
+          </Reveal>
+          <div className="mt-12"><HowItDecides res={res} /></div>
+        </section>
 
-              {res.ok && <AnalystPanel key={`${symbol}-${side}-${mode}-${fixture.sound ?? ""}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} fixture={fixture.sound} onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }} />}
+        <section className="border-t border-rule-soft py-20">
+          <Reveal>
+            <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Measured, not claimed.</h2>
+          </Reveal>
+          <div className="mt-10"><Proof eligible={uni?.eligibleCount} total={uni?.total} source={uni ? (uni.source === "live" ? "live" : `recorded ${uni.fetched_utc.slice(0, 10)}`) : undefined} /></div>
+        </section>
 
-              <details className="rounded-md border rule bg-paper-2/40 p-4">
-                <summary className="mono text-[11px] uppercase tracking-[0.18em] cursor-pointer">receipt · {res.receipt.receipt_sha256?.slice(0, 16)} · raw book {res.receipt.raw_sha256.slice(0, 16)}</summary>
-                <div className="mt-3 space-y-2 text-[12px] text-ink-2">
-                  <div>Source: {res.receipt.source}</div>
-                  <div className="mono">exchange_ts {res.receipt.exchange_ts} · request_start {res.receipt.request_start_utc} · rtt {res.receipt.rtt_ms} ms · clock offset {res.receipt.clock_offset_ms ?? "unmeasured"} ms · engine {res.receipt.engineVersion}</div>
-                  <div className="mono">replay offline: <code className="bg-paper px-1">{replayCmd || "pnpm replay <capture.json> <side> <amount> <ceiling>"}</code></div>
-                  <button onClick={() => { const blob = new Blob([JSON.stringify({ receipt: res.receipt, capture: resp!.capture, levels: resp!.levels }, null, 1)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `sounding-${res.symbol}-${res.receipt.exchange_ts}.json`; a.click(); }} className="mono text-[11px] uppercase tracking-[0.18em] underline">download receipt json</button>
-                  <p className="text-ink-3">A hash proves byte integrity of the captured book and this calculation. It does not prove a fill, an executable price, or future liquidity.</p>
-                </div>
-              </details>
-            </div>
-          )}
+        {res && (
+          <section className="border-t border-rule-soft py-12">
+            <details className="group rounded-[22px] border border-rule-soft bg-paper-2/40 p-5 sm:p-6">
+              <summary className="flex cursor-pointer list-none items-center gap-3">
+                <span className="text-[15px] text-ink">Receipt</span>
+                <span className="mono min-w-0 truncate text-[12px] text-ink-3">{res.receipt.receipt_sha256?.slice(0, 24)}</span>
+                <CaretDown size={14} className="ml-auto text-ink-3 transition-transform duration-[var(--dur-short)] group-open:rotate-180" />
+              </summary>
+              <div className="mt-5 space-y-3 text-[13px] text-ink-2">
+                <p>Hashes the inputs, the raw Bitget book and every number above{res.receipt.receipt_sig ? ", signed by this server" : ""}. It proves what was read and computed; it does not prove a fill, an executable price or future liquidity.</p>
+                <div className="mono break-all text-[12px] text-ink-3">engine {res.receipt.engineVersion} · book {res.receipt.raw_sha256.slice(0, 16)} · exchange ts {res.receipt.exchange_ts} · rtt {res.receipt.rtt_ms} ms</div>
+                {replayCmd && <pre className="mono overflow-x-auto rounded-xl bg-paper p-3 text-[12px] text-ink-2">{replayCmd}</pre>}
+                <button onClick={() => { const blob = new Blob([JSON.stringify({ receipt: res.receipt, capture: resp!.capture, levels: resp!.levels }, null, 1)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `sounding-${res.symbol}-${res.receipt.exchange_ts}.json`; a.click(); }} className="inline-flex items-center gap-2 rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">
+                  <DownloadSimple size={14} /> Download receipt
+                </button>
+              </div>
+            </details>
+          </section>
+        )}
+      </main>
+
+      <footer className="mt-10 border-t border-rule-soft">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div className="flex items-center gap-3 text-ink"><Mark size={26} /><span className="display text-[34px] leading-none sm:text-[44px]">Nothing is sent to an exchange.</span></div>
+          <p className="mt-5 max-w-3xl text-[13px] leading-relaxed text-ink-3">
+            Books from Bitget&rsquo;s public spot order book; eligibility from stock-info; sessions from Bitget&rsquo;s market states and calendar, with daylight saving computed locally. Weekend liquidity is market-maker liquidity, and unfilled weekend limit orders are cancelled at the session switch. Analyst: Qwen 3.8 Max, held to the rules above. Built for Bitget AI Base Camp S2 by xi labs.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-4 text-[13px]">
+            <a href="/task" className="text-ink-2 underline decoration-rule underline-offset-4 hover:text-ink">The frozen task, readable without JavaScript</a>
+          </div>
         </div>
-      </section>
-
-      <footer className="mt-16 border-t rule pt-4 mono text-[11px] text-ink-3 leading-5">
-        Source: Bitget public spot orderbook (matched the Bitget UI level-for-level for rHOOD on 2026-09-20; the whitelisted Reality depth feed was not compared). Eligibility from /api/v3/reality/market/stock-info; session from /market/states + /market/calendar with DST computed locally. Weekend liquidity is market-maker liquidity; unfilled weekend limit orders are cancelled at the session switch (Bitget Stock 2.0 FAQ). Built for Bitget AI Base Camp S2 by xi labs.
       </footer>
-    </main>
+    </>
   );
 }
 
-function Chip({ label, cls, title }: { label: string; cls?: string; title?: string }) {
-  return <span title={title} className={`mono text-[11px] uppercase tracking-[0.12em] px-2 py-1 rounded ${cls ?? "bg-paper-2 text-ink-2"}`}>{label}</span>;
+function Pill({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className="relative inline-flex items-center rounded-full border border-rule-soft bg-paper px-3 py-1.5 text-[12px] text-ink transition-colors duration-[var(--dur-micro)] focus-within:border-sea/60 hover:border-rule" title={label}>
+      {children}
+      <CaretDown size={11} className="pointer-events-none absolute right-2.5 text-ink-3" />
+    </span>
+  );
+}
+
+function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <label className="block min-w-0">
+      <span className="text-[11px] text-ink-3">{label}</span>
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} inputMode="decimal" className="mono mt-1 w-full rounded-xl border border-rule-soft bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-ink-3 focus:border-sea/60 focus:outline-none" />
+    </label>
+  );
+}
+
+function Fact({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[13px] text-ink-3">{k}</dt>
+      <dd className="mono mt-1 truncate text-[17px] text-ink">{v}</dd>
+    </div>
+  );
 }

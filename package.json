@@ -13,7 +13,9 @@
     "qwen:usage": "node scripts/qwen-usage.mjs"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "decimal.js": "^10.6.0",
+    "motion": "^14.0.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

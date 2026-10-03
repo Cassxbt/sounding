@@ -1,28 +1,46 @@
+/* Hallmark · genre: atmospheric · macrostructure: Workbench (instrument-led) · theme: custom "night sounding"
+ * vibe: depth sounder at night, sonar ping, measured not decorative
+ * paper oklch(14.5% 0.014 250) · accent oklch(84% 0.11 190) sonar cyan · Instrument Serif (roman) + Instrument Sans + Geist Mono
+ * axes: dark / classical-serif / cool · enrichment: built artefact (the sounding line) · nav: N5 floating pill · footer: Ft5 statement
+ */
 @import "tailwindcss";
 
 :root {
-  --paper: #f3eee2;
-  --paper-2: #e9e2d0;
-  --ink: #14213d;
-  --ink-2: #3b4664;
-  --ink-3: #7a819a;
-  --rule: #c9c0a8;
-  --within: #1f6f5a;
-  --within-bg: #dcece4;
-  --over: #c2410c;
-  --over-bg: #f8dfd0;
-  --warn: #8a6d00;
-  --warn-bg: #f3e9bf;
-  --sea: #1b3a6b;
+  --paper: oklch(14.5% 0.014 250);
+  --paper-2: oklch(18.5% 0.016 250);
+  --paper-3: oklch(23% 0.018 250);
+  --ink: oklch(95.5% 0.006 250);
+  --ink-2: oklch(79% 0.012 250);
+  --ink-3: oklch(61% 0.014 250);
+  --rule: oklch(31% 0.018 250);
+  --rule-soft: oklch(25% 0.016 250);
+  --sea: oklch(84% 0.11 190);
+  --sea-deep: oklch(42% 0.07 200);
+  --within: oklch(83% 0.14 165);
+  --within-bg: oklch(27% 0.045 165);
+  --over: oklch(73% 0.16 35);
+  --over-bg: oklch(27% 0.055 35);
+  --warn: oklch(86% 0.12 85);
+  --warn-bg: oklch(29% 0.05 85);
+  --focus: oklch(88% 0.12 190);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
 }
 
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-rule: var(--rule);
+  --color-rule-soft: var(--rule-soft);
   --color-within: var(--within);
   --color-within-bg: var(--within-bg);
   --color-over: var(--over);
@@ -30,26 +48,47 @@
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
   --color-sea: var(--sea);
+  --color-sea-deep: var(--sea-deep);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
   --font-sans: var(--font-sans);
 }
 
-html { background: var(--paper); }
+html, body { overflow-x: clip; }
+html { background: var(--paper); color-scheme: dark; scroll-behavior: smooth; }
 body {
   color: var(--ink);
-  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  /* The page darkens as it goes deeper, one cool bloom where the sounding starts. */
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(27, 58, 107, 0.08), transparent 60%),
-    repeating-linear-gradient(0deg, transparent 0 39px, rgba(20, 33, 61, 0.05) 39px 40px),
-    repeating-linear-gradient(90deg, transparent 0 39px, rgba(20, 33, 61, 0.05) 39px 40px),
-    var(--paper);
+    radial-gradient(900px 520px at 78% -6%, oklch(42% 0.07 200 / 0.28), transparent 70%),
+    linear-gradient(180deg, oklch(16% 0.016 250) 0%, var(--paper) 38%, oklch(11.5% 0.012 250) 100%);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
-.display { font-family: var(--font-display), Georgia, serif; font-variation-settings: "opsz" 144, "SOFT" 60; }
+::selection { background: oklch(84% 0.11 190 / 0.3); color: var(--ink); }
+
+.display { font-family: var(--font-display), Georgia, serif; font-style: normal; font-weight: 400; letter-spacing: -0.012em; overflow-wrap: anywhere; min-width: 0; }
 .mono { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
 .rule { border-color: var(--rule); }
-.fade-up { animation: fadeUp 480ms cubic-bezier(.2,.7,.2,1) both; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none; } }
-.lead-drop { animation: leadDrop 900ms cubic-bezier(.3,.9,.3,1) both; transform-origin: top; }
-@keyframes leadDrop { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.num { font-variant-numeric: tabular-nums; }
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.fade-up { animation: fadeUp var(--dur-long) var(--ease-out) both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Sonar ping on the wordmark and live indicator: one ring, slow, decorative only. */
+.ping { animation: ping 2.8s var(--ease-out) infinite; transform-origin: center; }
+@keyframes ping { 0% { transform: scale(0.6); opacity: 0.7; } 80%, 100% { transform: scale(2.2); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 150ms !important; animation-iteration-count: 1 !important; transition-duration: 150ms !important; }
+  .ping { animation: none; opacity: 0; }
+}
