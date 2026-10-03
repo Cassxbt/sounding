@@ -1,50 +1,88 @@
 "use client";
 
-import { BookOpenText, Broadcast, Record } from "@phosphor-icons/react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
+import { Broadcast, List, Record, X } from "@phosphor-icons/react";
 import { Mark } from "./ui/Mark";
 
 type Mode = "recorded" | "live";
 interface Props {
-  mode: Mode;
-  onMode: (m: Mode) => void;
+  /** the data-source switch only exists on the Desk */
+  mode?: Mode;
+  onMode?: (m: Mode) => void;
   eligible?: number;
   total?: number;
   /** where the universe count comes from: "live" or "recorded <date>" */
   source?: string;
 }
 
-/** Floating pill: the wordmark, what the data is, and the one switch that changes it. */
+const PAGES = [
+  { href: "/", label: "Desk" },
+  { href: "/bitget", label: "Built on Bitget" },
+  { href: "/how", label: "How it works" },
+  { href: "/proof", label: "Proof" },
+];
+
+/** Floating pill: the wordmark, the four pages, and on the Desk the one switch that changes the data. */
 export function Nav({ mode, onMode, eligible, total, source }: Props) {
+  const path = usePathname();
+  const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-3 z-40 px-4">
-      <nav className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 sm:gap-3 sm:pl-4 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60">
-        <a href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, home">
+      <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60 sm:gap-3 sm:pl-4">
+        <a href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, the desk">
           <Mark live={mode === "live"} />
           <span className="text-[15px] font-medium tracking-tight">Sounding</span>
         </a>
-        <span className="hidden h-4 w-px bg-rule md:block" />
-        <span className="hidden min-w-0 truncate mono text-[11px] text-ink-3 md:block">
-          {eligible !== undefined ? <>{eligible} of {total?.toLocaleString("en-US")} rTokens weekend-tradable · {source}</> : "reading the Bitget universe…"}
-        </span>
-        <a href="/task" aria-label="Frozen task" className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 text-[13px] text-ink-2 transition-colors duration-[var(--dur-micro)] hover:text-ink">
-          <BookOpenText size={16} weight="light" />
-          <span className="hidden sm:inline">Frozen task</span>
-        </a>
-        <div role="radiogroup" aria-label="Data source" className="flex rounded-full bg-paper p-0.5">
-          {(["recorded", "live"] as Mode[]).map((m) => (
-            <button
-              key={m}
-              role="radio"
-              aria-checked={mode === m}
-              onClick={() => onMode(m)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] min-[360px]:px-3 transition-colors duration-[var(--dur-micro)] ${mode === m ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink-2"}`}
-            >
-              {m === "live" ? <Broadcast size={14} weight={mode === m ? "fill" : "light"} className={mode === m ? "text-sea" : ""} /> : <Record size={14} weight={mode === m ? "fill" : "light"} />}
-              <span className="sr-only min-[360px]:not-sr-only">{m}</span>
-            </button>
+        <ul className="ml-3 hidden items-center gap-1 md:flex">
+          {PAGES.map((p) => (
+            <li key={p.href}>
+              <a href={p.href} aria-current={path === p.href ? "page" : undefined} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] transition-colors duration-[var(--dur-micro)] ${path === p.href ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink"}`}>{p.label}</a>
+            </li>
           ))}
+        </ul>
+        {eligible !== undefined && <span className="ml-auto hidden min-w-0 truncate mono text-[11px] text-ink-3 xl:block">{eligible} of {total?.toLocaleString("en-US")} weekend-tradable · {source}</span>}
+        <div className={`ml-auto flex items-center gap-1.5 ${eligible !== undefined ? "xl:ml-3" : ""}`}>
+          {mode && onMode && (
+            <div role="radiogroup" aria-label="Data source" className="flex rounded-full bg-paper p-0.5">
+              {(["recorded", "live"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  role="radio"
+                  aria-checked={mode === m}
+                  onClick={() => onMode(m)}
+                  className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] transition-colors duration-[var(--dur-micro)] min-[400px]:px-3 ${mode === m ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink-2"}`}
+                >
+                  {m === "live" ? <Broadcast size={14} weight={mode === m ? "fill" : "light"} className={mode === m ? "text-sea" : ""} /> : <Record size={14} weight={mode === m ? "fill" : "light"} />}
+                  <span className="sr-only min-[400px]:not-sr-only">{m}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="pages-menu" aria-label={open ? "Close pages" : "Pages"} className="inline-flex size-9 items-center justify-center rounded-full text-ink-2 hover:text-ink md:hidden">
+            {open ? <X size={18} /> : <List size={18} />}
+          </button>
         </div>
       </nav>
+      <AnimatePresence>
+        {open && (
+          <motion.ul
+            id="pages-menu"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="mx-auto mt-2 max-w-6xl overflow-hidden rounded-3xl border rule bg-paper-2/95 p-2 backdrop-blur-md md:hidden"
+          >
+            {PAGES.map((p) => (
+              <li key={p.href}>
+                <a href={p.href} aria-current={path === p.href ? "page" : undefined} className={`block rounded-2xl px-4 py-3 text-[15px] ${path === p.href ? "bg-paper-3 text-ink" : "text-ink-2"}`}>{p.label}</a>
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
