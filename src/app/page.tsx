@@ -198,6 +198,7 @@ export default function Page() {
                               {a.qty && <span className="mono text-ink-2"> · {a.qty} {side === "buy" && a.kind === "largest_within_ceiling" ? "USDT" : "sh"}</span>}
                               {a.price && <span className="mono text-ink-2"> · at {a.price}</span>}
                               {a.allInBpsByFee && <span className="mono text-ink-2"> · {Object.entries(a.allInBpsByFee).map(([f, b]) => `${b}@${f}`).join(" / ")}</span>}
+                              {a.remainder && <span className="mono text-ink-3"> · remainder {a.remainder} {side === "buy" ? "USDT" : "sh"} unpriced</span>}
                             </div>
                             <div className="text-[12px] text-ink-3 mt-1">{a.tradeoffs.join(" · ")}</div>
                           </li>

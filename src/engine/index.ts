@@ -121,7 +121,16 @@ export function sound(i: SoundingInput): SoundingResult {
     const q = i.intent.side === "sell"
       ? largestSellWithin(cap.raw, v.mid, i.ceilingBps, worstFee, qtyDp, D(spec.minOrderAmount))
       : largestBuyWithin(cap.raw, v.mid, i.ceilingBps, worstFee, quoteDp, D(spec.minOrderAmount));
-    if (q && q.gt(0)) alternatives.push({ kind: "largest_within_ceiling", qty: q.toString(), tradeoffs: [`largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, "partial exposure change", "does not make you flat or fully filled"] });
+    if (q && q.gt(0)) {
+      const clip = i.intent.side === "sell" ? sellShares(cap.raw, q.toString(), v.mid) : buyWithBudget(cap.raw, q.toString(), v.mid);
+      const unit = i.intent.side === "sell" ? "sh" : "USDT";
+      const remainder = D(i.intent.side === "sell" ? i.intent.baseQty : i.intent.quoteBudget).minus(q);
+      alternatives.push({
+        kind: "largest_within_ceiling", qty: q.toString(), remainder: remainder.toString(),
+        allInBpsByFee: { [worstFee]: D(clip.bpsPreFeeExact!).plus(worstFee).toFixed(2) },
+        tradeoffs: [`priced now: largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, `remainder ${remainder.toString()} ${unit} unpriced: no forecast of later depth`, "does not make you flat or fully filled"],
+      });
+    }
   }
   const limitPx = i.intent.side === "sell" ? v.bestAsk : v.bestBid;
   alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", ...(sess.state === "weekend_mm" || sess.state === "holiday_mm" ? ["cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] : [])] });

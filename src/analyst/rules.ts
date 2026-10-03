@@ -76,6 +76,8 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
     const sw = NEXT_SWITCH_NY(res);
     if (sw && c.hardDeadlineNy <= sw && (admissible.has("requote_at_switch") || out.recommendation === "requote_at_switch"))
       v.push({ rule: "hard_constraint", detail: `re-quote at switch (${sw}) is not before the deadline ${c.hardDeadlineNy}` });
+    if (sw && c.hardDeadlineNy <= sw && admissible.has("largest_within_ceiling"))
+      v.push({ rule: "hard_constraint", detail: `a partial leaves a remainder and the next session (${sw}) is not before the deadline ${c.hardDeadlineNy}` });
   }
   if (out.recommendation === "largest_within_ceiling" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "a partial size does not make the trader flat" });
   if (out.recommendation === "requote_at_switch" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "re-quoting later is a chance to exit, not an exit; it cannot be the recommendation under a hard deadline" });

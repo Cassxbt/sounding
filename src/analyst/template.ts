@@ -23,8 +23,10 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
       else if (anyWithin && !feeKnown) excluded.push({ kind: k, reason: "over ceiling at the 20 bps scenario; fee unknown" });
       else excluded.push({ kind: k, reason: "over ceiling on this snapshot" });
     } else if (k === "largest_within_ceiling") {
-      if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "partial size does not make you flat" });
-      else admissible.push({ kind: k, reason: "reduces size to fit the ceiling; partial exposure change" });
+      // Under a hard exit a clip is a plan step only if a later session, before the deadline, can take the unpriced remainder.
+      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= nextSwitch(res)) excluded.push({ kind: k, reason: "partial size leaves a remainder and no session before your deadline to reassess it" });
+      else if (c.mustBeFlat && c.hardDeadlineNy) admissible.push({ kind: k, reason: "plan step: the clip fits your ceiling now; the remainder is unpriced and reassessed at the next session; the full position is not exited" });
+      else admissible.push({ kind: k, reason: "reduces size to fit the ceiling; the remainder is unpriced" });
     } else if (k === "resting_limit") {
       if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "no_fill_possible; cannot satisfy a must-be-flat deadline" });
       else admissible.push({ kind: k, reason: "hypothetical; only if filled; cancelled at the session switch" });

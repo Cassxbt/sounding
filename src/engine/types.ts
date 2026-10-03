@@ -100,6 +100,8 @@ export interface Alternative {
   qty?: string;
   price?: string;
   allInBpsByFee?: Record<number, string>;
+  /** largest_within_ceiling: what the clip leaves, in the order's unit; never priced (no forecast of later depth) */
+  remainder?: string;
   tradeoffs: string[];
 }
 
