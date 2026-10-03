@@ -1,0 +1,2087 @@
+{
+ "summary": {
+  "today_ny": "2026-10-07",
+  "cases": 40,
+  "fields": [
+   "takerFeeBps",
+   "ceilingBps",
+   "hardDeadlineNy",
+   "mustBeFlat",
+   "sizeShares",
+   "sizeQuoteUsdt"
+  ],
+  "note": "The regex arm has no ceiling reader: before checked intake the ceiling came only from the form.",
+  "regex": {
+   "all": {
+    "cases": 40,
+    "casesAllRight": 2,
+    "statedFields": 151,
+    "statedCorrect": 19,
+    "correct": 107,
+    "wrong": 2,
+    "missed": 130,
+    "invented": 1,
+    "held": 0
+   },
+   "adversarial": {
+    "cases": 28,
+    "casesAllRight": 2,
+    "statedFields": 99,
+    "statedCorrect": 13,
+    "correct": 81,
+    "wrong": 1,
+    "missed": 85,
+    "invented": 1,
+    "held": 0
+   },
+   "zh": {
+    "cases": 22,
+    "casesAllRight": 1,
+    "statedFields": 81,
+    "statedCorrect": 5,
+    "correct": 56,
+    "wrong": 0,
+    "missed": 76,
+    "invented": 0,
+    "held": 0
+   }
+  },
+  "qwen": {
+   "all": {
+    "cases": 40,
+    "casesAllRight": 30,
+    "statedFields": 151,
+    "statedCorrect": 142,
+    "correct": 228,
+    "wrong": 1,
+    "missed": 5,
+    "invented": 3,
+    "held": 3
+   },
+   "adversarial": {
+    "cases": 28,
+    "casesAllRight": 23,
+    "statedFields": 99,
+    "statedCorrect": 95,
+    "correct": 162,
+    "wrong": 1,
+    "missed": 3,
+    "invented": 2,
+    "held": 0
+   },
+   "zh": {
+    "cases": 22,
+    "casesAllRight": 16,
+    "statedFields": 81,
+    "statedCorrect": 76,
+    "correct": 125,
+    "wrong": 1,
+    "missed": 2,
+    "invented": 2,
+    "held": 2
+   }
+  }
+ },
+ "rows": [
+  {
+   "id": "H01",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Selling 40 rAAPL. I pay 0.08% taker, all-in cost cap is half a percent. Need to be flat by Friday.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H01",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Selling 40 rAAPL. I pay 0.08% taker, all-in cost cap is half a percent. Need to be flat by Friday.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": "40",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3968
+  },
+  {
+   "id": "H02",
+   "lang": "en",
+   "adversarial": false,
+   "text": "buy rMSFT w/ 2,500 USDT, taker 6bp, max 35bp all in, have to be done before the 12th",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "500"
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "wrong"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H02",
+   "lang": "en",
+   "adversarial": false,
+   "text": "buy rMSFT w/ 2,500 USDT, taker 6bp, max 35bp all in, have to be done before the 12th",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 35,
+    "hardDeadlineNy": "2026-10-11",
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "2500"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3787
+  },
+  {
+   "id": "H03",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Hi, I'd like to sell 12.5 shares of rMETA. My taker fee is 0.1% and I'd accept at most 0.45% total execution cost. I must be completely out on or before October 14. Thank you!",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "12.5",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H03",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Hi, I'd like to sell 12.5 shares of rMETA. My taker fee is 0.1% and I'd accept at most 0.45% total execution cost. I must be completely out on or before October 14. Thank you!",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 10,
+    "ceilingBps": 45,
+    "hardDeadlineNy": "2026-10-14",
+    "mustBeFlat": true,
+    "sizeShares": "12.5",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 5171
+  },
+  {
+   "id": "H04",
+   "lang": "en",
+   "adversarial": false,
+   "text": "dump 300 rSPY, fee 5bps taker, cap 20bps, gotta be flat by thursday",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": 5,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H04",
+   "lang": "en",
+   "adversarial": false,
+   "text": "dump 300 rSPY, fee 5bps taker, cap 20bps, gotta be flat by thursday",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 5,
+    "ceilingBps": 20,
+    "hardDeadlineNy": "2026-10-08",
+    "mustBeFlat": true,
+    "sizeShares": "300",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3812
+  },
+  {
+   "id": "H05",
+   "lang": "en",
+   "adversarial": false,
+   "text": "wanna buy rAMZN for 1.2k usdt. takr fee 0.075%, wont go above 0.4% all in. by fri oct 9 ideally but i can hold thru if it doesnt fill",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H05",
+   "lang": "en",
+   "adversarial": false,
+   "text": "wanna buy rAMZN for 1.2k usdt. takr fee 0.075%, wont go above 0.4% all in. by fri oct 9 ideally but i can hold thru if it doesnt fill",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 7.5,
+    "ceilingBps": 40,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "held"
+   },
+   "clarification": "I read \"1.2k usdt\" two ways (1200 vs 1.2). What is the USDT amount, exactly?",
+   "ms": 4305
+  },
+  {
+   "id": "H06",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Selling 75 rCOIN. Fees on my tier: maker 0.02%, taker 0.06%. Keep total cost under 30bp. By the 13th.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H06",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Selling 75 rCOIN. Fees on my tier: maker 0.02%, taker 0.06%. Keep total cost under 30bp. By the 13th.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 30,
+    "hardDeadlineNy": "2026-10-13",
+    "mustBeFlat": false,
+    "sizeShares": "75",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3723
+  },
+  {
+   "id": "H07",
+   "lang": "en",
+   "adversarial": true,
+   "text": "My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp. Buying rMSTR with 5000 USDT, max 0.6% all-in, must be in before Friday.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "5000"
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H07",
+   "lang": "en",
+   "adversarial": true,
+   "text": "My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp. Buying rMSTR with 5000 USDT, max 0.6% all-in, must be in before Friday.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 10,
+    "ceilingBps": 60,
+    "hardDeadlineNy": "2026-10-08",
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "5000"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3048
+  },
+  {
+   "id": "H08",
+   "lang": "en",
+   "adversarial": true,
+   "text": "sell 20 rARM, taker is 0.1%... wait no, I got bumped to VIP1, it's 0.08% now. ceiling 40bp, by Oct 12.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": "2026-10-12",
+    "mustBeFlat": false,
+    "sizeShares": "20",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H08",
+   "lang": "en",
+   "adversarial": true,
+   "text": "sell 20 rARM, taker is 0.1%... wait no, I got bumped to VIP1, it's 0.08% now. ceiling 40bp, by Oct 12.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 40,
+    "hardDeadlineNy": "2026-10-12",
+    "mustBeFlat": false,
+    "sizeShares": "20",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3202
+  },
+  {
+   "id": "H09",
+   "lang": "en",
+   "adversarial": true,
+   "text": "rMU ripped 6% today and I think it can do another 3%. Selling 150 shares, my taker is 8bp.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "150",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H09",
+   "lang": "en",
+   "adversarial": true,
+   "text": "rMU ripped 6% today and I think it can do another 3%. Selling 150 shares, my taker is 8bp.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "150",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3005
+  },
+  {
+   "id": "H10",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Good morning. I'm buying rAVGO with 3,000 USDT and I won't pay more than 25 bps all-in. My taker fee is 0.05%. I need this done by the 9th.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "000"
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "wrong"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H10",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Good morning. I'm buying rAVGO with 3,000 USDT and I won't pay more than 25 bps all-in. My taker fee is 0.05%. I need this done by the 9th.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 5,
+    "ceilingBps": 25,
+    "hardDeadlineNy": "2026-10-09",
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "3000"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3657
+  },
+  {
+   "id": "H11",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Sell 60 rORCL after earnings, not before Oct 9. Taker 0.08%, cap 0.35% total.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "60",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H11",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Sell 60 rORCL after earnings, not before Oct 9. Taker 0.08%, cap 0.35% total.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 35,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "60",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2425
+  },
+  {
+   "id": "H12",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Selling 500 rHOOD. Was going to say out by Friday but scratch that, no deadline, I can hold over the weekend. Taker 6bp, max cost 40bp.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H12",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Selling 500 rHOOD. Was going to say out by Friday but scratch that, no deadline, I can hold over the weekend. Taker 6bp, max cost 40bp.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 40,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "500",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2968
+  },
+  {
+   "id": "H13",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Buy 2 rASML. 8bps taker. Ceiling 0.25%. I have to be filled on or before Tuesday the 13th, inclusive.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "2",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H13",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Buy 2 rASML. 8bps taker. Ceiling 0.25%. I have to be filled on or before Tuesday the 13th, inclusive.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 25,
+    "hardDeadlineNy": "2026-10-13",
+    "mustBeFlat": true,
+    "sizeShares": "2",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3850
+  },
+  {
+   "id": "H14",
+   "lang": "en",
+   "adversarial": true,
+   "text": "pls sell 35 rCRWD by oct 5th, taker 0.1%, cap 50bp",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": "2026-10-05",
+    "mustBeFlat": false,
+    "sizeShares": "35",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "invented",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H14",
+   "lang": "en",
+   "adversarial": true,
+   "text": "pls sell 35 rCRWD by oct 5th, taker 0.1%, cap 50bp",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 10,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "35",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": "I could not use \"by oct 5th\" as your deadline: this date has already passed (code reads 2026-10-05). What is your deadline, exactly?",
+   "ms": 2576
+  },
+  {
+   "id": "H15",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Sell 18 rSNOW by Wednesday. taker 7bp, cost cap 30bp. Must be flat.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": "18",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H15",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Sell 18 rSNOW by Wednesday. taker 7bp, cost cap 30bp. Must be flat.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 7,
+    "ceilingBps": 30,
+    "hardDeadlineNy": "2026-10-07",
+    "mustBeFlat": true,
+    "sizeShares": "18",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3649
+  },
+  {
+   "id": "H16",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Buy rTSM with 800 USDT sometime next week, taker 0.08%, max 0.5%.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "800"
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H16",
+   "lang": "en",
+   "adversarial": true,
+   "text": "Buy rTSM with 800 USDT sometime next week, taker 0.08%, max 0.5%.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "800"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2171
+  },
+  {
+   "id": "H17",
+   "lang": "en",
+   "adversarial": true,
+   "text": "gm, anyone know if the rQQQ market is open on Columbus Day?",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H17",
+   "lang": "en",
+   "adversarial": true,
+   "text": "gm, anyone know if the rQQQ market is open on Columbus Day?",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 1075
+  },
+  {
+   "id": "H18",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Selling 1,250 rBABA. I'm charged 0.0008 per side as taker, cap all-in at 0.003, out by Oct 16.",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": "2026-10-16",
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H18",
+   "lang": "en",
+   "adversarial": false,
+   "text": "Selling 1,250 rBABA. I'm charged 0.0008 per side as taker, cap all-in at 0.003, out by Oct 16.",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 30,
+    "hardDeadlineNy": "2026-10-16",
+    "mustBeFlat": true,
+    "sizeShares": "1250",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "invented",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3188
+  },
+  {
+   "id": "H19",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖出 rPDD 200 股，我的吃单手续费万8，全部成本不超过千分之五，必须在10月9日（含）之前卖完。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 5
+  },
+  {
+   "id": "H19",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖出 rPDD 200 股，我的吃单手续费万8，全部成本不超过千分之五，必须在10月9日（含）之前卖完。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 50,
+    "hardDeadlineNy": "2026-10-09",
+    "mustBeFlat": true,
+    "sizeShares": "200",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3003
+  },
+  {
+   "id": "H20",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "用 3000 USDT 买 rAAPL，taker 费率 0.06%，总成本上限 0.4%，10月12日之前一定要成交。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 1
+  },
+  {
+   "id": "H20",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "用 3000 USDT 买 rAAPL，taker 费率 0.06%，总成本上限 0.4%，10月12日之前一定要成交。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 40,
+    "hardDeadlineNy": "2026-10-11",
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "3000"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3647
+  },
+  {
+   "id": "H21",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "rMETA 帮我卖 30 股，吃单费千分之0.8，成本别超过0.3%，周五前搞定",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H21",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "rMETA 帮我卖 30 股，吃单费千分之0.8，成本别超过0.3%，周五前搞定",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 30,
+    "hardDeadlineNy": "2026-10-08",
+    "mustBeFlat": false,
+    "sizeShares": "30",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2566
+  },
+  {
+   "id": "H22",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖 rCOIN 45 股。我挂单费万2，吃单费万6。整体执行成本控制在万分之三十五以内。最晚10月13日。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H22",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖 rCOIN 45 股。我挂单费万2，吃单费万6。整体执行成本控制在万分之三十五以内。最晚10月13日。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 35,
+    "hardDeadlineNy": "2026-10-13",
+    "mustBeFlat": false,
+    "sizeShares": "45",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3026
+  },
+  {
+   "id": "H23",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "我朋友的吃单费是万4，我是普通用户，吃单万10。买 rMSFT，预算 1500 USDT，成本上限千分之六，10月14日前必须买到。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H23",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "我朋友的吃单费是万4，我是普通用户，吃单万10。买 rMSFT，预算 1500 USDT，成本上限千分之六，10月14日前必须买到。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 10,
+    "ceilingBps": 6,
+    "hardDeadlineNy": "2026-10-13",
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "1500"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "wrong",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3611
+  },
+  {
+   "id": "H24",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖出 rAMZN 25 股，手续费千分之一，哦不对，我刚升了VIP，现在吃单是万分之七。成本上限0.35%，10月15日之前。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H24",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖出 rAMZN 25 股，手续费千分之一，哦不对，我刚升了VIP，现在吃单是万分之七。成本上限0.35%，10月15日之前。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 7,
+    "ceilingBps": 35,
+    "hardDeadlineNy": "2026-10-14",
+    "mustBeFlat": false,
+    "sizeShares": "25",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2869
+  },
+  {
+   "id": "H25",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rMSTR 今天跌了8%，我想抄底买 2000 USDT 的。吃单费0.08%。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H25",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rMSTR 今天跌了8%，我想抄底买 2000 USDT 的。吃单费0.08%。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "2000"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2414
+  },
+  {
+   "id": "H26",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "买 rARM 10 股，成本最多不能超过万分之四十，我的 taker 费万五，必须周四之前买完。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H26",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "买 rARM 10 股，成本最多不能超过万分之四十，我的 taker 费万五，必须周四之前买完。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 5,
+    "ceilingBps": 40,
+    "hardDeadlineNy": "2026-10-07",
+    "mustBeFlat": true,
+    "sizeShares": "10",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3091
+  },
+  {
+   "id": "H27",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rSPY 卖 80 股，10月13日之前不要卖，吃单万6，成本上限千分之三。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H27",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rSPY 卖 80 股，10月13日之前不要卖，吃单万6，成本上限千分之三。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 30,
+    "hardDeadlineNy": "2026-10-12",
+    "mustBeFlat": false,
+    "sizeShares": "80",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "invented",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3141
+  },
+  {
+   "id": "H28",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖掉 rMU 120 股。原本说周五前必须清仓，现在不用了，可以拿着过周末。吃单0.1%，总成本不超过0.5%。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H28",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "卖掉 rMU 120 股。原本说周五前必须清仓，现在不用了，可以拿着过周末。吃单0.1%，总成本不超过0.5%。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 10,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "120",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3861
+  },
+  {
+   "id": "H29",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "买 rAVGO 5 股，最晚10月6日，吃单万8，上限千分之四。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H29",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "买 rAVGO 5 股，最晚10月6日，吃单万8，上限千分之四。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 40,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "5",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": "I could not use \"最晚10月6日\" as your deadline: this date has already passed (code reads 2026-10-06). What is your deadline, exactly?",
+   "ms": 2745
+  },
+  {
+   "id": "H30",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rORCL 卖 33 股，最晚周三，一定要卖完。吃单万分之六，成本上限万分之二十五。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H30",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rORCL 卖 33 股，最晚周三，一定要卖完。吃单万分之六，成本上限万分之二十五。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 25,
+    "hardDeadlineNy": "2026-10-07",
+    "mustBeFlat": true,
+    "sizeShares": "33",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2960
+  },
+  {
+   "id": "H31",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rHOOD 卖 400 股，月底前清掉就行，吃单万6，成本上限千分之四。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H31",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "rHOOD 卖 400 股，月底前清掉就行，吃单万6，成本上限千分之四。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 40,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": "400",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "invented",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": "I could not use \"月底前\" as your deadline: code cannot confirm a date from these words. What is your deadline, exactly?",
+   "ms": 2832
+  },
+  {
+   "id": "H32",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "在吗？",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H32",
+   "lang": "zh",
+   "adversarial": true,
+   "text": "在吗？",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 1536
+  },
+  {
+   "id": "H33",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "帮我买 rTSM，花 4,800 USDT，吃单万分之八，明天之内必须买完。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H33",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "帮我买 rTSM，花 4,800 USDT，吃单万分之八，明天之内必须买完。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "4800"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "held",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": "I could not use \"明天之内\" as your deadline: code cannot confirm a date from these words. What is your deadline, exactly?",
+   "ms": 2895
+  },
+  {
+   "id": "H34",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "卖出 rASML 3.5 股，不赶时间，持有过周末也没问题。手续费我不清楚。",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H34",
+   "lang": "zh",
+   "adversarial": false,
+   "text": "卖出 rASML 3.5 股，不赶时间，持有过周末也没问题。手续费我不清楚。",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "3.5",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2190
+  },
+  {
+   "id": "H35",
+   "lang": "mixed",
+   "adversarial": false,
+   "text": "sell 50 rDELL，taker fee 0.08%，all-in cost 不超过 40bp，must be flat by 10月9日",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": true,
+    "sizeShares": "50",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H35",
+   "lang": "mixed",
+   "adversarial": false,
+   "text": "sell 50 rDELL，taker fee 0.08%，all-in cost 不超过 40bp，must be flat by 10月9日",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 40,
+    "hardDeadlineNy": "2026-10-09",
+    "mustBeFlat": true,
+    "sizeShares": "50",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3337
+  },
+  {
+   "id": "H36",
+   "lang": "mixed",
+   "adversarial": false,
+   "text": "买 rBABA 2k USDT, taker 万6, ceiling 千分之五, 10月10号前 must 成交",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "missed"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H36",
+   "lang": "mixed",
+   "adversarial": false,
+   "text": "买 rBABA 2k USDT, taker 万6, ceiling 千分之五, 10月10号前 must 成交",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 6,
+    "ceilingBps": 50,
+    "hardDeadlineNy": "2026-10-09",
+    "mustBeFlat": true,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "held"
+   },
+   "clarification": "I read \"2k USDT\" two ways (2000 vs 2). What is the USDT amount, exactly?",
+   "ms": 2746
+  },
+  {
+   "id": "H37",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "我的 maker fee 是 0.02%, taker 0.07%, 我同事 taker 才 0.04%. 卖 rQQQ 90 股, max 0.3% all in, by Friday 就行, 拿过周末也OK",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "missed",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H37",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "我的 maker fee 是 0.02%, taker 0.07%, 我同事 taker 才 0.04%. 卖 rQQQ 90 股, max 0.3% all in, by Friday 就行, 拿过周末也OK",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 7,
+    "ceilingBps": 30,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "90",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 3138
+  },
+  {
+   "id": "H38",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "sell 15 rCRWD by next Friday 吧, taker 万8, 成本上限 50bp",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "15",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H38",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "sell 15 rCRWD by next Friday 吧, taker 万8, 成本上限 50bp",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "15",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": "I could not use \"by next Friday\" as your deadline: code cannot confirm a date from these words. What is your deadline, exactly?",
+   "ms": 2863
+  },
+  {
+   "id": "H39",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "Bitget default taker 是 0.1%, 但我用 BGB 抵扣, 实际付 0.08%. sell 22 rAMZN, cost 上限 千分之四, 周一前 must 出",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": "22",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "missed",
+    "mustBeFlat": "missed",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H39",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "Bitget default taker 是 0.1%, 但我用 BGB 抵扣, 实际付 0.08%. sell 22 rAMZN, cost 上限 千分之四, 周一前 must 出",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 40,
+    "hardDeadlineNy": "2026-10-11",
+    "mustBeFlat": true,
+    "sizeShares": "22",
+    "sizeQuoteUsdt": null
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2675
+  },
+  {
+   "id": "H40",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "buy rMSFT w 600 usdt after 10月8号, taker 8bp, 成本max 0.5%",
+   "arm": "regex",
+   "got": {
+    "takerFeeBps": null,
+    "ceilingBps": null,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "600"
+   },
+   "outcome": {
+    "takerFeeBps": "missed",
+    "ceilingBps": "missed",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 0
+  },
+  {
+   "id": "H40",
+   "lang": "mixed",
+   "adversarial": true,
+   "text": "buy rMSFT w 600 usdt after 10月8号, taker 8bp, 成本max 0.5%",
+   "arm": "qwen",
+   "got": {
+    "takerFeeBps": 8,
+    "ceilingBps": 50,
+    "hardDeadlineNy": null,
+    "mustBeFlat": false,
+    "sizeShares": null,
+    "sizeQuoteUsdt": "600"
+   },
+   "outcome": {
+    "takerFeeBps": "correct",
+    "ceilingBps": "correct",
+    "hardDeadlineNy": "correct",
+    "mustBeFlat": "correct",
+    "sizeShares": "correct",
+    "sizeQuoteUsdt": "correct"
+   },
+   "clarification": null,
+   "ms": 2282
+  }
+ ]
+}

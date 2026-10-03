@@ -1,0 +1,606 @@
+{
+  "today_ny": "2026-10-07",
+  "written_by": "blind writer agent v2",
+  "cases": [
+    {
+      "id": "H01",
+      "lang": "en",
+      "text": "Selling 40 rAAPL. I pay 0.08% taker, all-in cost cap is half a percent. Need to be flat by Friday.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": true,
+        "sizeShares": "40",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "by Friday = 2026-10-09 inclusive; 'need to' -> mustBeFlat true; half a percent = 50bp."
+    },
+    {
+      "id": "H02",
+      "lang": "en",
+      "text": "buy rMSFT w/ 2,500 USDT, taker 6bp, max 35bp all in, have to be done before the 12th",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 35,
+        "hardDeadlineNy": "2026-10-11",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "2500"
+      },
+      "adversarial": false,
+      "note": "'before the 12th' excludes the 12th -> 2026-10-11; comma thousands separator."
+    },
+    {
+      "id": "H03",
+      "lang": "en",
+      "text": "Hi, I'd like to sell 12.5 shares of rMETA. My taker fee is 0.1% and I'd accept at most 0.45% total execution cost. I must be completely out on or before October 14. Thank you!",
+      "gold": {
+        "takerFeeBps": 10,
+        "ceilingBps": 45,
+        "hardDeadlineNy": "2026-10-14",
+        "mustBeFlat": true,
+        "sizeShares": "12.5",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "Polite register; 'on or before' inclusive; fractional shares."
+    },
+    {
+      "id": "H04",
+      "lang": "en",
+      "text": "dump 300 rSPY, fee 5bps taker, cap 20bps, gotta be flat by thursday",
+      "gold": {
+        "takerFeeBps": 5,
+        "ceilingBps": 20,
+        "hardDeadlineNy": "2026-10-08",
+        "mustBeFlat": true,
+        "sizeShares": "300",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "Terse slang; 'gotta' = have to -> mustBeFlat true; Thursday = 2026-10-08."
+    },
+    {
+      "id": "H05",
+      "lang": "en",
+      "text": "wanna buy rAMZN for 1.2k usdt. takr fee 0.075%, wont go above 0.4% all in. by fri oct 9 ideally but i can hold thru if it doesnt fill",
+      "gold": {
+        "takerFeeBps": 7.5,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": false,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "1200"
+      },
+      "adversarial": false,
+      "note": "Typos; 1.2k = 1200; 0.075% = 7.5bp (fractional); explicit 'can hold thru' -> mustBeFlat false while the stated date stays 2026-10-09."
+    },
+    {
+      "id": "H06",
+      "lang": "en",
+      "text": "Selling 75 rCOIN. Fees on my tier: maker 0.02%, taker 0.06%. Keep total cost under 30bp. By the 13th.",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-10-13",
+        "mustBeFlat": null,
+        "sizeShares": "75",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Maker and taker fee in one message; taker = 6bp, maker ignored. 'By the 13th' = 2026-10-13; no must language -> null."
+    },
+    {
+      "id": "H07",
+      "lang": "en",
+      "text": "My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp. Buying rMSTR with 5000 USDT, max 0.6% all-in, must be in before Friday.",
+      "gold": {
+        "takerFeeBps": 10,
+        "ceilingBps": 60,
+        "hardDeadlineNy": "2026-10-08",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "5000"
+      },
+      "adversarial": true,
+      "note": "Another person's fee (4bp) must be ignored; trader's own taker is 10bp. 'before Friday' -> 2026-10-08."
+    },
+    {
+      "id": "H08",
+      "lang": "en",
+      "text": "sell 20 rARM, taker is 0.1%... wait no, I got bumped to VIP1, it's 0.08% now. ceiling 40bp, by Oct 12.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-12",
+        "mustBeFlat": null,
+        "sizeShares": "20",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Fee corrected mid-message: final value 8bp, not 10."
+    },
+    {
+      "id": "H09",
+      "lang": "en",
+      "text": "rMU ripped 6% today and I think it can do another 3%. Selling 150 shares, my taker is 8bp.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "150",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "6% and 3% are price moves, not a cost ceiling -> ceilingBps null."
+    },
+    {
+      "id": "H10",
+      "lang": "en",
+      "text": "Good morning. I'm buying rAVGO with 3,000 USDT and I won't pay more than 25 bps all-in. My taker fee is 0.05%. I need this done by the 9th.",
+      "gold": {
+        "takerFeeBps": 5,
+        "ceilingBps": 25,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "3000"
+      },
+      "adversarial": true,
+      "note": "Negated ceiling 'won't pay more than 25 bps' = ceiling 25. 'by the 9th' -> 2026-10-09."
+    },
+    {
+      "id": "H11",
+      "lang": "en",
+      "text": "Sell 60 rORCL after earnings, not before Oct 9. Taker 0.08%, cap 0.35% total.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 35,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "60",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "'not before Oct 9' is an earliest date, not a deadline -> hardDeadlineNy null."
+    },
+    {
+      "id": "H12",
+      "lang": "en",
+      "text": "Selling 500 rHOOD. Was going to say out by Friday but scratch that, no deadline, I can hold over the weekend. Taker 6bp, max cost 40bp.",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "sizeShares": "500",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Cancelled deadline -> null; 'can hold over the weekend' -> mustBeFlat false."
+    },
+    {
+      "id": "H13",
+      "lang": "en",
+      "text": "Buy 2 rASML. 8bps taker. Ceiling 0.25%. I have to be filled on or before Tuesday the 13th, inclusive.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 25,
+        "hardDeadlineNy": "2026-10-13",
+        "mustBeFlat": true,
+        "sizeShares": "2",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Inclusive marker; Tuesday the 13th is consistent (2026-10-13 is a Tuesday)."
+    },
+    {
+      "id": "H14",
+      "lang": "en",
+      "text": "pls sell 35 rCRWD by oct 5th, taker 0.1%, cap 50bp",
+      "gold": {
+        "takerFeeBps": 10,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "35",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Oct 5 is already past (today 2026-10-07) -> hardDeadlineNy null. No must language -> mustBeFlat null."
+    },
+    {
+      "id": "H15",
+      "lang": "en",
+      "text": "Sell 18 rSNOW by Wednesday. taker 7bp, cost cap 30bp. Must be flat.",
+      "gold": {
+        "takerFeeBps": 7,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-10-07",
+        "mustBeFlat": true,
+        "sizeShares": "18",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Weekday equal to today: 'by Wednesday' said on Wednesday = 2026-10-07, not 10-14."
+    },
+    {
+      "id": "H16",
+      "lang": "en",
+      "text": "Buy rTSM with 800 USDT sometime next week, taker 0.08%, max 0.5%.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "800"
+      },
+      "adversarial": true,
+      "note": "'next week' is ambiguous -> hardDeadlineNy null."
+    },
+    {
+      "id": "H17",
+      "lang": "en",
+      "text": "gm, anyone know if the rQQQ market is open on Columbus Day?",
+      "gold": {
+        "takerFeeBps": null,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": null,
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Irrelevant message: no order, no limits. All fields null."
+    },
+    {
+      "id": "H18",
+      "lang": "en",
+      "text": "Selling 1,250 rBABA. I'm charged 0.0008 per side as taker, cap all-in at 0.003, out by Oct 16.",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-10-16",
+        "mustBeFlat": null,
+        "sizeShares": "1250",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "Decimal-fraction format: 0.0008 = 8bp, 0.003 = 30bp. 'out by' without must -> mustBeFlat null."
+    },
+    {
+      "id": "H19",
+      "lang": "zh",
+      "text": "卖出 rPDD 200 股，我的吃单手续费万8，全部成本不超过千分之五，必须在10月9日（含）之前卖完。",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": true,
+        "sizeShares": "200",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Inclusive marker （含） -> 2026-10-09; 万8 = 8bp; 千分之五 = 50bp."
+    },
+    {
+      "id": "H20",
+      "lang": "zh",
+      "text": "用 3000 USDT 买 rAAPL，taker 费率 0.06%，总成本上限 0.4%，10月12日之前一定要成交。",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-11",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "3000"
+      },
+      "adversarial": false,
+      "note": "'10月12日之前' excludes the 12th -> 2026-10-11; 一定要 -> true."
+    },
+    {
+      "id": "H21",
+      "lang": "zh",
+      "text": "rMETA 帮我卖 30 股，吃单费千分之0.8，成本别超过0.3%，周五前搞定",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-10-08",
+        "mustBeFlat": null,
+        "sizeShares": "30",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "千分之0.8 = 8bp. '周五前' treated as exclusive per spec ('X前' excludes X) -> 2026-10-08. 搞定 is not must language -> null."
+    },
+    {
+      "id": "H22",
+      "lang": "zh",
+      "text": "卖 rCOIN 45 股。我挂单费万2，吃单费万6。整体执行成本控制在万分之三十五以内。最晚10月13日。",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 35,
+        "hardDeadlineNy": "2026-10-13",
+        "mustBeFlat": null,
+        "sizeShares": "45",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Maker (挂单 万2) and taker (吃单 万6) in one message; taker = 6. 最晚 = inclusive."
+    },
+    {
+      "id": "H23",
+      "lang": "zh",
+      "text": "我朋友的吃单费是万4，我是普通用户，吃单万10。买 rMSFT，预算 1500 USDT，成本上限千分之六，10月14日前必须买到。",
+      "gold": {
+        "takerFeeBps": 10,
+        "ceilingBps": 60,
+        "hardDeadlineNy": "2026-10-13",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "1500"
+      },
+      "adversarial": true,
+      "note": "Friend's fee (万4) ignored; own fee 万10 = 10bp. '10月14日前' -> 2026-10-13."
+    },
+    {
+      "id": "H24",
+      "lang": "zh",
+      "text": "卖出 rAMZN 25 股，手续费千分之一，哦不对，我刚升了VIP，现在吃单是万分之七。成本上限0.35%，10月15日之前。",
+      "gold": {
+        "takerFeeBps": 7,
+        "ceilingBps": 35,
+        "hardDeadlineNy": "2026-10-14",
+        "mustBeFlat": null,
+        "sizeShares": "25",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Fee corrected mid-message: 千分之一 (10bp) replaced by 万分之七 (7bp). '10月15日之前' -> 2026-10-14."
+    },
+    {
+      "id": "H25",
+      "lang": "zh",
+      "text": "rMSTR 今天跌了8%，我想抄底买 2000 USDT 的。吃单费0.08%。",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "2000"
+      },
+      "adversarial": true,
+      "note": "8% is a price move, not a ceiling -> ceilingBps null."
+    },
+    {
+      "id": "H26",
+      "lang": "zh",
+      "text": "买 rARM 10 股，成本最多不能超过万分之四十，我的 taker 费万五，必须周四之前买完。",
+      "gold": {
+        "takerFeeBps": 5,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-07",
+        "mustBeFlat": true,
+        "sizeShares": "10",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Negated ceiling 不能超过 万分之四十 = 40bp. '周四之前' excludes Thursday 10-08 -> 2026-10-07 (today)."
+    },
+    {
+      "id": "H27",
+      "lang": "zh",
+      "text": "rSPY 卖 80 股，10月13日之前不要卖，吃单万6，成本上限千分之三。",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 30,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "80",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "'10月13日之前不要卖' = not before Oct 13, an earliest date -> hardDeadlineNy null."
+    },
+    {
+      "id": "H28",
+      "lang": "zh",
+      "text": "卖掉 rMU 120 股。原本说周五前必须清仓，现在不用了，可以拿着过周末。吃单0.1%，总成本不超过0.5%。",
+      "gold": {
+        "takerFeeBps": 10,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "sizeShares": "120",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Cancelled deadline: the 必须 clause is withdrawn -> deadline null, mustBeFlat false (can hold over weekend)."
+    },
+    {
+      "id": "H29",
+      "lang": "zh",
+      "text": "买 rAVGO 5 股，最晚10月6日，吃单万8，上限千分之四。",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "5",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "10月6日 is already past -> hardDeadlineNy null."
+    },
+    {
+      "id": "H30",
+      "lang": "zh",
+      "text": "rORCL 卖 33 股，最晚周三，一定要卖完。吃单万分之六，成本上限万分之二十五。",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 25,
+        "hardDeadlineNy": "2026-10-07",
+        "mustBeFlat": true,
+        "sizeShares": "33",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Weekday equal to today: 最晚周三 said on Wednesday = 2026-10-07."
+    },
+    {
+      "id": "H31",
+      "lang": "zh",
+      "text": "rHOOD 卖 400 股，月底前清掉就行，吃单万6，成本上限千分之四。",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "400",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "月底 is ambiguous per spec -> null. 就行 is not must language -> null."
+    },
+    {
+      "id": "H32",
+      "lang": "zh",
+      "text": "在吗？",
+      "gold": {
+        "takerFeeBps": null,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": null,
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Empty/irrelevant message: all null."
+    },
+    {
+      "id": "H33",
+      "lang": "zh",
+      "text": "帮我买 rTSM，花 4,800 USDT，吃单万分之八，明天之内必须买完。",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": null,
+        "hardDeadlineNy": "2026-10-08",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "4800"
+      },
+      "adversarial": false,
+      "note": "万分之八 = 8bp; 明天 (tomorrow) = 2026-10-08; no ceiling stated."
+    },
+    {
+      "id": "H34",
+      "lang": "zh",
+      "text": "卖出 rASML 3.5 股，不赶时间，持有过周末也没问题。手续费我不清楚。",
+      "gold": {
+        "takerFeeBps": null,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "sizeShares": "3.5",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "Fee explicitly unknown -> null; '持有过周末也没问题' -> mustBeFlat false."
+    },
+    {
+      "id": "H35",
+      "lang": "mixed",
+      "text": "sell 50 rDELL，taker fee 0.08%，all-in cost 不超过 40bp，must be flat by 10月9日",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": true,
+        "sizeShares": "50",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": false,
+      "note": "Mixed; 'by 10月9日' inclusive -> 2026-10-09."
+    },
+    {
+      "id": "H36",
+      "lang": "mixed",
+      "text": "买 rBABA 2k USDT, taker 万6, ceiling 千分之五, 10月10号前 must 成交",
+      "gold": {
+        "takerFeeBps": 6,
+        "ceilingBps": 50,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": true,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "2000"
+      },
+      "adversarial": false,
+      "note": "2k = 2000; '10月10号前' exclusive -> 2026-10-09."
+    },
+    {
+      "id": "H37",
+      "lang": "mixed",
+      "text": "我的 maker fee 是 0.02%, taker 0.07%, 我同事 taker 才 0.04%. 卖 rQQQ 90 股, max 0.3% all in, by Friday 就行, 拿过周末也OK",
+      "gold": {
+        "takerFeeBps": 7,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-10-09",
+        "mustBeFlat": false,
+        "sizeShares": "90",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Maker fee and colleague's fee both distractors; own taker 7bp. Date stated as Friday 10-09 but trader can hold through -> mustBeFlat false."
+    },
+    {
+      "id": "H38",
+      "lang": "mixed",
+      "text": "sell 15 rCRWD by next Friday 吧, taker 万8, 成本上限 50bp",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": "15",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "'next Friday' is ambiguous (10-09 vs 10-16) -> null."
+    },
+    {
+      "id": "H39",
+      "lang": "mixed",
+      "text": "Bitget default taker 是 0.1%, 但我用 BGB 抵扣, 实际付 0.08%. sell 22 rAMZN, cost 上限 千分之四, 周一前 must 出",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": "2026-10-11",
+        "mustBeFlat": true,
+        "sizeShares": "22",
+        "sizeQuoteUsdt": null
+      },
+      "adversarial": true,
+      "note": "Platform default fee (10bp) vs what the trader actually pays (8bp) -> 8. '周一前' = before Monday 10-12 -> 2026-10-11."
+    },
+    {
+      "id": "H40",
+      "lang": "mixed",
+      "text": "buy rMSFT w 600 usdt after 10月8号, taker 8bp, 成本max 0.5%",
+      "gold": {
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": null,
+        "sizeShares": null,
+        "sizeQuoteUsdt": "600"
+      },
+      "adversarial": true,
+      "note": "'after 10月8号' is an earliest date -> hardDeadlineNy null."
+    }
+  ]
+}
