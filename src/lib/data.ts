@@ -12,6 +12,9 @@ export const FIXTURES: Record<string, string> = {
   RHIMSUSDT: "rhims-20260920T090235Z.json",
   RSPYUSDT: "rspy-20260920T0902Z.json",
   RSPMOUSDT: "rspmo-20260920T0902Z.json",
+  // Two real Saturday captures 21 s apart, for the recorded Last Look demo.
+  "RHIMSUSDT@20261003a": "rhims-20261003T011955Z.json",
+  "RHIMSUSDT@20261003b": "rhims-20261003T012016Z.json",
 };
 export const recordedCapture = (symbol: string): BookCapture | null => (FIXTURES[symbol] ? read<BookCapture>(FIXTURES[symbol]) : null);
 
