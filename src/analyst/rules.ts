@@ -7,21 +7,6 @@ import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
  */
 export interface RuleViolation { rule: string; detail: string }
 
-const NEXT_SWITCH_NY = (res: SoundingResult): string | null => {
-  // Weekend/holiday MM session: the next switch is the next trading-day 04:00 NY. We only know the date coarsely here;
-  // the analyst treats "requote_at_switch" as admissible only if the hard deadline is strictly after that date.
-  if (res.session !== "weekend_mm" && res.session !== "holiday_mm") return null;
-  const ts = Number(res.receipt.exchange_ts);
-  const d = new Date(ts);
-  // next weekday after this instant, in NY
-  const ny = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" });
-  for (let i = 0; i <= 4; i++) {
-    const cand = new Date(ts + i * 86_400_000);
-    const parts = Object.fromEntries(ny.formatToParts(cand).map((p) => [p.type, p.value]));
-    if (!["Sat", "Sun"].includes(parts.weekday) && i > 0) return `${parts.year}-${parts.month}-${parts.day}`;
-  }
-  return null;
-};
 
 export function relevantEvidenceIds(pack: EvidencePack, c: Constraints): { relevant: string[]; timeUnknownOnDeadline: string[] } {
   const relevant: string[] = []; const timeUnknownOnDeadline: string[] = [];
@@ -73,11 +58,12 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   const admissible = new Set(out.admissible.map((a) => a.kind));
   if (c.mustBeFlat && c.hardDeadlineNy) {
     if (admissible.has("resting_limit") || out.recommendation === "resting_limit") v.push({ rule: "hard_constraint", detail: "a resting limit (no_fill_possible) cannot satisfy a must-be-flat deadline" });
-    const sw = NEXT_SWITCH_NY(res);
-    if (sw && c.hardDeadlineNy <= sw && (admissible.has("requote_at_switch") || out.recommendation === "requote_at_switch"))
-      v.push({ rule: "hard_constraint", detail: `re-quote at switch (${sw}) is not before the deadline ${c.hardDeadlineNy}` });
-    if (sw && c.hardDeadlineNy <= sw && admissible.has("largest_within_ceiling"))
-      v.push({ rule: "hard_constraint", detail: `a partial leaves a remainder and the next session (${sw}) is not before the deadline ${c.hardDeadlineNy}` });
+    // Unknown next session is treated as none before the deadline, the same as the template.
+    const sw = res.nextSessionNy ?? "9999-12-31";
+    if (c.hardDeadlineNy <= sw && (admissible.has("requote_at_switch") || out.recommendation === "requote_at_switch"))
+      v.push({ rule: "hard_constraint", detail: `re-quote at the next session (${res.nextSessionNy ?? "unknown"}) is not before the deadline ${c.hardDeadlineNy}` });
+    if (admissible.has("largest_within_ceiling"))
+      v.push({ rule: "hard_constraint", detail: "a partial leaves an unpriced remainder; it does not exit the full position" });
   }
   if (out.recommendation === "largest_within_ceiling" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "a partial size does not make the trader flat" });
   if (out.recommendation === "requote_at_switch" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "re-quoting later is a chance to exit, not an exit; it cannot be the recommendation under a hard deadline" });

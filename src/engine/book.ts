@@ -31,7 +31,9 @@ export const signReceiptHash = (hash: string) => (receiptKey() ? createHmac("sha
 export function receiptSignatureValid(hash: string, sig?: string): boolean {
   if (!receiptKey()) return true; // unsigned deployment (local dev): integrity only, stated in the UI
   const want = signReceiptHash(hash)!;
-  return typeof sig === "string" && sig.length === want.length && timingSafeEqual(Buffer.from(sig), Buffer.from(want));
+  if (typeof sig !== "string") return false;
+  const got = Buffer.from(sig), exp = Buffer.from(want);
+  return got.length === exp.length && timingSafeEqual(got, exp);
 }
 
 /** Python `json.dumps(sort_keys=True, separators=(",",":"))` equivalent, so hashes match the census. */

@@ -1,4 +1,5 @@
 import type { Constraints } from "./schema";
+import { dayBefore } from "./normalize";
 
 const MONTHS: Record<string, string> = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", sept: "09", oct: "10", nov: "11", dec: "12" };
 
@@ -11,9 +12,9 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   const fee = t.match(/(?:taker\s*)?fee\s*(?:is|of|=|:)?\s*(\d+(?:\.\d+)?)\s*bps/) ?? t.match(/(\d+(?:\.\d+)?)\s*bps\s*(?:taker\s*)?fee/);
   if (fee) c.takerFeeBps = Number(fee[1]);
 
-  const iso = t.match(/(?:deadline|by|before)\s*(?:is\s*)?(\d{4}-\d{2}-\d{2})/);
+  const iso = t.match(/(deadline|by|before)\s*(?:is\s*)?(\d{4}-\d{2}-\d{2})/);
   const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/);
-  if (iso) c.hardDeadlineNy = iso[1];
+  if (iso) c.hardDeadlineNy = iso[1] === "before" ? dayBefore(iso[2]) : iso[2];
   else if (named) c.hardDeadlineNy = `${year}-${MONTHS[named[1]]}-${named[2].padStart(2, "0")}`;
 
   if (/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/.test(t)) c.mustBeFlat = true;

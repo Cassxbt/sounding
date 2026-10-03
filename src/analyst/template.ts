@@ -23,15 +23,13 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
       else if (anyWithin && !feeKnown) excluded.push({ kind: k, reason: "over ceiling at the 20 bps scenario; fee unknown" });
       else excluded.push({ kind: k, reason: "over ceiling on this snapshot" });
     } else if (k === "largest_within_ceiling") {
-      // Under a hard exit a clip is a plan step only if a later session, before the deadline, can take the unpriced remainder.
-      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= nextSwitch(res)) excluded.push({ kind: k, reason: "partial size leaves a remainder and no session before your deadline to reassess it" });
-      else if (c.mustBeFlat && c.hardDeadlineNy) admissible.push({ kind: k, reason: "plan step: the clip fits your ceiling now; the remainder is unpriced and reassessed at the next session; the full position is not exited" });
+      if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "a partial leaves an unpriced remainder; it does not exit the full position" });
       else admissible.push({ kind: k, reason: "reduces size to fit the ceiling; the remainder is unpriced" });
     } else if (k === "resting_limit") {
       if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "no_fill_possible; cannot satisfy a must-be-flat deadline" });
       else admissible.push({ kind: k, reason: "hypothetical; only if filled; cancelled at the session switch" });
     } else if (k === "requote_at_switch") {
-      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= nextSwitch(res)) excluded.push({ kind: k, reason: "the next session is not before your deadline" });
+      if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= (res.nextSessionNy ?? "9999-12-31")) excluded.push({ kind: k, reason: "the next session is not before your deadline" });
       else if (c.mustBeFlat && c.hardDeadlineNy) admissible.push({ kind: k, reason: "reassess at the next session; a later chance to exit, not an exit; nothing promised about cost then" });
       else admissible.push({ kind: k, reason: "reassess at the next session; nothing promised about cost then" });
     }
@@ -54,14 +52,4 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
   const explanation = `Engine: ${pre} bps pre-fee; all-in ${fees} bps vs ceiling ${res.ceilingBps} bps. ${clarification ? "Clarification needed before a route is chosen. " : ""}Admissible: ${admissible.map((a) => a.kind).join(", ") || "none"}. Excluded: ${excluded.map((e) => `${e.kind} (${e.reason})`).join("; ") || "none"}. Evidence: ${relevant.join(", ") || "none relevant"}.`;
   const changedBecause = previous ? (previous.recommendation === rec ? "recommendation unchanged; inputs changed the numbers only" : `recommendation changed from ${previous.recommendation ?? "none"} to ${rec ?? "none"} because the constraint set or the cost class changed`) : null;
   return { constraints: c, clarification, admissible, excluded, recommendation: clarification ? null : rec, bindingConstraint: binding, evidence, changedBecause, explanation };
-}
-
-function nextSwitch(res: SoundingResult): string {
-  const ts = Number(res.receipt.exchange_ts);
-  const ny = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", year: "numeric", month: "2-digit", day: "2-digit" });
-  for (let i = 1; i <= 4; i++) {
-    const parts = Object.fromEntries(ny.formatToParts(new Date(ts + i * 86_400_000)).map((p) => [p.type, p.value]));
-    if (!["Sat", "Sun"].includes(parts.weekday)) return `${parts.year}-${parts.month}-${parts.day}`;
-  }
-  return "9999-12-31";
 }

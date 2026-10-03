@@ -123,6 +123,8 @@ export interface SoundingResult {
   fees?: FeeScenario[];
   feeSensitive?: boolean;
   alternatives?: Alternative[];
+  /** NY date of the next session a re-quote could use; see nextSessionNy */
+  nextSessionNy?: string | null;
   freshness: {
     exchangeAgeMs?: number;
     rttMs: number;

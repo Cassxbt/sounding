@@ -27,7 +27,21 @@ const MONTHS: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5,
  * A calendar date in New York: "2026-10-08", "Oct 8", "October 8th", "10/8", "the 8th", "10月8日".
  * A bare day ("the 8th") resolves to its next occurrence on or after `today` (YYYY-MM-DD, NY).
  */
+/** The NY date before an ISO date. "Out before the 8th" leaves the 7th as the last day: the stricter reading of a hard exit. */
+export function dayBefore(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+const EXCLUSIVE = /\bbefore\b|之前|以前/;
+
 export function readDate(span: string, today: string): string | null {
+  const d = readNamedDate(span, today);
+  return d && EXCLUSIVE.test(span.toLowerCase()) ? dayBefore(d) : d;
+}
+
+function readNamedDate(span: string, today: string): string | null {
   const s = span.toLowerCase().trim();
   const [ty, tm, td] = today.split("-").map(Number);
   const fmt = (y: number, m: number, d: number) => (m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` : null);

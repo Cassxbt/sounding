@@ -14,8 +14,9 @@ const MAX_BODY_BYTES = 512 * 1024;
 
 /** Last Look: re-walk a fresh book for the exact order the trader is confirming; the decision stands only if nothing material moved. */
 export async function POST(req: Request) {
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return NextResponse.json({ error: "request too large" }, { status: 413 });
   const text = await req.text();
-  if (text.length > MAX_BODY_BYTES) return NextResponse.json({ error: "request too large" }, { status: 413 });
+  if (Buffer.byteLength(text) > MAX_BODY_BYTES) return NextResponse.json({ error: "request too large" }, { status: 413 });
   let b: Body;
   try { b = JSON.parse(text) as Body; } catch { return NextResponse.json({ error: "body must be JSON" }, { status: 400 }); }
   if (!b.original?.receipt) return NextResponse.json({ error: "original sounding with its receipt is required" }, { status: 400 });

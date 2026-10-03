@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import type { AnalystOutput, Constraints, EvidencePack } from "@/analyst/schema";
+import type { FieldName, Intake, IntakeField } from "@/analyst/intake";
 
 interface Turn { role: "user" | "assistant"; text: string }
+/** Where each carried value came from: the trader's own words and whether code confirmed the reading. */
+type Provenance = Partial<Record<FieldName, IntakeField>>;
 interface AnalystResp { output: AnalystOutput; producedBy: "model" | "template"; provider?: string; model?: string; violations: { rule: string; detail: string }[]; modelOutputRejected?: AnalystOutput }
 
 interface Props {
   symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; mode: "recorded" | "live"; userFee: string;
   seed?: string;
-  onConstraints?: (c: Constraints) => void;
-  onAmount?: (amount: string) => void;
+  /** size, ceiling and fee the engine used for this turn, when the trader's words changed them; the page re-sounds on them so Last Look confirms the same terms */
+  onTerms?: (t: { amount: string; ceiling: number; userFee: string }) => void;
 }
 
 const DEMO_TURNS = [
@@ -20,10 +23,11 @@ const DEMO_TURNS = [
   "Actually I can hold through the transition.",
 ];
 
-export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onConstraints, onAmount }: Props) {
+export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onTerms }: Props) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState(DEMO_TURNS[0]);
   const [state, setState] = useState<{ resp: AnalystResp; evidence: EvidencePack; constraints: Constraints } | null>(null);
+  const [prov, setProv] = useState<{ fields: Provenance; held: IntakeField[]; reader: Intake["reader"] | null }>({ fields: {}, held: [], reader: null });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [arm, setArm] = useState<"model" | "template">("model");
@@ -41,11 +45,20 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onC
     setBusy(false);
     if (!r.ok || !j.analyst) { setErr(j.error ?? j.note ?? "analyst unavailable"); return; }
     const resp = j.analyst as AnalystResp;
+    const read = j.intake as Intake | undefined;
+    if (read) setProv((p) => {
+      const fields = { ...p.fields };
+      for (const f of read.fields.filter((x) => x.status === "accepted")) {
+        if (f.name === "releaseDeadline") { fields.hardDeadlineNy = f; fields.mustBeFlat = f; }
+        else fields[f.name] = f;
+      }
+      return { fields, held: read.fields.filter((x) => x.status !== "accepted"), reader: read.reader };
+    });
     // Carry what the trader stated (checked intake), never the model's output, into the next turn.
     const carried: Constraints = j.intake?.constraints ?? resp.output.constraints;
     setState({ resp, evidence: j.evidence, constraints: carried });
-    onConstraints?.(carried);
-    if (j.amount && j.amount !== amount) onAmount?.(j.amount);
+    const terms = { amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling, userFee: j.userFeeBps === null || j.userFeeBps === undefined ? userFee : String(j.userFeeBps) };
+    if (terms.amount !== amount || terms.ceiling !== ceiling || terms.userFee !== userFee) onTerms?.(terms);
     setTurns([...next, { role: "assistant", text: resp.output.clarification ?? resp.output.explanation }]);
     const idx = DEMO_TURNS.indexOf(text);
     if (idx >= 0 && idx < DEMO_TURNS.length - 1) setInput(DEMO_TURNS[idx + 1]);
@@ -91,7 +104,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onC
               <div className="display text-3xl">{out.recommendation ? out.recommendation.replace(/_/g, " ") : out.clarification ? "waiting on your answer" : "none satisfies every hard constraint"}</div>
               {out.changedBecause && <div className="text-[12px] text-ink-2 mt-1">{out.changedBecause}</div>}
             </div>
-            <Constraint c={state.constraints} />
+            <ConstraintCard c={state.constraints} prov={prov} ceiling={ceiling} amount={amount} side={side} />
           </div>
           <div className="space-y-3">
             <List title="admissible" items={out.admissible} cls="text-within" />
@@ -131,15 +144,30 @@ function List({ title, items, cls }: { title: string; items: { kind: string; rea
     </div>
   );
 }
-function Constraint({ c }: { c: Constraints }) {
-  const rows: [string, string][] = [
-    ["thesis", c.thesis ?? "—"], ["hard deadline (NY)", c.hardDeadlineNy ?? "—"], ["must be flat", String(c.mustBeFlat)],
-    ["exclusive exposure", String(c.exclusiveExposure)], ["proxy consent", String(c.proxyConsent)], ["taker fee", c.takerFeeBps === null ? "unknown" : `${c.takerFeeBps} bps`],
+const SOURCE: Record<IntakeField["source"], string> = { "model+code": "code-confirmed", model: "model-read · words verified", code: "code-read" };
+
+function ConstraintCard({ c, prov, ceiling, amount, side }: { c: Constraints; prov: { fields: Provenance; held: IntakeField[]; reader: Intake["reader"] | null }; ceiling: number; amount: string; side: "buy" | "sell" }) {
+  const rows: { k: string; v: string; f?: IntakeField }[] = [
+    { k: "size", v: `${amount} ${side === "buy" ? "USDT" : "sh"}`, f: prov.fields.sizeShares ?? prov.fields.sizeQuoteUsdt },
+    { k: "ceiling", v: `${ceiling} bps all-in`, f: prov.fields.ceilingBps },
+    { k: "taker fee", v: c.takerFeeBps === null ? "unknown" : `${c.takerFeeBps} bps`, f: prov.fields.takerFeeBps },
+    { k: "hard deadline (NY)", v: c.hardDeadlineNy ?? "—", f: prov.fields.hardDeadlineNy },
+    { k: "must be flat", v: String(c.mustBeFlat), f: prov.fields.mustBeFlat },
+    { k: "thesis", v: c.thesis ?? "—", f: prov.fields.thesis },
   ];
   return (
     <div>
-      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">constraints carried across turns</div>
-      <table className="text-[12px]"><tbody>{rows.map(([k, v]) => <tr key={k}><td className="text-ink-3 pr-3 py-0.5">{k}</td><td className="mono">{v}</td></tr>)}</tbody></table>
+      <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">what you stated · carried across turns</div>
+      <table className="text-[12px]"><tbody>{rows.map(({ k, v, f }) => (
+        <tr key={k} className="align-top">
+          <td className="text-ink-3 pr-3 py-0.5 whitespace-nowrap">{k}</td>
+          <td className="mono pr-3 whitespace-nowrap">{v}</td>
+          <td className="text-ink-2">{f ? <>&ldquo;{f.span}&rdquo; <span className="mono text-[10px] uppercase tracking-[0.12em] text-ink-3">{SOURCE[f.source]}</span></> : <span className="text-ink-3">{prov.reader === "regex" ? "regex reader" : "not stated in chat"}</span>}</td>
+        </tr>
+      ))}</tbody></table>
+      {prov.held.map((f, i) => (
+        <div key={i} className="text-[12px] text-warn mt-1">{f.status === "conflict" ? "held, not used" : "ignored"}: {f.name} from &ldquo;{f.span}&rdquo; ({f.note})</div>
+      ))}
     </div>
   );
 }

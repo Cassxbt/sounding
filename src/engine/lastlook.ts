@@ -1,5 +1,5 @@
-import { canonicalJson, receiptSignatureValid, sha256 } from "./book";
-import { STABILITY_BPS } from "./index";
+import { canonicalJson, receiptSignatureValid, sha256, signReceiptHash } from "./book";
+import { DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS, decidingRow } from "./decision";
 import type { FeeScenario, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
@@ -9,10 +9,7 @@ import { D } from "./types";
  * the sounding the trader read and the book at the moment they confirm.
  */
 
-/** The engine's stability threshold: the same number that marks a quote unstable between two soundings. */
-export const DEFAULT_LASTLOOK_TOLERANCE_BPS = STABILITY_BPS;
-/** A decision older than this is not confirmed on a fresh book; it is re-sounded. */
-export const MAX_DECISION_AGE_MS = 120_000;
+export { DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS, decidingRow };
 
 export type LastLookStatus = "STANDS_ON_FRESH_BOOK" | "VOID_GATE" | "VOID_STALE";
 
@@ -30,8 +27,10 @@ export interface LastLookResult {
   /** seconds between the book the trader read and the book confirmed on */
   gapSeconds: string;
   original: { receipt_sha256: string; exchange_ts: string; allInBps?: string; verdict: FeeScenario["verdict"] };
+  fresh_receipt_sha256?: string;
   fresh: SoundingResult;
   receipt_sha256: string;
+  receipt_sig?: string;
 }
 
 export class LastLookInputError extends Error {}
@@ -40,12 +39,6 @@ export class LastLookInputError extends Error {}
 export function verifyReceipt(r: Receipt): boolean {
   if (!r?.receipt_sha256 || sha256(canonicalJson({ ...r, receipt_sha256: undefined, receipt_sig: undefined })) !== r.receipt_sha256) return false;
   return receiptSignatureValid(r.receipt_sha256, r.receipt_sig);
-}
-
-/** The fee row that decides: the trader's stated fee, otherwise the worst scenario (a decision must hold at every unknown fee). */
-export function decidingRow(r: SoundingResult): FeeScenario | undefined {
-  const fees = r.fees ?? [];
-  return fees.find((f) => f.source === "user") ?? fees.filter((f) => f.source === "scenario").sort((a, b) => b.feeBps - a.feeBps)[0];
 }
 
 const sameOrder = (a: SoundingResult, b: SoundingResult) =>
@@ -70,10 +63,7 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
   const reasons: string[] = [];
   let status: LastLookStatus = "STANDS_ON_FRESH_BOOK";
   const headroomBps = o.allInBps !== undefined ? (original.ceilingBps - Number(o.allInBps)).toFixed(2) : undefined;
-  if (gapMs > MAX_DECISION_AGE_MS) {
-    status = "VOID_STALE";
-    reasons.push(`the decision was read ${formatGap(gapMs)} before this confirm, beyond the ${MAX_DECISION_AGE_MS / 60_000}-minute limit; re-sound before acting`);
-  }
+  const tooOld = gapMs > MAX_DECISION_AGE_MS;
   let driftBps: string | undefined, priceDriftBps: string | undefined;
   const f = fresh.fees?.find((x) => x.source === o.source && x.feeBps === o.feeBps);
 
@@ -101,17 +91,23 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
     priceDriftBps = pd.toFixed(2);
     if (pd.abs().gt(toleranceBps)) {
       status = "VOID_STALE";
-      reasons.push(`the price you would get moved ${pd.lt(0) ? "against you" : "in your favour"} by ${pd.abs().toFixed(2)} bps since you read it, beyond the ${toleranceBps} bps tolerance`);
+      reasons.push(`the price you would get moved ${pd.lt(0) ? "against you" : "in your favour"} by ${pd.abs().toFixed(2)} bps since you read it, beyond the ${toleranceBps} bps tolerance${pd.gt(0) ? "; a different market from the one you decided on" : ""}`);
     }
-    if (status === "STANDS_ON_FRESH_BOOK") reasons.push(`fresh book within ${toleranceBps} bps of the sounding you read on cost and price; still within ceiling at ${f.allInBps} bps`);
+    if (status === "STANDS_ON_FRESH_BOOK" && !tooOld) reasons.push(`fresh book within ${toleranceBps} bps of the sounding you read on cost and price; still within ceiling at ${f.allInBps} bps`);
   }
 
+  // A gate failure outranks age in the badge; the age reason is listed either way.
+  if (tooOld) {
+    if (status === "STANDS_ON_FRESH_BOOK") status = "VOID_STALE";
+    reasons.push(`the decision was read ${formatGap(gapMs)} before this confirm, beyond the ${MAX_DECISION_AGE_MS / 60_000}-minute limit; re-sound before acting`);
+  }
   const core = {
     status, reasons, toleranceBps, decidingFeeBps: o.feeBps, driftBps, priceDriftBps, headroomBps, gapSeconds: (gapMs / 1000).toFixed(1),
     original: { receipt_sha256: original.receipt.receipt_sha256!, exchange_ts: original.receipt.exchange_ts, allInBps: o.allInBps, verdict: o.verdict },
     fresh_receipt_sha256: fresh.receipt.receipt_sha256,
   };
-  return { ...core, fresh, receipt_sha256: sha256(canonicalJson(core)) } as LastLookResult;
+  const receipt_sha256 = sha256(canonicalJson(core));
+  return { ...core, fresh, receipt_sha256, receipt_sig: signReceiptHash(receipt_sha256) };
 }
 
 function formatGap(ms: number): string {

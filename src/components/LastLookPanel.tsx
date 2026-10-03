@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { SoundingResult } from "@/engine/types";
 import type { LastLookResult } from "@/engine/lastlook";
-import { decidingRow, DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS } from "@/engine/lastlook";
+import { decidingRow, DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS } from "@/engine/decision";
 
 interface Props { original: SoundingResult; mode: "recorded" | "live"; confirmFixture?: string; confirmNote?: string }
 
@@ -38,7 +38,7 @@ export function LastLookPanel({ original, mode, confirmFixture, confirmNote }: P
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="mono text-[11px] uppercase tracking-[0.18em] text-ink-3">last look · confirm this decision</div>
-          <p className="text-[12px] text-ink-3 mt-1">On confirm, the book is walked again. The decision stands only if every gate still passes, it is still within your ceiling at {deciding!.feeBps} bps fee{deciding!.source === "user" ? " (yours)" : " (worst case, fee unknown)"}, cost and price each moved at most {DEFAULT_LASTLOOK_TOLERANCE_BPS} bps, and the decision is under {MAX_DECISION_AGE_MS / 60_000} minutes old. Nothing is sent to an exchange.</p>
+          <p className="text-[12px] text-ink-3 mt-1">On confirm, the book is walked again. The decision stands only if every gate still passes, it is still within your ceiling at {deciding!.feeBps} bps fee{deciding!.source === "user" ? " (yours)" : " (worst case, fee unknown)"}, cost and price each moved at most {DEFAULT_LASTLOOK_TOLERANCE_BPS} bps, and {mode === "live" ? `the decision is under ${MAX_DECISION_AGE_MS / 60_000} minutes old` : `the two recorded captures are under ${MAX_DECISION_AGE_MS / 60_000} minutes apart (recorded mode measures capture times, not your wait)`}. Nothing is sent to an exchange.</p>
           {confirmNote && <p className="text-[12px] text-ink-2 mt-1">{confirmNote}</p>}
         </div>
         <button onClick={confirm} disabled={busy} className="rounded bg-ink text-paper px-4 py-2 mono text-[11px] uppercase tracking-[0.18em] disabled:opacity-50">{busy ? "re-walking…" : "re-check · nothing sent"}</button>

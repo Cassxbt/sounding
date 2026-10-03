@@ -1,14 +1,15 @@
 import Decimal from "decimal.js";
 import { buyWithBudget, canonicalJson, signReceiptHash, decimals, largestBuyWithin, largestSellWithin, rawHash, sellShares, sha256, validateBook, withinCeiling } from "./book";
 import { eligibilityFor, type StockInfo } from "./eligibility";
-import { classifySession, nextSwitchHint, type Calendar, type MarketStates } from "./session";
+import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type MarketStates } from "./session";
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.3.0";
+export const ENGINE_VERSION = "sounding-engine/0.3.1";
 export const DEFAULT_FEE_SCENARIOS_BPS = [0, 10, 20];
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
-export const STABILITY_BPS = 10;
+import { STABILITY_BPS } from "./decision";
+export { STABILITY_BPS };
 
 export interface SoundingInput {
   capture: BookCapture;
@@ -125,10 +126,12 @@ export function sound(i: SoundingInput): SoundingResult {
       const clip = i.intent.side === "sell" ? sellShares(cap.raw, q.toString(), v.mid) : buyWithBudget(cap.raw, q.toString(), v.mid);
       const unit = i.intent.side === "sell" ? "sh" : "USDT";
       const remainder = D(i.intent.side === "sell" ? i.intent.baseQty : i.intent.quoteBudget).minus(q);
+      const remainderValue = i.intent.side === "sell" ? remainder.mul(v.mid) : remainder;
+      const orphan = remainder.gt(0) && remainderValue.lt(spec.minOrderAmount);
       alternatives.push({
         kind: "largest_within_ceiling", qty: q.toString(), remainder: remainder.toString(),
         allInBpsByFee: { [worstFee]: D(clip.bpsPreFeeExact!).plus(worstFee).toFixed(2) },
-        tradeoffs: [`priced now: largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, `remainder ${remainder.toString()} ${unit} unpriced: no forecast of later depth`, "does not make you flat or fully filled"],
+        tradeoffs: [`priced now: largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, `remainder ${remainder.toString()} ${unit} unpriced: no forecast of later depth`, ...(orphan ? [`remainder is below the ${spec.minOrderAmount} USDT minimum order: it cannot be traded on its own`] : []), i.intent.side === "sell" ? "does not make you flat" : "does not spend your full budget"],
       });
     }
   }
@@ -136,8 +139,9 @@ export function sound(i: SoundingInput): SoundingResult {
   alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", ...(sess.state === "weekend_mm" || sess.state === "holiday_mm" ? ["cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] : [])] });
   alternatives.push({ kind: "requote_at_switch", tradeoffs: [nextSwitchHint(sess), "reassess only: does not by itself satisfy a hard exit", "nothing promised about future cost or availability"] });
 
-  const outputs = { referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives };
-  return { ok: true, ...base, spec, weekendTradable: elig.weekendTradable, referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, receipt: receiptFor(i, sess.state, undefined, outputs) };
+  const nextSession = nextSessionNy(sess, i.calendar);
+  const outputs = { referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession };
+  return { ok: true, ...base, spec, weekendTradable: elig.weekendTradable, referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession, receipt: receiptFor(i, sess.state, undefined, outputs) };
 }
 
 export { buyWithBudget, sellShares, validateBook, rawHash } from "./book";

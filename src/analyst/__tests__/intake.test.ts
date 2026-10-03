@@ -13,7 +13,7 @@ describe("code readers for trader phrasing", () => {
   it("readBps returns null rather than guessing", () => expect(readBps("cheap please")).toBeNull());
 
   it.each([
-    ["before the 8th", "2026-10-08"], ["Oct 8", "2026-10-08"], ["October 8th", "2026-10-08"], ["8 Oct", "2026-10-08"],
+    ["before the 8th", "2026-10-07"], ["by the 8th", "2026-10-08"], ["10月9日之前", "2026-10-08"], ["before Nov 1", "2026-10-31"], ["Oct 8", "2026-10-08"], ["October 8th", "2026-10-08"], ["8 Oct", "2026-10-08"],
     ["10/8", "2026-10-08"], ["10月8日", "2026-10-08"], ["2026-10-08", "2026-10-08"], ["by the 1st", "2026-11-01"], ["Jan 5", "2027-01-05"],
   ])("readDate(%s) = %s", (s, v) => expect(readDate(s as string, TODAY)).toBe(v));
 
@@ -30,13 +30,13 @@ describe("checked intake", () => {
     const f = checkFields([
       { name: "takerFeeBps", value: 8, span: "I pay 0.08% taker" },
       { name: "ceilingBps", value: 50, span: "keep it under half a percent" },
-      { name: "hardDeadlineNy", value: "2026-10-08", span: "before the 8th" },
+      { name: "hardDeadlineNy", value: "2026-10-07", span: "before the 8th" },
       { name: "mustBeFlat", value: true, span: "must be flat" },
     ], text, TODAY);
     expect(f.every((x) => x.status === "accepted")).toBe(true);
     expect(f.filter((x) => x.source === "model+code").map((x) => x.name)).toEqual(["takerFeeBps", "ceilingBps", "hardDeadlineNy"]);
     const r = applyFields(EMPTY_CONSTRAINTS, f);
-    expect(r.constraints).toMatchObject({ takerFeeBps: 8, hardDeadlineNy: "2026-10-08", mustBeFlat: true });
+    expect(r.constraints).toMatchObject({ takerFeeBps: 8, hardDeadlineNy: "2026-10-07", mustBeFlat: true });
     expect(r.ceilingBps).toBe(50);
   });
   it("rejects a value whose cited words are not in the message (hallucinated span)", () => {

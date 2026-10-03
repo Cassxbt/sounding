@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifySession, nyClock } from "../session";
+import { classifySession, nextSessionNy, nyClock } from "../session";
 import { calendar, states } from "./helpers";
 
 const at = (iso: string) => new Date(iso);
@@ -34,4 +34,16 @@ describe("session classification", () => {
     expect(classifySession(at("2026-11-01T07:30:00Z"), c().s, c().cal).state).toBe("weekend_mm");
   });
   it("missing inputs -> unknown", () => expect(classifySession(at("2026-09-20T09:00:00Z"), null, c().cal).state).toBe("unknown"));
+});
+
+describe("nextSessionNy", () => {
+  const at = (iso: string) => classifySession(new Date(iso), states(), calendar());
+  it("Sunday -> Monday", () => expect(nextSessionNy(at("2026-09-20T15:00:00Z"), calendar())).toBe("2026-09-21"));
+  it("Labor Day weekend skips the Monday closure", () => {
+    const sat = at("2026-09-05T15:00:00Z");
+    expect(sat.state).toBe("weekend_mm");
+    expect(nextSessionNy(sat, calendar())).toBe("2026-09-08");
+  });
+  it("weekday session: a boundary falls today", () => expect(nextSessionNy(at("2026-09-22T15:00:00Z"), calendar())).toBe("2026-09-22"));
+  it("no calendar -> null", () => expect(nextSessionNy(at("2026-09-20T15:00:00Z"), null)).toBeNull());
 });

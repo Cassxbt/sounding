@@ -36,7 +36,7 @@ For every field you return, "span" must be the exact words copied from the messa
 Fields:
 - takerFeeBps: their trading fee, converted to basis points (0.08% = 8, 8bp = 8, 千分之0.8 = 8)
 - ceilingBps: the maximum all-in cost they accept, in basis points (half a percent = 50)
-- hardDeadlineNy: a date by which they must be done, as YYYY-MM-DD (today is TODAY)
+- hardDeadlineNy: the last NY date on which they may still trade, as YYYY-MM-DD (today is TODAY). "by the 8th" = the 8th; "before the 8th" = the 7th. The span must include the word (by, before, 之前) that sets it
 - mustBeFlat: true only if they say they MUST be out/done by that date
 - releaseDeadline: true only if they say a previous deadline no longer applies (e.g. "I can hold through")
 - sizeShares: a share quantity they want to trade, as a decimal string

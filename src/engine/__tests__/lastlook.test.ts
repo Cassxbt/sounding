@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { sound } from "..";
+import { sound, STABILITY_BPS } from "..";
 import { canonicalJson, rawHash, sha256 } from "../book";
 import { lastLook, LastLookInputError, decidingRow, verifyReceipt, DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS } from "../lastlook";
 import type { BookCapture, Intent } from "../types";
@@ -35,8 +35,8 @@ afterEach(() => { delete process.env.SOUNDING_RECEIPT_KEY; });
 
 describe("Last Look", () => {
   it("uses the engine's stability threshold, not a separate number", () => {
-    expect(DEFAULT_LASTLOOK_TOLERANCE_BPS).toBe(10);
-    expect(lastLook(read(), read()).toleranceBps).toBe(10);
+    expect(DEFAULT_LASTLOOK_TOLERANCE_BPS).toBe(STABILITY_BPS);
+    expect(lastLook(read(), read()).toleranceBps).toBe(STABILITY_BPS);
   });
   it("same book -> stands, zero drift, hash-linked to both receipts", () => {
     const o = read(), r = lastLook(o, read());
@@ -132,5 +132,21 @@ describe("Last Look", () => {
     o.receipt.ceilingBps = 500;
     o.receipt.receipt_sha256 = sha256(canonicalJson({ ...o.receipt, receipt_sha256: undefined, receipt_sig: undefined }));
     expect(verifyReceipt(o.receipt)).toBe(true);
+  });
+  it("a failed gate outranks age in the badge; both reasons are listed", () => {
+    const fresh = sound({ ...ctx(), instruments: [], capture: later(MAX_DECISION_AGE_MS + 1000), ...order });
+    const r = lastLook(read(), fresh);
+    expect(r.status).toBe("VOID_GATE");
+    expect(r.reasons[0]).toMatch(/INVALID_INSTRUMENT/);
+    expect(r.reasons.join(" ")).toMatch(/minute limit/);
+  });
+  it("a malformed signature is refused, never thrown", () => {
+    process.env.SOUNDING_RECEIPT_KEY = "test-key";
+    const o = read(); o.receipt.receipt_sig = "é".repeat(64);
+    expect(verifyReceipt(o.receipt)).toBe(false);
+  });
+  it("the Last Look receipt is signed on a signing deployment", () => {
+    process.env.SOUNDING_RECEIPT_KEY = "test-key";
+    expect(lastLook(read(), read()).receipt_sig).toHaveLength(64);
   });
 });

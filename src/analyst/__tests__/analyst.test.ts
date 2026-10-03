@@ -14,13 +14,12 @@ const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { si
 const turn2 = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 50 });
 
 describe("template analyst on the lead demo", () => {
-  it("turn 1: fee-sensitive -> asks for the fee, no recommendation, hard deadline excludes the limit; the clip is a plan step only", () => {
+  it("turn 1: fee-sensitive -> asks for the fee, no recommendation, hard deadline excludes limit and partial", () => {
     const c = C({ thesis: "GLP-1", hardDeadlineNy: "2026-10-08", mustBeFlat: true });
     const out = templateAnalysis(turn1(), evidence(), c);
     expect(out.clarification).toMatch(/taker fee/);
     expect(out.recommendation).toBeNull();
-    expect(out.excluded.map((e) => e.kind)).toContain("resting_limit");
-    expect(out.admissible.find((a) => a.kind === "largest_within_ceiling")!.reason).toMatch(/plan step.*remainder is unpriced/);
+    expect(out.excluded.map((e) => e.kind)).toEqual(expect.arrayContaining(["resting_limit", "largest_within_ceiling"]));
     expect(out.admissible.map((a) => a.kind)).toContain("requote_at_switch"); // Oct 8 is well after Monday's switch
     expect(out.evidence.find((e) => e.recordId === "hims-cao-departure-2026")!.relevant).toBe(true);
     expect(validate(out, turn1(), evidence())).toEqual([]);
@@ -130,20 +129,25 @@ describe("clip row: priced now, remainder unpriced", () => {
     expect(Number(clip.allInBpsByFee![20])).toBeLessThanOrEqual(50);
     expect(clip.tradeoffs.join(" ")).toMatch(/remainder 30.5512 sh unpriced/);
   });
-  it("hard deadline before the next session: the clip is excluded, and a model admitting it is flagged", () => {
-    const c = C({ hardDeadlineNy: "2026-09-21", mustBeFlat: true, takerFeeBps: 20 });
-    const out = templateAnalysis(turn1(20), evidence(), c);
-    expect(out.excluded.map((e) => e.kind)).toContain("largest_within_ceiling");
-    expect(out.recommendation).toBeNull();
-    expect(validate(out, turn1(20), evidence())).toEqual([]);
-    const bad = { ...out, admissible: [...out.admissible, { kind: "largest_within_ceiling" as const, reason: "x" }], excluded: out.excluded.filter((e) => e.kind !== "largest_within_ceiling") };
-    expect(validate(bad, turn1(20), evidence()).map((v) => v.detail).join(" ")).toMatch(/partial leaves a remainder/);
+  it("hard exit: the clip is excluded whatever the deadline, and a model admitting it is flagged", () => {
+    for (const d of ["2026-09-21", "2026-10-08"]) {
+      const out = templateAnalysis(turn1(20), evidence(), C({ hardDeadlineNy: d, mustBeFlat: true, takerFeeBps: 20 }));
+      expect(out.excluded.map((e) => e.kind)).toContain("largest_within_ceiling");
+      expect(out.recommendation).toBeNull();
+      expect(validate(out, turn1(20), evidence())).toEqual([]);
+      const bad = { ...out, admissible: [...out.admissible, { kind: "largest_within_ceiling" as const, reason: "x" }], excluded: out.excluded.filter((e) => e.kind !== "largest_within_ceiling") };
+      expect(validate(bad, turn1(20), evidence()).map((v) => v.detail).join(" ")).toMatch(/does not exit the full position/);
+    }
   });
-  it("hard deadline after the next session: admissible as a plan step, never the recommendation", () => {
-    const c = C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true, takerFeeBps: 20 });
-    const out = templateAnalysis(turn1(20), evidence(), c);
+  it("no hard exit: the clip is admissible", () => {
+    const out = templateAnalysis(turn1(20), evidence(), C({ takerFeeBps: 20 }));
     expect(out.admissible.map((a) => a.kind)).toContain("largest_within_ceiling");
-    expect(out.recommendation).toBeNull();
-    expect(validate(out, turn1(20), evidence())).toEqual([]);
+  });
+  it("a remainder too small to trade on its own is named", () => {
+    const res = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "148" }, ceilingBps: 50, userFeeBps: 20 });
+    const clip = res.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
+    expect(clip.remainder).toBe("0.1391");
+    expect(clip.tradeoffs.join(" ")).toMatch(/below the 10 USDT minimum order/);
+    expect(turn1(20).alternatives!.find((a) => a.kind === "largest_within_ceiling")!.tradeoffs.join(" ")).not.toMatch(/minimum order/);
   });
 });

@@ -197,8 +197,7 @@ export default function Page() {
                               <span className="mono">{a.kind.replace(/_/g, " ")}</span>
                               {a.qty && <span className="mono text-ink-2"> · {a.qty} {side === "buy" && a.kind === "largest_within_ceiling" ? "USDT" : "sh"}</span>}
                               {a.price && <span className="mono text-ink-2"> · at {a.price}</span>}
-                              {a.allInBpsByFee && <span className="mono text-ink-2"> · {Object.entries(a.allInBpsByFee).map(([f, b]) => `${b}@${f}`).join(" / ")}</span>}
-                              {a.remainder && <span className="mono text-ink-3"> · remainder {a.remainder} {side === "buy" ? "USDT" : "sh"} unpriced</span>}
+                              {a.allInBpsByFee && <span className="mono text-ink-2"> · {a.kind === "largest_within_ceiling" ? Object.keys(a.allInBpsByFee).map((f) => `≤ ${res.ceilingBps}@${f} (sized to your ceiling)`).join("") : Object.entries(a.allInBpsByFee).map(([f, b]) => `${b}@${f}`).join(" / ")}</span>}
                             </div>
                             <div className="text-[12px] text-ink-3 mt-1">{a.tradeoffs.join(" · ")}</div>
                           </li>
@@ -212,7 +211,7 @@ export default function Page() {
 
               {res.ok && <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />}
 
-              {res.ok && <AnalystPanel key={`${symbol}-${mode}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} onConstraints={(c) => { if (c.takerFeeBps !== null && userFee === "") setUserFee(String(c.takerFeeBps)); }} onAmount={(a) => { setAmount(a); setTimeout(() => run({ amount: a }), 0); }} />}
+              {res.ok && <AnalystPanel key={`${symbol}-${mode}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }} />}
 
               <details className="rounded-md border rule bg-paper-2/40 p-4">
                 <summary className="mono text-[11px] uppercase tracking-[0.18em] cursor-pointer">receipt · {res.receipt.receipt_sha256?.slice(0, 16)} · raw book {res.receipt.raw_sha256.slice(0, 16)}</summary>

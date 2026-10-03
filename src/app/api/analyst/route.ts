@@ -43,5 +43,5 @@ export async function POST(req: Request) {
   const analyst = read.clarification
     ? { output: { ...templateAnalysis(result, evidence, constraints, b.previous), clarification: read.clarification, recommendation: null }, producedBy: "template" as const, violations: [] }
     : await runAnalyst({ result, evidence, turns: b.turns ?? [], constraints, previous: b.previous, mode: b.analyst });
-  return NextResponse.json({ result, evidence, analyst, amount, ceilingBps, intake: read });
+  return NextResponse.json({ result, evidence, analyst, amount, ceilingBps, userFeeBps: userFee ?? null, intake: read });
 }
