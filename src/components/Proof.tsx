@@ -11,7 +11,7 @@ export function Proof({ eligible, total, source }: { eligible?: number; total?: 
           <span className="display text-[64px] leading-none text-ink num">142</span>
           <span className="mono text-[13px] text-ink-3">/ 151</span>
         </div>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-2">stated limits reached the engine correctly on 40 blind messages in English, 中文 and mixed, written by someone who never saw the code. A regex reader got <span className="text-ink num">19</span>.</p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-2">stated limits reached the engine correctly on 40 blind messages in English, 中文 and mixed, written by AI agents that were never shown the code. A regex reader got <span className="text-ink num">19</span>.</p>
         <p className="mt-3 text-[12px] text-ink-3">Held-out set, run once and published unchanged, including its one wrong value.</p>
       </Reveal>
       <Reveal className="bg-paper p-6 sm:p-8">

@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 const NOT_USED = [
   { name: "Agent Hub CLI, dry run", why: "In our keyless test its dry run accepted side=hold, a negative quantity and a missing quantity, so it cannot stand in for a safety check. Sounding never sends an order, so nothing here depends on it." },
-  { name: "bitget-signal", why: "Every upstream feed we queried returned empty during the build. A signal with nothing in it would be decoration, so it is not on the page." },
-  { name: "GetAgent", why: "A research assistant across assets. It does not walk a Bitget book at a given size, which is the one thing a decision here rests on." },
+  { name: "bitget-signal", why: "Every upstream feed we queried returned empty when checked on 2026-10-02. A signal with nothing in it would be decoration, so it is not on the page." },
+  { name: "GetAgent", why: "A research assistant across assets. Its published material shows no walk of a Bitget book at a given size, which is the one thing a decision here rests on." },
 ];
 
 /** Static at build: the engine runs the lead order with each input withheld. Readable without JavaScript. */
@@ -23,7 +23,7 @@ export default async function Bitget() {
   return (
     <>
       <Nav />
-      <main className="mx-auto max-w-6xl px-4 sm:px-6">
+      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="pt-16 pb-14 sm:pt-24">
           <h1 className="display max-w-4xl text-[48px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]">Take Bitget away and it stops.</h1>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-2">
@@ -33,8 +33,8 @@ export default async function Bitget() {
         </section>
 
         <section className="pb-20">
-          <DeletionRows rows={t.rows} baseline={t.baseline} />
-          <p className="mt-4 text-[13px] text-ink-3">Computed when this page was built, from the frozen fixtures, by the same <span className="mono">sound()</span> the desk calls. A test fails the build if any removal stops breaking it.</p>
+          <DeletionRows rows={t.rows} />
+          <p className="mt-4 text-[13px] text-ink-3">Computed when this page was built, from the frozen fixtures, by the same <span className="mono">sound()</span> the desk calls. The build runs a test first that fails if any removal stops breaking it.</p>
         </section>
 
         <section className="grid gap-10 border-t border-rule-soft py-20 lg:grid-cols-2 lg:gap-16">

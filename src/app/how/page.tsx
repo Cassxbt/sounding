@@ -39,15 +39,15 @@ export default async function How() {
     { icon: Brain, who: "Qwen 3.8 Max", title: "Reads your words", body: "Returns each limit with the exact words that state it. It never computes a price and never fills a default.", here: "for example: fee ← \"I pay 0.08% taker\" · ceiling ← \"under half a percent\" · deadline ← \"before the 8th\"" },
     { icon: SealCheck, who: "Code", title: "Checks every quote", body: "Finds the quoted words in your message and reads the number or date itself. A deadline is used only when code reads the same date; a disagreement is asked back.", here: `code reads ${readBps("I pay 0.08% taker")} bps · ${readBps("under half a percent")} bps · ${readDate("before the 8th", today)}` },
     { icon: Stack, who: "Engine, on Bitget data", title: "Walks the book", body: "Seven gates in order, then the order is walked through Bitget's book at your size, in exact decimals, at your fee and every scenario.", here: `${res.leg?.levelsConsumed} levels · ${d.allInBps} bps all-in at ${d.feeBps} bps · ${d.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" ? "within" : "over"} ${res.ceilingBps}` },
-    { icon: Scales, who: "Qwen, under rules", title: "Rules on the routes", body: "Which priced routes meet your limits, and why. Five rules are checked in code; an answer that breaks one is replaced by a deterministic template.", here: `admissible: ${ruling.admissible.map((a) => say(a.kind)).join(", ") || "none"} · excluded: ${ruling.excluded.map((a) => say(a.kind)).join(", ") || "none"}` },
+    { icon: Scales, who: "Qwen, under rules", title: "Rules on the routes", body: "Which priced routes meet your limits, and why. Every answer is checked in code against 14 named rules; an answer that breaks one is replaced by a deterministic template.", here: `for this order, any answer must exclude: ${ruling.excluded.filter((e) => e.kind === "resting_limit" || e.kind === "largest_within_ceiling").map((a) => say(a.kind)).join(", ") || "nothing"} · may never recommend: wait for the next session` },
     { icon: ArrowsClockwise, who: "Engine", title: "Last Look, then a receipt", body: "When you confirm, a fresh book is walked again. Inputs, the raw book and every output are hashed and signed.", here: `receipt ${res.receipt.receipt_sha256?.slice(0, 20)}…` },
   ];
   return (
     <>
       <Nav />
-      <main className="mx-auto max-w-6xl px-4 sm:px-6">
+      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="pt-16 pb-16 sm:pt-24">
-          <h1 className="display max-w-4xl text-[48px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]">Six hands, one decision.</h1>
+          <h1 className="display max-w-4xl text-[48px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]">Words in, one decision out.</h1>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-2">The model reads and explains. Code checks what it read. Bitget&rsquo;s book decides. Each step below shows what it produced for the same order the desk opens on.</p>
         </section>
 

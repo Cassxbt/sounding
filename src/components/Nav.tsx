@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Broadcast, List, Record, X } from "@phosphor-icons/react";
@@ -28,8 +28,15 @@ const PAGES = [
 export function Nav({ mode, onMode, eligible, total, source }: Props) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [open]);
   return (
     <header className="sticky top-3 z-40 px-4">
+      <a href="#main" className="sr-only rounded-full bg-ink px-4 py-2 text-[13px] text-paper focus:not-sr-only focus:absolute focus:left-4 focus:top-0 focus:z-50">Skip to content</a>
       <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60 sm:gap-3 sm:pl-4">
         <a href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, the desk">
           <Mark live={mode === "live"} />
@@ -65,6 +72,11 @@ export function Nav({ mode, onMode, eligible, total, source }: Props) {
           </button>
         </div>
       </nav>
+      <noscript>
+        <ul className="mx-auto mt-2 flex max-w-6xl flex-wrap gap-x-5 gap-y-1 px-3 text-[14px] md:hidden">
+          {PAGES.map((p) => <li key={p.href}><a href={p.href} className="text-ink-2">{p.label}</a></li>)}
+        </ul>
+      </noscript>
       <AnimatePresence>
         {open && (
           <motion.ul

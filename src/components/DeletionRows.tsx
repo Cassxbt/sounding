@@ -1,12 +1,12 @@
 "use client";
 
 import { Brain, CalendarBlank, CheckCircle, Database, Ruler, Stack, XCircle } from "@phosphor-icons/react";
-import type { DeletionRow, Outcome } from "@/lib/deletion";
+import type { DeletionRow } from "@/lib/deletion";
 
 const ICON = { book: Stack, stockInfo: Database, session: CalendarBlank, instruments: Ruler, qwen: Brain } as const;
 
 /** Each sponsor input beside what the engine does without it. Both columns are computed, never written. */
-export function DeletionRows({ rows, baseline, compact = false }: { rows: DeletionRow[]; baseline: Outcome; compact?: boolean }) {
+export function DeletionRows({ rows, compact = false }: { rows: DeletionRow[]; compact?: boolean }) {
   return (
     <ul className="divide-y divide-rule-soft overflow-hidden rounded-[22px] border border-rule-soft bg-paper-2/40">
       {rows.map((r) => {
@@ -30,7 +30,8 @@ export function DeletionRows({ rows, baseline, compact = false }: { rows: Deleti
             </div>
             <div className="min-w-0">
               <div className="eyebrow mb-1.5">with it</div>
-              <div className="flex items-center gap-2 text-[14px] text-within"><CheckCircle size={16} weight="fill" className="shrink-0" />{baseline.headline}</div>
+              <div className="flex items-center gap-2 text-[14px] text-within"><CheckCircle size={16} weight="fill" className="shrink-0" />{r.with.headline}</div>
+              {r.id === "qwen" && <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">{r.with.detail}</p>}
             </div>
             <div className="min-w-0">
               <div className="eyebrow mb-1.5">without it</div>
@@ -38,7 +39,8 @@ export function DeletionRows({ rows, baseline, compact = false }: { rows: Deleti
                 <XCircle size={16} weight="fill" className="shrink-0" />
                 <span className="min-w-0">{r.without.code ? <span className="mono text-[12px]">{r.without.code}</span> : r.without.headline}</span>
               </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">{r.id === "qwen" ? `${r.without.detail}. A trade that fits this trader is refused.` : r.without.detail}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">{r.without.detail}.</p>
+              {!compact && <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">{r.why}</p>}
             </div>
           </li>
         );

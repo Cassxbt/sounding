@@ -10,7 +10,7 @@ import { AnalystPanel } from "@/components/AnalystPanel";
 import { LastLookPanel } from "@/components/LastLookPanel";
 import { DeletionRows } from "@/components/DeletionRows";
 import { Footer } from "@/components/Footer";
-import type { DeletionRow, Outcome } from "@/lib/deletion";
+import type { DeletionRow } from "@/lib/deletion";
 import { Proof } from "@/components/Proof";
 import { Reveal } from "@/components/ui/Reveal";
 import { decidingRow } from "@/engine/decision";
@@ -22,8 +22,8 @@ interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bid
 interface Preset { id: string; label: string; outcome: string; tone: "within" | "over" | "warn"; symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee?: number; fixture?: string; confirmFixture?: string; confirmNote?: string }
 
 const PRESETS: Preset[] = [
-  { id: "lead", label: "Sell 178.4121 rHIMS at your 8 bps fee", outcome: "within", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8 },
-  { id: "hims-1", label: "The same order, fee not stated", outcome: "asks for the fee", tone: "warn", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50 },
+  { id: "lead", label: "Sell 178.4121 rHIMS, fee not yet said", outcome: "over at worst case", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50 },
+  { id: "fee-8", label: "The same order, 8 bps fee set by hand", outcome: "within", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8 },
   { id: "ll-stands", label: "Re-check on a book 21 s later", outcome: "stands", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the re-check walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you press it." },
   { id: "ll-void", label: "Re-check a decision 12.7 days old", outcome: "void", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the Sep 20 decision re-checked against a real capture taken 12.7 days later." },
   { id: "hims-precision", label: "Sell 178.412132 rHIMS (6 decimals)", outcome: "refused", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50 },
@@ -54,7 +54,7 @@ export default function Page() {
   const [side, setSide] = useState<"buy" | "sell">("sell");
   const [amount, setAmount] = useState("178.4121");
   const [ceiling, setCeiling] = useState(50);
-  const [userFee, setUserFee] = useState<string>("8");
+  const [userFee, setUserFee] = useState<string>("");
   const [active, setActive] = useState("lead");
   const [resp, setResp] = useState<Resp | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function Page() {
   const [terms, setTerms] = useState(false);
   const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
   const reduce = useReducedMotion();
-  const [deletion, setDeletion] = useState<{ rows: DeletionRow[]; baseline: Outcome } | null>(null);
+  const [deletion, setDeletion] = useState<{ rows: DeletionRow[] } | null>(null);
 
   useEffect(() => { fetch("/api/deletion").then((r) => r.json()).then(setDeletion).catch(() => setDeletion(null)); }, []);
   useEffect(() => { fetch(`/api/universe?mode=${mode}`).then((r) => r.json()).then(setUni).catch(() => setUni(null)); }, [mode]);
@@ -142,7 +142,7 @@ export default function Page() {
     <>
       <Nav mode={mode} onMode={switchMode} eligible={uni?.eligibleCount} total={uni?.total} source={uni ? (uni.source === "live" ? "live" : `recorded ${uni.fetched_utc.slice(0, 10)}`) : undefined} />
 
-      <main className="mx-auto max-w-6xl px-4 sm:px-6">
+      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="grid gap-10 pt-14 pb-16 sm:pt-20 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-14">
           <div className="min-w-0">
             <motion.h1
@@ -280,7 +280,7 @@ export default function Page() {
             </Reveal>
             <a href="/bitget" className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">The full deletion test <ArrowRight size={13} /></a>
           </div>
-          <div className="mt-10">{deletion ? <DeletionRows rows={deletion.rows} baseline={deletion.baseline} compact /> : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/40" />}</div>
+          <div className="mt-10">{deletion ? <DeletionRows rows={deletion.rows} compact /> : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/40" />}</div>
         </section>
 
         <section className="border-t border-rule-soft py-20">

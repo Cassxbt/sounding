@@ -67,7 +67,7 @@ export default async function Proof() {
   return (
     <>
       <Nav />
-      <main className="mx-auto max-w-6xl px-4 sm:px-6">
+      <main id="main" className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="pt-16 pb-12 sm:pt-24">
           <h1 className="display max-w-4xl text-[48px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]">Run it again yourself.</h1>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-2">Every block says what kind of proof it is. Engine results are recomputed when this page is built, from the same frozen Bitget books the desk replays. Evaluation runs are published as they came out, including the misses. What Sounding cannot check is listed, not hidden.</p>
