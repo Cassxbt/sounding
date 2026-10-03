@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { ArrowRight, CheckCircle, Prohibit, WarningCircle, XCircle } from "@phosphor-icons/react";
+import { ArrowRight, CheckCircle, Prohibit, Scissors, WarningCircle, XCircle } from "@phosphor-icons/react";
 import type { FeeScenario, SoundingResult } from "@/engine/types";
 import { decidingRow } from "@/engine/decision";
 
@@ -38,7 +38,7 @@ function Meter({ fees, ceiling, deciding }: { fees: FeeScenario[]; ceiling: numb
   const x = (v: number) => `${Math.min(100, (v / top) * 100)}%`;
   return (
     <div className="space-y-2.5">
-      <div className="grid grid-cols-[76px_minmax(0,1fr)_52px] gap-3">
+      <div className="grid grid-cols-[92px_minmax(0,1fr)_52px] gap-3">
         <span />
         <span className="relative h-3"><span className="absolute -translate-x-1/2 whitespace-nowrap mono text-[10px] text-ink-3" style={{ left: x(ceiling) }}>ceiling {ceiling}</span></span>
       </div>
@@ -47,8 +47,11 @@ function Meter({ fees, ceiling, deciding }: { fees: FeeScenario[]; ceiling: numb
         const yours = f.source === "user";
         const isDeciding = deciding && f.source === deciding.source && f.feeBps === deciding.feeBps;
         return (
-          <div key={`${f.source}-${f.feeBps}`} className="grid grid-cols-[76px_minmax(0,1fr)_52px] items-center gap-3">
-            <span className={`mono text-[11px] whitespace-nowrap ${yours ? "text-ink" : "text-ink-3"}`}>{f.feeBps} bps{yours ? " · you" : ""}</span>
+          <div key={`${f.source}-${f.feeBps}`} className="grid grid-cols-[92px_minmax(0,1fr)_52px] items-center gap-3">
+            <span className={`inline-flex items-center gap-1 mono text-[11px] whitespace-nowrap ${yours ? "text-ink" : "text-ink-3"}`}>
+              {ok ? <CheckCircle size={11} weight="fill" className="text-within" aria-label="within" /> : <XCircle size={11} weight="fill" className="text-over" aria-label="over" />}
+              {f.feeBps} bps{yours ? " · you" : ""}
+            </span>
             <span className="relative h-5">
               <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-rule" />
               <span className="absolute top-0 bottom-0 w-px bg-ink-3/70" style={{ left: x(ceiling) }} />
@@ -78,6 +81,7 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
   const d = decidingRow(res);
   const within = d?.verdict === WITHIN;
   const unknownFee = !res.fees?.some((f) => f.source === "user");
+  const clip = res.alternatives?.find((a) => a.kind === "largest_within_ceiling");
   const order = side === "sell" ? `sell ${res.intent.side === "sell" ? res.intent.baseQty : ""} r${code}` : `buy r${code} with ${res.intent.side === "buy" ? res.intent.quoteBudget : ""} USDT`;
 
   return (
@@ -112,7 +116,7 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
           <WarningCircle size={28} weight="light" className="mt-1 shrink-0 text-warn" />
           <div>
             <div className="display text-[34px] leading-[1.05]">The visible book cannot carry it.</div>
-            <p className="mt-3 text-[15px] text-ink-2">Visible {side === "sell" ? "bid" : "ask"} depth is {res.leg?.visibleNotional} USDT. The largest size that fits is listed below.</p>
+            <p className="mt-3 text-[15px] text-ink-2">Visible {side === "sell" ? "bid" : "ask"} depth is {res.leg?.visibleNotional} USDT.{clip ? <> The largest size that fits your ceiling: <span className="mono text-ink">{clip.qty}</span> {side === "sell" ? "sh" : "USDT"}.</> : null}</p>
           </div>
         </div>
       ) : (
@@ -125,6 +129,17 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
             {within ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
             {within ? `Within your ${res.ceilingBps} bps ceiling` : `Over your ${res.ceilingBps} bps ceiling`}
           </div>
+          {res.worstCase && (
+            <div className="mt-5 rounded-2xl bg-over-bg/60 px-4 py-3">
+              <div className="flex items-center gap-2 text-[13px] text-over"><XCircle size={15} weight="fill" className="shrink-0" /> At the worst-case {res.worstCase.feeBps} bps fee: {res.worstCase.allInBps} bps, over.</div>
+              {res.worstCase.clipQty && <div className="mt-1 flex items-start gap-2 text-[13px] text-ink-2"><Scissors size={14} className="mt-0.5 shrink-0 text-ink-3" /><span>Same book, the largest size that fits there: <span className="mono text-ink">{res.worstCase.clipQty}</span> {side === "sell" ? "sh" : "USDT"}, leaving {res.worstCase.remainder} unpriced.</span></div>}
+            </div>
+          )}
+          {!within && clip && (
+            <div className="mt-5 flex items-center gap-2 rounded-2xl bg-paper-3/70 px-4 py-3 text-[13px] text-ink-2">
+              <Scissors size={15} className="shrink-0 text-ink-3" /><span>The largest size that fits now: <span className="mono text-ink">{clip.qty}</span> {side === "sell" ? "sh" : "USDT"}, leaving {clip.remainder} unpriced.</span>
+            </div>
+          )}
           <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
             {unknownFee
               ? <>Your fee is not known yet, so the worst case decides ({d!.feeBps} bps). {res.feeSensitive && <span className="text-warn">The answer flips with your fee: say it, and it decides.</span>}</>

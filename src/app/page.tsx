@@ -78,11 +78,13 @@ export default function Page() {
 
   const expired = !!resp && !resp.result.freshness.historical && age > 5000;
 
-  async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string }>) {
+  // The mode is passed in by callers that change it; React state would still hold the old one here.
+  async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string; mode: Mode }>) {
     setBusy(true); setErr(null);
+    const m = over?.mode ?? mode;
     const fx = over?.fixture !== undefined ? over.fixture || undefined : fixture.sound;
     const fee = over?.userFee !== undefined ? over.userFee : userFee;
-    const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: fee === "" ? undefined : Number(fee), mode, previousBpsPreFee: mode === "live" ? prevBps : undefined, fixture: mode === "recorded" ? fx : undefined };
+    const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: fee === "" ? undefined : Number(fee), mode: m, previousBpsPreFee: m === "live" ? prevBps : undefined, fixture: m === "recorded" ? fx : undefined };
     const r = await fetch("/api/sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json();
     setBusy(false);
@@ -94,11 +96,11 @@ export default function Page() {
     const fx = p.fixture ? { sound: p.fixture, confirm: p.confirmFixture, confirmNote: p.confirmNote } : {};
     const fee = p.userFee !== undefined ? String(p.userFee) : "";
     setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setMode("recorded"); setFixture(fx); setUserFee(fee); setActive(p.id);
-    setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling, fixture: fx.sound ?? "", userFee: fee }), 0);
+    setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling, fixture: fx.sound ?? "", userFee: fee, mode: "recorded" }), 0);
   }
   function switchMode(m: Mode) {
     setMode(m); setFixture({}); setActive("");
-    setTimeout(() => run({ fixture: "" }), 0);
+    setTimeout(() => run({ fixture: "", mode: m }), 0);
   }
 
   const res = resp?.result;
@@ -135,7 +137,7 @@ export default function Page() {
 
   return (
     <>
-      <Nav mode={mode} onMode={switchMode} eligible={uni?.eligibleCount} total={uni?.total} session={uni?.session.state} />
+      <Nav mode={mode} onMode={switchMode} eligible={uni?.eligibleCount} total={uni?.total} source={uni ? (uni.source === "live" ? "live" : `recorded ${uni.fetched_utc.slice(0, 10)}`) : undefined} />
 
       <main className="mx-auto max-w-6xl px-4 sm:px-6">
         <section className="grid gap-10 pt-14 pb-16 sm:pt-20 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:gap-14">
@@ -192,7 +194,7 @@ export default function Page() {
               <Reveal>
                 <h2 className="display text-[40px] leading-[1.05] text-ink sm:text-[52px]">Watch it sink through the book.</h2>
                 <p className="mt-5 max-w-md text-[16px] leading-relaxed text-ink-2">
-                  {side === "sell" ? "Selling takes the bids, best first." : "Buying takes the asks, best first."} The deeper the order reaches, the worse its average price. Your verdict is two depths compared: where the average lands, and how deep your ceiling lets it go once your fee is paid.
+                  {side === "sell" ? "Selling takes the bids, best first." : "Buying takes the asks, best first."} {res.leg.status === "OK" ? "The deeper the order reaches, the worse its average price. Your verdict is two depths compared: where the average lands, and how deep your ceiling lets it go once your fee is paid." : `This order is deeper than the whole visible book: every level shown is taken and ${res.leg.visibleNotional} USDT is all there is.`}
                 </p>
               </Reveal>
               {res.leg.status === "OK" && (
@@ -215,8 +217,8 @@ export default function Page() {
               qty={res.leg.qty}
               levelsConsumed={res.leg.levelsConsumed}
               avgBps={res.leg.status === "OK" ? res.leg.bpsPreFee : undefined}
-              budgetBps={d ? res.ceilingBps - d.feeBps : undefined}
-              feeBps={d?.feeBps}
+              budgetBps={d && res.leg.status === "OK" ? res.ceilingBps - d.feeBps : undefined}
+              feeLabel={d ? `${d.source === "user" ? "your" : "the worst-case"} ${d.feeBps} bps fee` : undefined}
             />
           </section>
         )}
@@ -227,11 +229,11 @@ export default function Page() {
               <h2 className="display max-w-2xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Every route it priced, and what each costs you.</h2>
             </Reveal>
             <ul className="mt-10 grid gap-3 md:grid-cols-2">
-              {res.alternatives.map((a, i) => {
+              {res.alternatives.map((a) => {
                 const A = ALT[a.kind];
                 const priced = a.kind === "largest_within_ceiling" ? `≤ ${res.ceilingBps} bps, sized to your ceiling` : a.allInBpsByFee ? Object.entries(a.allInBpsByFee).filter(([f]) => !d || Number(f) === d.feeBps).map(([f, b]) => `${b} bps at ${f} bps fee`).join("") : a.price ? `at ${a.price}` : "not priced now";
                 return (
-                  <Reveal as="li" key={a.kind} delay={i * 0.05} className="rounded-[20px] border border-rule-soft bg-paper-2/40 p-5 sm:p-6">
+                  <li key={a.kind} className="rounded-[20px] border border-rule-soft bg-paper-2/40 p-5 sm:p-6">
                     <div className="flex items-start gap-4">
                       <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-paper-3 text-ink-2"><A.icon size={18} weight="light" /></span>
                       <div className="min-w-0">
@@ -240,7 +242,7 @@ export default function Page() {
                         <ul className="mt-3 space-y-1 text-[13px] leading-snug text-ink-3">{a.tradeoffs.map((t, j) => <li key={j}>{plain(t)}</li>)}</ul>
                       </div>
                     </div>
-                  </Reveal>
+                  </li>
                 );
               })}
             </ul>

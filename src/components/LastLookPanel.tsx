@@ -117,9 +117,13 @@ function Drift({ label, value, tolerance }: { label: string; value?: string; tol
         {v !== null && <motion.span className={`absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-paper-2 ${inside ? "bg-within" : "bg-over"}`} initial={{ left: "50%" }} animate={{ left: x(v) }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} />}
       </div>
       <div className="relative mt-1 h-3 mono text-[10px] text-ink-3">
-        <span className="absolute -translate-x-1/2" style={{ left: x(-tolerance) }}>−{tolerance}</span>
-        <span className="absolute -translate-x-1/2" style={{ left: "50%" }}>0</span>
-        <span className="absolute -translate-x-1/2" style={{ left: x(tolerance) }}>+{tolerance}</span>
+        {span <= tolerance * 4 ? (
+          <>
+            <span className="absolute -translate-x-1/2" style={{ left: x(-tolerance) }}>−{tolerance}</span>
+            <span className="absolute -translate-x-1/2" style={{ left: "50%" }}>0</span>
+            <span className="absolute -translate-x-1/2" style={{ left: x(tolerance) }}>+{tolerance}</span>
+          </>
+        ) : <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: "50%" }}>±{tolerance} band</span>}
       </div>
     </div>
   );

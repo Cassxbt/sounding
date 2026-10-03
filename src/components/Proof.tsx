@@ -25,7 +25,7 @@ export function Proof({ eligible, total, source }: { eligible?: number; total?: 
       <Reveal delay={0.12} className="bg-paper p-6 sm:p-8">
         <Equals size={22} weight="light" className="text-sea" />
         <div className="mt-6 display text-[40px] leading-none text-ink">Level for level</div>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-2">The public book Sounding walks matched the Bitget app&rsquo;s order book, price and size, on the day it was checked.</p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-2">The public book Sounding walks matched Bitget&rsquo;s web order book for rHOOD, price and size, when checked side by side on 2026-09-20.</p>
       </Reveal>
     </div>
   );

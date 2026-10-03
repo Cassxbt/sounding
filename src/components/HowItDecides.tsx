@@ -3,7 +3,6 @@
 import type { Icon } from "@phosphor-icons/react";
 import { ArrowsClockwise, Book, CalendarCheck, Clock, Fingerprint, Lock, Pulse, Quotes, Ruler, ShieldCheck, Stack, Timer } from "@phosphor-icons/react";
 import type { SoundingResult } from "@/engine/types";
-import { Reveal } from "./ui/Reveal";
 
 interface Step { icon: Icon; name: string; does: string; now?: string }
 
@@ -41,7 +40,7 @@ function Column({ title, steps, numbered }: { title: string; steps: Step[]; numb
       <ol className="relative mt-6 space-y-1">
         <span className="absolute left-[19px] top-3 bottom-3 w-px bg-rule-soft" aria-hidden />
         {steps.map((s, i) => (
-          <Reveal as="li" key={s.name} delay={i * 0.05} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-4 rounded-2xl p-2 transition-colors duration-[var(--dur-short)] hover:bg-paper-2/50">
+          <li key={s.name} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-4 rounded-2xl p-2 transition-colors duration-[var(--dur-short)] hover:bg-paper-2/50">
             <span className="relative z-10 flex size-10 items-center justify-center rounded-full border border-rule-soft bg-paper text-ink-2">
               <s.icon size={18} weight="light" />
             </span>
@@ -53,7 +52,7 @@ function Column({ title, steps, numbered }: { title: string; steps: Step[]; numb
               </span>
               <span className="mt-1 block text-[14px] leading-relaxed text-ink-3">{s.does}</span>
             </span>
-          </Reveal>
+          </li>
         ))}
       </ol>
     </div>

@@ -104,7 +104,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
           rows={3}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(input); } }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) { e.preventDefault(); send(input); } }}
           placeholder="Say the order: size, your fee, your ceiling, your deadline. English or 中文."
           className="block w-full resize-none bg-transparent px-3 pt-3 pb-2 text-[17px] leading-relaxed text-ink placeholder:text-ink-3 focus:outline-none"
         />
@@ -127,6 +127,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
       </form>
 
       {turns.length === 0 && (
+        <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="eyebrow mr-1">try</span>
           {EXAMPLES.map((x) => (
@@ -134,6 +135,8 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
               {x.label}
             </button>
           ))}
+        </div>
+        <p className="text-[13px] leading-relaxed text-ink-3">Qwen reads your words and must quote them for every limit; code then finds those words and re-reads each number and date before the engine uses it.</p>
         </div>
       )}
 

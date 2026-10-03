@@ -9,11 +9,12 @@ interface Props {
   onMode: (m: Mode) => void;
   eligible?: number;
   total?: number;
-  session?: string;
+  /** where the universe count comes from: "live" or "recorded <date>" */
+  source?: string;
 }
 
 /** Floating pill: the wordmark, what the data is, and the one switch that changes it. */
-export function Nav({ mode, onMode, eligible, total, session }: Props) {
+export function Nav({ mode, onMode, eligible, total, source }: Props) {
   return (
     <header className="sticky top-3 z-40 px-4">
       <nav className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 sm:gap-3 sm:pl-4 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60">
@@ -23,7 +24,7 @@ export function Nav({ mode, onMode, eligible, total, session }: Props) {
         </a>
         <span className="hidden h-4 w-px bg-rule md:block" />
         <span className="hidden min-w-0 truncate mono text-[11px] text-ink-3 md:block">
-          {eligible !== undefined ? <>{eligible} of {total?.toLocaleString("en-US")} rTokens weekend-tradable · {session?.replace("_", " ")}</> : "reading the Bitget universe…"}
+          {eligible !== undefined ? <>{eligible} of {total?.toLocaleString("en-US")} rTokens weekend-tradable · {source}</> : "reading the Bitget universe…"}
         </span>
         <a href="/task" aria-label="Frozen task" className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 text-[13px] text-ink-2 transition-colors duration-[var(--dur-micro)] hover:text-ink">
           <BookOpenText size={16} weight="light" />

@@ -16,7 +16,8 @@ interface Props {
   avgBps?: string;
   /** what the ceiling leaves for the walk at the deciding fee, bps from mid */
   budgetBps?: number;
-  feeBps?: number;
+  /** "your 8 bps fee" or "the worst-case 20 bps fee" */
+  feeLabel?: string;
 }
 
 
@@ -25,7 +26,7 @@ interface Props {
  * sinks through the levels this order consumes as the section scrolls into view.
  * Average cost and the ceiling budget sit on the same axis, so the verdict is a comparison of two depths.
  */
-export function SoundingLine({ side, levels, mid, qty, levelsConsumed = 0, avgBps, budgetBps, feeBps }: Props) {
+export function SoundingLine({ side, levels, mid, qty, levelsConsumed = 0, avgBps, budgetBps, feeLabel }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 80%", "center 45%"] });
@@ -38,7 +39,7 @@ export function SoundingLine({ side, levels, mid, qty, levelsConsumed = 0, avgBp
   const deepest = Math.max(all.at(-1)?.bps ?? 1, budgetBps ?? 0, Number(avgBps ?? 0));
   const depth = (b: number) => (b / (deepest * 1.08)) * 100;
   const maxQ = Math.max(...all.map((l) => l.q), 1e-9);
-  const consumedDepth = depth(all[Math.max(0, levelsConsumed - 1)]?.bps ?? 0);
+  const consumedDepth = depth(all[Math.min(all.length, Math.max(1, levelsConsumed)) - 1]?.bps ?? 0);
   const req = qty ? Number(qty) : 0;
   let cum = 0;
   const rows = all.map((l, i) => {
@@ -76,7 +77,7 @@ export function SoundingLine({ side, levels, mid, qty, levelsConsumed = 0, avgBp
         {rows.map((r) => <Row key={r.i} r={r} maxQ={maxQ} progress={progress} consumedDepth={consumedDepth} showLabel={labelled.has(r.i)} underMarker={markerYs.some((y) => Math.abs(y - r.y) < 4.5)} />)}
 
         {avgBps && <Marker y={depth(Number(avgBps))} tone="sea" label={`your average · ${avgBps} bps`} progress={progress} />}
-        {budgetBps !== undefined && budgetBps > 0 && <Marker y={depth(budgetBps)} tone="ceiling" label={`ceiling at your ${feeBps} bps fee · ${budgetBps.toFixed(2)} bps`} progress={progress} />}
+        {budgetBps !== undefined && budgetBps > 0 && <Marker y={depth(budgetBps)} tone="ceiling" label={`ceiling at ${feeLabel} · ${budgetBps.toFixed(2)} bps`} progress={progress} />}
       </div>
       {walk.length > all.length && <div className="mono mt-2 text-[10px] text-ink-3">+{walk.length - all.length} deeper levels kept in the receipt</div>}
     </div>
