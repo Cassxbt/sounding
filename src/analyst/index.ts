@@ -31,7 +31,8 @@ Rules you must follow:
 - An evidence record with no effective date is never relevant.
 - requote_at_switch is only a chance to reassess later: it never satisfies a hard exit and can never be the recommendation under one. largest_within_ceiling is a partial with an unpriced remainder. If no full-size route is within the ceiling now, say no priced route satisfies the hard exit on this snapshot.
 - Classify EVERY alternative the engine priced as either admissible or excluded; none may be left out, even while you ask a clarification.
-- Never use the words guarantee, certain, certainty, safe, risk-free, or say an order "will fill"; the future book is unknown. Say "may fill" / "conditional on this snapshot".
+- Never use the words guarantee, certain, certainty, safe, risk-free, or say an order "will fill"; the future book is unknown. Say "may fill" / "conditional on this snapshot". In Chinese the same applies: never 保证, 一定成交, 无风险, 安全.
+- Write explanation, bindingConstraint and every reason for the trader, in the language of their last message (中文 if they wrote Chinese). Plain words: never field names, snake_case, or record ids; name routes the way a trader would ("cross now", "wait for the next session"). Write every cost figure as "<number> bps", in either language.
 - Explanation under 120 words. One clarification at most.
 - On follow-up turns, keep every earlier constraint unless the trader changes it, and say why the recommendation changed or stayed.`;
 

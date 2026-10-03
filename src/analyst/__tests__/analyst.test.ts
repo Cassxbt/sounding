@@ -151,3 +151,18 @@ describe("clip row: priced now, remainder unpriced", () => {
     expect(turn1(20).alternatives!.find((a) => a.kind === "largest_within_ceiling")!.tradeoffs.join(" ")).not.toMatch(/minimum order/);
   });
 });
+
+describe("reply voice", () => {
+  it("promise language is caught in Chinese too", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    for (const s of ["这笔订单保证成交。", "现在卖出是无风险的。", "一定会成交"]) {
+      expect(validate({ ...out, explanation: s }, turn1(8), evidence()).map((v) => v.rule)).toContain("promise_language");
+    }
+  });
+  it("the template speaks to the trader: no field names, no snake_case, leads with the answer", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8, hardDeadlineNy: "2026-10-07", mustBeFlat: true }));
+    expect(out.explanation).not.toMatch(/_|mustBeFlat|hardDeadline/);
+    expect(out.explanation).toMatch(/^Cross now at full size: 39\.89 bps all-in/);
+    expect(validate(out, turn1(8), evidence())).toEqual([]);
+  });
+});

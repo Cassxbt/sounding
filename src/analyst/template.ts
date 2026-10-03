@@ -26,7 +26,7 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
       if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "a partial leaves an unpriced remainder; it does not exit the full position" });
       else admissible.push({ kind: k, reason: "reduces size to fit the ceiling; the remainder is unpriced" });
     } else if (k === "resting_limit") {
-      if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "no_fill_possible; cannot satisfy a must-be-flat deadline" });
+      if (c.mustBeFlat && c.hardDeadlineNy) excluded.push({ kind: k, reason: "may not fill at all, so it cannot get you out by your deadline" });
       else admissible.push({ kind: k, reason: "hypothetical; only if filled; cancelled at the session switch" });
     } else if (k === "requote_at_switch") {
       if (c.mustBeFlat && c.hardDeadlineNy && c.hardDeadlineNy <= (res.nextSessionNy ?? "9999-12-31")) excluded.push({ kind: k, reason: "the next session is not before your deadline" });
@@ -43,13 +43,27 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
   const rec = admissible.find((a) => a.kind === "immediate_cross")?.kind
     ?? (hardExit ? null : admissible.find((a) => a.kind === "requote_at_switch")?.kind ?? admissible[0]?.kind ?? null);
   const noRoute = hardExit && !rec && !clarification;
-  const binding = res.feeSensitive && !feeKnown ? "fee scenario (verdict flips at 20 bps)"
+  const binding = res.feeSensitive && !feeKnown ? "your fee: the answer flips between 10 and 20 bps"
     : noRoute ? `no priced route exits the full position within ${res.ceilingBps} bps on this snapshot; reassess at the next session`
-    : hardExit ? `hard deadline ${c.hardDeadlineNy} (must be flat)` : `ceiling ${res.ceilingBps} bps on this snapshot`;
+    : hardExit ? `you must be out by ${c.hardDeadlineNy}` : `your ${res.ceilingBps} bps ceiling, on this snapshot`;
   const evidence = pack.records.map((r) => ({ recordId: r.id, relevant: relevant.includes(r.id), reason: relevant.includes(r.id) ? `${r.kind} dated ${r.effective_date_ny}${r.time_known ? "" : ", time not published"}` : "not dated or not within horizon" }));
-  const pre = res.leg?.bpsPreFee ?? "—";
-  const fees = (res.fees ?? []).map((f) => `${f.allInBps ?? "—"} at ${f.feeBps}`).join(", ");
-  const explanation = `Engine: ${pre} bps pre-fee; all-in ${fees} bps vs ceiling ${res.ceilingBps} bps. ${clarification ? "Clarification needed before a route is chosen. " : ""}Admissible: ${admissible.map((a) => a.kind).join(", ") || "none"}. Excluded: ${excluded.map((e) => `${e.kind} (${e.reason})`).join("; ") || "none"}. Evidence: ${relevant.join(", ") || "none relevant"}.`;
+  const explanation = plainExplanation(res, c, clarification ? null : rec, excluded, clarification, hardExit, userFee);
   const changedBecause = previous ? (previous.recommendation === rec ? "recommendation unchanged; inputs changed the numbers only" : `recommendation changed from ${previous.recommendation ?? "none"} to ${rec ?? "none"} because the constraint set or the cost class changed`) : null;
   return { constraints: c, clarification, admissible, excluded, recommendation: clarification ? null : rec, bindingConstraint: binding, evidence, changedBecause, explanation };
+}
+
+const SAY: Record<string, string> = { immediate_cross: "crossing now", largest_within_ceiling: "a partial at the largest size that fits", resting_limit: "resting a limit", requote_at_switch: "waiting for the next session" };
+
+/** What the trader reads: the answer first, then the one limit that decides it. Engine figures only. */
+function plainExplanation(res: SoundingResult, c: Constraints, rec: string | null, excluded: AnalystOutput["excluded"], clarification: string | null, hardExit: boolean, userFee?: { feeBps: number; allInBps?: string }): string {
+  if (clarification) return `One thing first: ${clarification}`;
+  const worst = [...(res.fees ?? [])].filter((f) => f.source === "scenario").sort((a, b) => b.feeBps - a.feeBps)[0];
+  const row = userFee ?? worst;
+  const fee = row ? `${userFee ? "your" : "the worst-case"} ${row.feeBps} bps fee` : "the fee scenarios";
+  const ruledOut = excluded.filter((e) => e.kind !== "immediate_cross").map((e) => SAY[e.kind]).join(" and ");
+  const deadline = hardExit && c.hardDeadlineNy ? ` Because you must be out by ${c.hardDeadlineNy}, ${ruledOut || "nothing else"} ${ruledOut.includes(" and ") ? "are" : "is"} ruled out.` : "";
+  if (rec === "immediate_cross" && row?.allInBps) return `Cross now at full size: ${row.allInBps} bps all-in at ${fee}, inside your ${res.ceilingBps} bps ceiling on this snapshot.${deadline}`;
+  if (rec) return `Crossing now does not fit your ${res.ceilingBps} bps ceiling at ${fee}; the route that does is ${SAY[rec] ?? rec}.${deadline}`;
+  if (hardExit) return `No priced route exits the full position inside your ${res.ceilingBps} bps ceiling at ${fee} on this snapshot. The largest size that fits is listed; the rest is unpriced until the book is read again.`;
+  return `Nothing priced fits your ${res.ceilingBps} bps ceiling at ${fee} on this snapshot.`;
 }

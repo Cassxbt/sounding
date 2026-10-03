@@ -102,7 +102,9 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   // no promises: fill certainty, safety, guarantees, probabilities, price targets, catalysts
   const texts = [out.explanation, out.bindingConstraint, out.clarification ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
   const banned = /\b(guarantee[sd]?|certain(?:ty|ly)?|will (?:be )?fill|fill certainty|safe(?:ly)?|risk[- ]free|price target|catalyst|probabilit(?:y|ies)|\d+\s*%\s*(?:chance|likely))\b/i;
-  const hit = texts.match(banned);
+  // The reply follows the trader's language, so the same promises are checked in Chinese.
+  const bannedZh = /保证|一定(?:会)?成交|肯定(?:会)?成交|确定(?:会)?成交|无风险|零风险|稳赚|安全的|目标价|催化剂|成交概率|\d+\s*%\s*(?:的)?(?:概率|可能)/;
+  const hit = texts.match(banned) ?? texts.match(bannedZh);
   if (hit) v.push({ rule: "promise_language", detail: `"${hit[0]}"` });
 
   const wc = out.explanation.trim().split(/\s+/).length;

@@ -27,13 +27,13 @@ export function logUsage(entry: { purpose: string; usage?: QwenUsage; ms: number
 const EXAMPLE_OUTPUT = {
   constraints: { thesis: "string or null", hardDeadlineNy: "YYYY-MM-DD or null", mustBeFlat: false, exclusiveExposure: false, proxyConsent: false, takerFeeBps: null },
   clarification: "one question, or null",
-  admissible: [{ kind: "requote_at_switch", reason: "why it fits, <=240 chars" }],
-  excluded: [{ kind: "resting_limit", reason: "why it is out, <=240 chars" }],
+  admissible: [{ kind: "requote_at_switch", reason: "why it fits, in plain words, <=240 chars" }],
+  excluded: [{ kind: "resting_limit", reason: "why it is out, in plain words, <=240 chars" }],
   recommendation: "one of immediate_cross | largest_within_ceiling | resting_limit | requote_at_switch, or null",
-  bindingConstraint: "<=240 chars",
+  bindingConstraint: "the one limit that decides it, in plain words, <=240 chars",
   evidence: [{ recordId: "id from the evidence pack", relevant: true, reason: "<=240 chars" }],
   changedBecause: "string or null",
-  explanation: "<=120 words; cite record ids and only engine numbers",
+  explanation: "2-3 short sentences to the trader: the answer first with its all-in figure, then the one limit that decides it",
 };
 const OUTPUT_INSTRUCTIONS = `Respond with ONLY a JSON object with exactly these keys and value types (replace every placeholder; do not output a schema):
 ${JSON.stringify(EXAMPLE_OUTPUT, null, 1)}
