@@ -47,7 +47,7 @@ export function loosened(stated: Constraints, proposed: Constraints): RuleViolat
   return v;
 }
 
-export function validate(out: AnalystOutput, res: SoundingResult, pack: EvidencePack, stated?: Constraints): RuleViolation[] {
+export function validate(out: AnalystOutput, res: SoundingResult, pack: EvidencePack, stated?: Constraints, lang?: "en" | "zh"): RuleViolation[] {
   const v: RuleViolation[] = stated ? loosened(stated, out.constraints) : [];
   const kinds = new Set((res.alternatives ?? []).map((a) => a.kind));
   const c = out.constraints;
@@ -107,6 +107,11 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   const hit = texts.match(banned) ?? texts.match(bannedZh);
   if (hit) v.push({ rule: "promise_language", detail: `"${hit[0]}"` });
 
+  if (lang) {
+    const cjk = (out.explanation.match(/[\u4e00-\u9fff]/g) ?? []).length;
+    const latin = (out.explanation.match(/[A-Za-z]/g) ?? []).length;
+    if (lang === "zh" ? cjk === 0 : cjk > latin / 4) v.push({ rule: "reply_language", detail: `reply is not in ${lang === "zh" ? "Chinese" : "English"}` });
+  }
   const wc = out.explanation.trim().split(/\s+/).length;
   if (wc > 120) v.push({ rule: "length", detail: `${wc} words > 120` });
   return v;

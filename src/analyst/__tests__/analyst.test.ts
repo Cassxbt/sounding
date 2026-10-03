@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { sound } from "@/engine";
 import { templateAnalysis } from "../template";
 import { validate } from "../rules";
-import { EMPTY_CONSTRAINTS } from "..";
+import { EMPTY_CONSTRAINTS, replyLanguage } from "..";
 import type { EvidencePack } from "../schema";
 import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
 
@@ -164,5 +164,19 @@ describe("reply voice", () => {
     expect(out.explanation).not.toMatch(/_|mustBeFlat|hardDeadline/);
     expect(out.explanation).toMatch(/^Cross now at full size: 39\.89 bps all-in/);
     expect(validate(out, turn1(8), evidence())).toEqual([]);
+  });
+});
+
+describe("reply language is decided by code", () => {
+  it("reads the trader's language from their message", () => {
+    expect(replyLanguage("Sell 178.4121 rHIMS. I pay 0.08% taker, out before the 8th.")).toBe("en");
+    expect(replyLanguage("卖出178.4121股rHIMS，吃单手续费千分之0.8，8号之前必须清仓。")).toBe("zh");
+    expect(replyLanguage("sell 178.4121 rHIMS, taker 万8, all-in 不超过 50bp, before the 8th 必须 flat")).toBe("en");
+  });
+  it("a reply in the wrong language is a violation", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    expect(validate({ ...out, explanation: "立即吃单卖出，总成本为39.89 bps，在50 bps上限内。" }, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).toContain("reply_language");
+    expect(validate(out, turn1(8), evidence(), undefined, "zh").map((v) => v.rule)).toContain("reply_language");
+    expect(validate(out, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).not.toContain("reply_language");
   });
 });

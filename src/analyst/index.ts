@@ -31,10 +31,19 @@ Rules you must follow:
 - An evidence record with no effective date is never relevant.
 - requote_at_switch is only a chance to reassess later: it never satisfies a hard exit and can never be the recommendation under one. largest_within_ceiling is a partial with an unpriced remainder. If no full-size route is within the ceiling now, say no priced route satisfies the hard exit on this snapshot.
 - Classify EVERY alternative the engine priced as either admissible or excluded; none may be left out, even while you ask a clarification.
-- Never use the words guarantee, certain, certainty, safe, risk-free, or say an order "will fill"; the future book is unknown. Say "may fill" / "conditional on this snapshot". In Chinese the same applies: never 保证, 一定成交, 无风险, 安全.
-- Write explanation, bindingConstraint and every reason for the trader, in the language of their last message (中文 if they wrote Chinese). Plain words: never field names, snake_case, or record ids; name routes the way a trader would ("cross now", "wait for the next session"). Write every cost figure as "<number> bps", in either language.
+- Never use the words guarantee, certain, certainty, safe, risk-free, or say an order "will fill"; the future book is unknown. Say "may fill" / "conditional on this snapshot". The same applies in any language.
+- Write explanation, bindingConstraint and every reason for the trader, in the REPLY LANGUAGE named at the end of the input. Plain words: never field names, snake_case, or record ids; name routes the way a trader would ("cross now", "wait for the next session"). Write every cost figure as "<number> bps", in either language.
 - Explanation under 120 words. One clarification at most.
 - On follow-up turns, keep every earlier constraint unless the trader changes it, and say why the recommendation changed or stayed.`;
+
+/** The reply follows the trader's own language; decided in code, never left to the model. Mixed messages follow their majority. */
+export function replyLanguage(text: string): "en" | "zh" {
+  const cjk = (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  return cjk > 0 && cjk * 2 >= latin ? "zh" : "en";
+}
+
+const lastUser = (turns: AnalystTurn[]) => [...turns].reverse().find((t) => t.role === "user")?.text ?? "";
 
 export function buildUserPrompt(result: SoundingResult, evidence: EvidencePack, constraints: Constraints, turns: AnalystTurn[], previous?: AnalystOutput): string {
   const engineView = {
@@ -42,7 +51,7 @@ export function buildUserPrompt(result: SoundingResult, evidence: EvidencePack, 
     intent: result.intent, ceilingBps: result.ceilingBps, referenceMid: result.referenceMid, leg: result.leg, fees: result.fees, feeSensitive: result.feeSensitive,
     alternatives: result.alternatives, nextSessionNy: result.nextSessionNy, exchange_ts: result.receipt.exchange_ts, historical: result.freshness.historical,
   };
-  return `ENGINE OUTPUT (authoritative, do not alter):\n${JSON.stringify(engineView, null, 1)}\n\nEVIDENCE PACK (${evidence.source_kind}):\n${JSON.stringify(evidence.records, null, 1)}\n\nCONSTRAINTS SO FAR:\n${JSON.stringify(constraints)}\n\n${previous ? `PREVIOUS ANALYSIS:\n${JSON.stringify(previous)}\n\n` : ""}CONVERSATION:\n${turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n")}\n\nUpdate the constraints from the conversation, then produce the analysis.`;
+  return `ENGINE OUTPUT (authoritative, do not alter):\n${JSON.stringify(engineView, null, 1)}\n\nEVIDENCE PACK (${evidence.source_kind}):\n${JSON.stringify(evidence.records, null, 1)}\n\nCONSTRAINTS SO FAR:\n${JSON.stringify(constraints)}\n\n${previous ? `PREVIOUS ANALYSIS:\n${JSON.stringify(previous)}\n\n` : ""}CONVERSATION:\n${turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n")}\n\nREPLY LANGUAGE: ${replyLanguage(lastUser(turns)) === "zh" ? "Simplified Chinese" : "English"}\n\nUpdate the constraints from the conversation, then produce the analysis.`;
 }
 
 export async function runAnalyst(args: { result: SoundingResult; evidence: EvidencePack; turns: AnalystTurn[]; constraints: Constraints; previous?: AnalystOutput; mode?: "model" | "template" }): Promise<AnalystResponse> {
@@ -53,7 +62,7 @@ export async function runAnalyst(args: { result: SoundingResult; evidence: Evide
   try {
     const { parsed } = await qwenAnalyze(SYSTEM, buildUserPrompt(result, evidence, constraints, turns, previous));
     if (!parsed) return { output: template, producedBy: "template", provider: "qwen", model, violations: [{ rule: "parse_failed", detail: "model output did not parse" }] };
-    const violations = validate(parsed, result, evidence, constraints);
+    const violations = validate(parsed, result, evidence, constraints, replyLanguage(lastUser(turns)));
     if (violations.length) {
       // The fallback answers from the checked intake, never from the rejected model's constraints.
       const fallback = templateAnalysis(result, evidence, constraints, previous);
