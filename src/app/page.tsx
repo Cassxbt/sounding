@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { ArrowDown, CaretDown, Clock, DownloadSimple, Hourglass, Lightning, Play, Scissors, Sliders } from "@phosphor-icons/react";
+import { ArrowDown, ArrowRight, CaretDown, Clock, DownloadSimple, Hourglass, Lightning, Play, Scissors, Sliders } from "@phosphor-icons/react";
 import { Nav } from "@/components/Nav";
 import { DecisionCard } from "@/components/DecisionCard";
 import { SoundingLine } from "@/components/SoundingLine";
 import { AnalystPanel } from "@/components/AnalystPanel";
 import { LastLookPanel } from "@/components/LastLookPanel";
-import { HowItDecides } from "@/components/HowItDecides";
+import { DeletionRows } from "@/components/DeletionRows";
+import { Footer } from "@/components/Footer";
+import type { DeletionRow, Outcome } from "@/lib/deletion";
 import { Proof } from "@/components/Proof";
 import { Reveal } from "@/components/ui/Reveal";
-import { Mark } from "@/components/ui/Mark";
 import { decidingRow } from "@/engine/decision";
 import type { Alternative, SoundingResult } from "@/engine/types";
 
@@ -63,7 +64,9 @@ export default function Page() {
   const [terms, setTerms] = useState(false);
   const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
   const reduce = useReducedMotion();
+  const [deletion, setDeletion] = useState<{ rows: DeletionRow[]; baseline: Outcome } | null>(null);
 
+  useEffect(() => { fetch("/api/deletion").then((r) => r.json()).then(setDeletion).catch(() => setDeletion(null)); }, []);
   useEffect(() => { fetch(`/api/universe?mode=${mode}`).then((r) => r.json()).then(setUni).catch(() => setUni(null)); }, [mode]);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("task");
@@ -198,7 +201,7 @@ export default function Page() {
                 </p>
               </Reveal>
               {res.leg.status === "OK" && (
-                <Reveal delay={0.08}>
+                <Reveal>
                   <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-rule-soft pt-6">
                     <Fact k="levels taken" v={String(res.leg.levelsConsumed)} />
                     <Fact k="average price" v={res.leg.vwap ?? "—"} />
@@ -270,16 +273,24 @@ export default function Page() {
         </section>
 
         <section className="border-t border-rule-soft py-20">
-          <Reveal>
-            <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">It refuses in order, and says which rule.</h2>
-          </Reveal>
-          <div className="mt-12"><HowItDecides res={res} /></div>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <Reveal>
+              <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Take Bitget away and it stops.</h2>
+              <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-ink-2">The engine re-runs the lead order with each input withheld. Every removal refuses it or gets it wrong.</p>
+            </Reveal>
+            <a href="/bitget" className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">The full deletion test <ArrowRight size={13} /></a>
+          </div>
+          <div className="mt-10">{deletion ? <DeletionRows rows={deletion.rows} baseline={deletion.baseline} compact /> : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/40" />}</div>
         </section>
 
         <section className="border-t border-rule-soft py-20">
           <Reveal>
             <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Measured, not claimed.</h2>
           </Reveal>
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[14px]">
+            <a href="/proof" className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink">Every proof, and what it cannot check <ArrowRight size={13} /></a>
+            <a href="/how" className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink">How a decision is made <ArrowRight size={13} /></a>
+          </div>
           <div className="mt-10"><Proof eligible={uni?.eligibleCount} total={uni?.total} source={uni ? (uni.source === "live" ? "live" : `recorded ${uni.fetched_utc.slice(0, 10)}`) : undefined} /></div>
         </section>
 
@@ -304,17 +315,7 @@ export default function Page() {
         )}
       </main>
 
-      <footer className="mt-10 border-t border-rule-soft">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          <div className="flex items-center gap-3 text-ink"><Mark size={26} /><span className="display text-[34px] leading-none sm:text-[44px]">Nothing is sent to an exchange.</span></div>
-          <p className="mt-5 max-w-3xl text-[13px] leading-relaxed text-ink-3">
-            Books from Bitget&rsquo;s public spot order book; eligibility from stock-info; sessions from Bitget&rsquo;s market states and calendar, with daylight saving computed locally. Weekend liquidity is market-maker liquidity, and unfilled weekend limit orders are cancelled at the session switch. Analyst: Qwen 3.8 Max, held to the rules above. Built for Bitget AI Base Camp S2 by xi labs.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-4 text-[13px]">
-            <a href="/task" className="text-ink-2 underline decoration-rule underline-offset-4 hover:text-ink">The frozen task, readable without JavaScript</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

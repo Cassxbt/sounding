@@ -92,3 +92,16 @@ body {
   *, *::before, *::after { animation-duration: 150ms !important; animation-iteration-count: 1 !important; transition-duration: 150ms !important; }
   .ping { animation: none; opacity: 0; }
 }
+
+/* Reveal on scroll without JavaScript: visible by default, animated only where the browser can tie it to the view. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-view {
+      animation: revealView linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 22%;
+    }
+  }
+}
+/* Movement only: a full-page capture or a reader who never scrolls still sees every word. */
+@keyframes revealView { from { transform: translateY(22px); } to { transform: none; } }
