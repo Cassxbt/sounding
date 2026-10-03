@@ -71,6 +71,12 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     if (same(c, value)) out.push({ name, value: c, span: p.span, source: "model+code", status: "accepted" });
     else out.push({ name, value, span: p.span, source: "model", status: "conflict", note: `code reads ${String(c)}` });
   }
+  // "Need to be flat by Friday" with no deadline proposed: code reads the date from the must-be-flat words.
+  const must = out.find((f) => f.name === "mustBeFlat" && f.status === "accepted" && f.value === true);
+  if (must && !out.some((f) => f.name === "hardDeadlineNy") && !EARLIEST.test(must.span.toLowerCase())) {
+    const d = readDate(must.span, today);
+    if (d && d >= today) out.push({ name: "hardDeadlineNy", value: d, span: must.span, source: "code", status: "accepted", note: "read by code from the must-be-flat words" });
+  }
   return out;
 }
 

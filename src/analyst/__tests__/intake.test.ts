@@ -90,3 +90,18 @@ describe("deadlines: code must confirm the date", () => {
     expect(applyFields(EMPTY_CONSTRAINTS, f).constraints.hardDeadlineNy).toBeNull();
   });
 });
+
+describe("readers after held-out v2 (development; v2 numbers above are pre-fix)", () => {
+  const WED = "2026-10-07";
+  it.each([["千分之六", 60], ["万分之三十五", 35], ["万分之八", 8], ["千分之零点八", 8], ["千分之五", 50], ["万十", 10], ["万6", 6]])("readBps(%s) = %s", (s, v) => expect(readBps(s as string)).toBe(v));
+  it.each([["1.2k usdt", "1200"], ["2k USDT", "2000"], ["1万 USDT", "10000"], ["1,250", "1250"]])("readQty(%s) = %s", (s, v) => expect(readQty(s as string)).toBe(v));
+  it.each([["明天之内", "2026-10-08"], ["by tomorrow", "2026-10-08"], ["today", "2026-10-07"], ["今天之前", "2026-10-06"]])("readDate(%s) = %s", (s, v) => expect(readDate(s as string, WED)).toBe(v));
+  it("'之前不要卖' is an earliest date, not a deadline", () => {
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-12", span: "10月13日之前不要卖" }], "rSPY 卖 80 股，10月13日之前不要卖", WED);
+    expect(f[0].status).toBe("rejected_meaning");
+  });
+  it("a date inside the must-be-flat words supplies the deadline when the model gave none", () => {
+    const f = checkFields([{ name: "mustBeFlat", value: true, span: "Need to be flat by Friday" }], "Selling 40 rAAPL. Need to be flat by Friday.", WED);
+    expect(f.find((x) => x.name === "hardDeadlineNy")).toMatchObject({ value: "2026-10-09", source: "code", status: "accepted" });
+  });
+});

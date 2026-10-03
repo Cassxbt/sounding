@@ -1,3 +1,4 @@
+import Decimal from "decimal.js";
 /**
  * Code-side readers for the phrases traders actually type. Each returns a value or null; null means
  * "code cannot read this phrase", never a guess. Used to check every span Qwen extracts.
@@ -5,9 +6,20 @@
 
 const NUM_WORDS: Record<string, number> = { half: 0.5, quarter: 0.25, "three quarters": 0.75, one: 1, a: 1, two: 2, three: 3 };
 
-/** Fee or cost in basis points: "8 bps", "8bp", "0.08%", "half a percent", "千分之0.8", "万8". */
+const CN_DIGITS: Record<string, number> = { 零: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+
+/** Chinese numerals up to 99 with an optional decimal: 六, 十五, 三十五, 零点八. */
+function cnNumber(t: string): string {
+  const [int, frac] = t.split("点");
+  let n = 0;
+  if (int.includes("十")) { const [tens, ones] = int.split("十"); n = (tens ? CN_DIGITS[tens] : 1) * 10 + (ones ? CN_DIGITS[ones] : 0); }
+  else n = int ? Number([...int].map((c) => CN_DIGITS[c]).join("")) : 0;
+  return frac ? `${n}.${[...frac].map((c) => CN_DIGITS[c]).join("")}` : String(n);
+}
+
+/** Fee or cost in basis points: "8 bps", "8bp", "0.08%", "half a percent", "千分之0.8", "千分之六", "万8". */
 export function readBps(span: string): number | null {
-  const s = span.toLowerCase().replace(/,/g, "").trim();
+  const s = span.toLowerCase().replace(/,/g, "").replace(/[零一二两三四五六七八九十点]+/g, cnNumber).trim();
   let m = s.match(/(\d+(?:\.\d+)?)\s*(?:bps?|basis points?|基点)/);
   if (m) return Number(m[1]);
   m = s.match(/(\d+(?:\.\d+)?)\s*(?:%|percent|per cent)/);
@@ -34,10 +46,16 @@ export function dayBefore(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+function dayAfter(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 const EXCLUSIVE = /\bbefore\b|\bprior to\b|\bahead of\b|前/;
 const INCLUSIVE = /on or before|no later than|inclusive|[（(]含[)）]|含当天|最晚|最迟/;
 /** "Not before the 8th" names the earliest day to act, not a deadline. */
-export const EARLIEST = /not before|no earlier than|\bafter\b|不早于|之后|以后/;
+export const EARLIEST = /not before|no earlier than|\bafter\b|不早于|之后|以后|前不|前别/;
 
 export function readDate(span: string, today: string): string | null {
   const d = readNamedDate(span, today);
@@ -78,6 +96,8 @@ function readNamedDate(span: string, today: string): string | null {
   if (x) return withYear(Number(x[1]), Number(x[2]));
   x = s.match(/\b(\d{1,2})\/(\d{1,2})\b/);
   if (x) return withYear(Number(x[1]), Number(x[2]));
+  if (/\btoday\b|今天|今日/.test(s)) return today;
+  if (/\btomorrow\b|明天|明日/.test(s)) return dayAfter(today);
   const wd = readWeekday(s, today);
   if (wd !== undefined) return wd;
   x = s.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/) ?? s.match(/(?<![月\d])(\d{1,2})[日号]/);
@@ -88,10 +108,11 @@ function readNamedDate(span: string, today: string): string | null {
   return null;
 }
 
-/** A positive quantity: "178.4121", "35 shares", "1,000". */
+/** A positive quantity: "178.4121", "35 shares", "1,000", "1.2k", "1万". */
 export function readQty(span: string): string | null {
-  const m = span.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
-  return m && Number(m[1]) > 0 ? m[1] : null;
+  const m = span.replace(/,/g, "").match(/(\d+(?:\.\d+)?)\s*(k\b|万)?/i);
+  if (!m || !(Number(m[1]) > 0)) return null;
+  return m[2] ? new Decimal(m[1]).mul(m[2] === "万" ? 10_000 : 1_000).toString() : m[1];
 }
 
 /** Whitespace- and case-insensitive containment, so a model cannot cite words the trader never typed. */
