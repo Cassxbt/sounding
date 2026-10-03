@@ -16,7 +16,7 @@ interface Props {
 export function Nav({ mode, onMode, eligible, total, session }: Props) {
   return (
     <header className="sticky top-3 z-40 px-4">
-      <nav className="mx-auto flex max-w-6xl items-center gap-3 rounded-full border rule bg-paper-2/80 py-1.5 pl-4 pr-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60">
+      <nav className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 sm:gap-3 sm:pl-4 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60">
         <a href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, home">
           <Mark live={mode === "live"} />
           <span className="text-[15px] font-medium tracking-tight">Sounding</span>
@@ -25,7 +25,7 @@ export function Nav({ mode, onMode, eligible, total, session }: Props) {
         <span className="hidden min-w-0 truncate mono text-[11px] text-ink-3 md:block">
           {eligible !== undefined ? <>{eligible} of {total?.toLocaleString("en-US")} rTokens weekend-tradable · {session?.replace("_", " ")}</> : "reading the Bitget universe…"}
         </span>
-        <a href="/task" className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] text-ink-2 transition-colors duration-[var(--dur-micro)] hover:text-ink">
+        <a href="/task" aria-label="Frozen task" className="ml-auto inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1.5 sm:px-3 text-[13px] text-ink-2 transition-colors duration-[var(--dur-micro)] hover:text-ink">
           <BookOpenText size={16} weight="light" />
           <span className="hidden sm:inline">Frozen task</span>
         </a>
@@ -36,10 +36,10 @@ export function Nav({ mode, onMode, eligible, total, session }: Props) {
               role="radio"
               aria-checked={mode === m}
               onClick={() => onMode(m)}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] transition-colors duration-[var(--dur-micro)] ${mode === m ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink-2"}`}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12px] min-[360px]:px-3 transition-colors duration-[var(--dur-micro)] ${mode === m ? "bg-paper-3 text-ink" : "text-ink-3 hover:text-ink-2"}`}
             >
               {m === "live" ? <Broadcast size={14} weight={mode === m ? "fill" : "light"} className={mode === m ? "text-sea" : ""} /> : <Record size={14} weight={mode === m ? "fill" : "light"} />}
-              {m}
+              <span className="sr-only min-[360px]:not-sr-only">{m}</span>
             </button>
           ))}
         </div>
