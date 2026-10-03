@@ -54,3 +54,36 @@ describe("checked intake", () => {
     expect(applyFields({ ...EMPTY_CONSTRAINTS, mustBeFlat: true, hardDeadlineNy: "2026-10-08" }, f).constraints).toMatchObject({ mustBeFlat: false, hardDeadlineNy: null });
   });
 });
+
+describe("deadlines: code must confirm the date", () => {
+  const SAT = "2026-10-03";
+  it.each([
+    ["by fri", "2026-10-09"], ["by Monday", "2026-10-05"], ["before Wednesday", "2026-10-06"], ["周五前", "2026-10-08"], ["Friday 前", "2026-10-08"], ["星期三之前", "2026-10-06"], ["礼拜一", "2026-10-05"],
+    ["on or before October 20", "2026-10-20"], ["10月12日（含）之前", "2026-10-12"], ["最晚10月9日", "2026-10-09"], ["by Oct 9", "2026-10-09"],
+  ])("readDate(%s) on a Saturday = %s", (s, v) => expect(readDate(s as string, SAT)).toBe(v));
+  it("'by Friday' said on a Friday means today", () => expect(readDate("by Friday", TODAY)).toBe("2026-10-02"));
+  it("relative weeks are not guessed", () => expect(readDate("by next Friday", SAT)).toBeNull());
+  it("a recently passed month-day stays in this year (asked back), it does not roll a year later", () => expect(readDate("by Oct 1", TODAY)).toBe("2026-10-01"));
+
+  it("a deadline code cannot read is asked back, never taken on the model's word", () => {
+    const text = "dump 60 rPLTR by next Friday";
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-09", span: "by next Friday" }], text, SAT);
+    expect(f[0].status).toBe("conflict");
+    expect(applyFields(EMPTY_CONSTRAINTS, f).constraints.hardDeadlineNy).toBeNull();
+  });
+  it("a deadline already past is asked back even when model and code agree", () => {
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-01", span: "by Oct 1" }], "sell by Oct 1", TODAY);
+    expect(f[0].status).toBe("conflict");
+    expect(f[0].note).toMatch(/already passed/);
+  });
+  it("the model's past weekday date is caught by code (eval v1 P02)", () => {
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-02", span: "out by fri" }], "sell 250 rNVDA, out by fri hard", SAT);
+    expect(f[0].status).toBe("conflict");
+    expect(f[0].note).toMatch(/2026-10-09/);
+  });
+  it("'not before' is an earliest date, not a deadline", () => {
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-07", span: "not before the 8th" }], "Selling 90 rGOOGL but not before the 8th", SAT);
+    expect(f[0].status).toBe("rejected_meaning");
+    expect(applyFields(EMPTY_CONSTRAINTS, f).constraints.hardDeadlineNy).toBeNull();
+  });
+});

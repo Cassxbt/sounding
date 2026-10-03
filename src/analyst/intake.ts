@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { readBps, readDate, readQty, spanInText } from "./normalize";
+import { EARLIEST, readBps, readDate, readQty, spanInText } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -17,7 +17,7 @@ export interface IntakeField {
   value: string | number | boolean;
   span: string;
   source: "code" | "model" | "model+code";
-  status: "accepted" | "conflict" | "rejected_span";
+  status: "accepted" | "conflict" | "rejected_span" | "rejected_meaning";
   note?: string;
 }
 
@@ -65,12 +65,24 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     const name = p.name as FieldName;
     const value = p.value as string | number | boolean;
     if (!spanInText(p.span, text)) { out.push({ name, value, span: p.span, source: "model", status: "rejected_span", note: "cited words are not in the message" }); continue; }
+    if (name === "hardDeadlineNy") { out.push(checkDeadline(value, p.span, today)); continue; }
     const c = codeRead(name, p.span, today);
     if (c === undefined || c === null) { out.push({ name, value, span: p.span, source: "model", status: "accepted", note: c === null ? "code cannot read this phrase; span verified" : undefined }); continue; }
     if (same(c, value)) out.push({ name, value: c, span: p.span, source: "model+code", status: "accepted" });
     else out.push({ name, value, span: p.span, source: "model", status: "conflict", note: `code reads ${String(c)}` });
   }
   return out;
+}
+
+/** A deadline is never taken on the model's word: code must read the same date, and it must not have passed. */
+function checkDeadline(value: string | number | boolean, span: string, today: string): IntakeField {
+  const base = { name: "hardDeadlineNy" as const, value, span, source: "model" as const };
+  if (EARLIEST.test(span.toLowerCase())) return { ...base, status: "rejected_meaning", note: "an earliest date to act, not a deadline" };
+  const c = readDate(span, today);
+  if (!c) return { ...base, status: "conflict", note: "code cannot confirm a date from these words" };
+  if (c < today) return { ...base, status: "conflict", note: `this date has already passed (code reads ${c})` };
+  if (c !== String(value)) return { ...base, status: "conflict", note: `code reads ${c}` };
+  return { ...base, value: c, source: "model+code", status: "accepted" };
 }
 
 export function applyFields(prior: Constraints, fields: IntakeField[]): Omit<Intake, "fields" | "clarification" | "reader"> {
@@ -93,7 +105,8 @@ function clarify(fields: IntakeField[]): string | null {
   const conflict = fields.find((f) => f.status === "conflict");
   if (!conflict) return null;
   const label: Record<FieldName, string> = { takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
-  return `I read "${conflict.span}" two ways (${conflict.value} vs ${conflict.note?.replace("code reads ", "")}). What is ${label[conflict.name]}, exactly?`;
+  if (conflict.note?.startsWith("code reads ")) return `I read "${conflict.span}" two ways (${conflict.value} vs ${conflict.note.replace("code reads ", "")}). What is ${label[conflict.name]}, exactly?`;
+  return `I could not use "${conflict.span}" as ${label[conflict.name]}: ${conflict.note}. What is ${label[conflict.name]}, exactly?`;
 }
 
 /** Regex-only reading: the baseline arm, and the fallback when Qwen is unavailable. */

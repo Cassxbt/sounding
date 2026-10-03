@@ -211,7 +211,7 @@ export default function Page() {
 
               {res.ok && <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />}
 
-              {res.ok && <AnalystPanel key={`${symbol}-${mode}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }} />}
+              {res.ok && <AnalystPanel key={`${symbol}-${side}-${mode}-${fixture.sound ?? ""}`} symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} fixture={fixture.sound} onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }} />}
 
               <details className="rounded-md border rule bg-paper-2/40 p-4">
                 <summary className="mono text-[11px] uppercase tracking-[0.18em] cursor-pointer">receipt · {res.receipt.receipt_sha256?.slice(0, 16)} · raw book {res.receipt.raw_sha256.slice(0, 16)}</summary>

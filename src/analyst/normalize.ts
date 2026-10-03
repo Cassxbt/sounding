@@ -34,18 +34,40 @@ export function dayBefore(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-const EXCLUSIVE = /\bbefore\b|之前|以前/;
+const EXCLUSIVE = /\bbefore\b|\bprior to\b|\bahead of\b|前/;
+const INCLUSIVE = /on or before|no later than|inclusive|[（(]含[)）]|含当天|最晚|最迟/;
+/** "Not before the 8th" names the earliest day to act, not a deadline. */
+export const EARLIEST = /not before|no earlier than|\bafter\b|不早于|之后|以后/;
 
 export function readDate(span: string, today: string): string | null {
   const d = readNamedDate(span, today);
-  return d && EXCLUSIVE.test(span.toLowerCase()) ? dayBefore(d) : d;
+  const s = span.toLowerCase();
+  return d && EXCLUSIVE.test(s) && !INCLUSIVE.test(s) ? dayBefore(d) : d;
+}
+
+const EN_DAYS: [RegExp, number][] = [[/\bsun(day)?\b/, 0], [/\bmon(day)?\b/, 1], [/\btue(s|sday)?\b/, 2], [/\bwed(nesday)?\b/, 3], [/\bthu(r|rs|rsday)?\b/, 4], [/\bfri(day)?\b/, 5], [/\bsat(urday)?\b/, 6]];
+const ZH_DAYS: Record<string, number> = { 日: 0, 天: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
+
+/** A weekday name resolves to its next occurrence on or after today ("by Friday" said on a Friday is today). */
+function readWeekday(s: string, today: string): string | null | undefined {
+  if (/\bnext\s+(week|mon|tue|wed|thu|fri|sat|sun)|下(个)?(周|星期|礼拜)/.test(s)) return null;
+  const zh = s.match(/(?:周|星期|礼拜)([一二三四五六日天])/);
+  const target = zh ? ZH_DAYS[zh[1]] : EN_DAYS.find(([re]) => re.test(s))?.[1];
+  if (target === undefined) return undefined;
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + ((target - d.getUTCDay() + 7) % 7));
+  return d.toISOString().slice(0, 10);
 }
 
 function readNamedDate(span: string, today: string): string | null {
   const s = span.toLowerCase().trim();
   const [ty, tm, td] = today.split("-").map(Number);
   const fmt = (y: number, m: number, d: number) => (m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` : null);
-  const withYear = (m: number, d: number) => fmt(m < tm || (m === tm && d < td) ? ty + 1 : ty, m, d);
+  // Roll to next year only when the date is well past; a date passed days ago is kept so it can be asked back.
+  const withYear = (m: number, d: number) => {
+    const ago = (Date.UTC(ty, tm - 1, td) - Date.UTC(ty, m - 1, d)) / 86_400_000;
+    return fmt(ago > 31 ? ty + 1 : ty, m, d);
+  };
   let x = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (x) return fmt(Number(x[1]), Number(x[2]), Number(x[3]));
   x = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?/);
@@ -56,6 +78,8 @@ function readNamedDate(span: string, today: string): string | null {
   if (x) return withYear(Number(x[1]), Number(x[2]));
   x = s.match(/\b(\d{1,2})\/(\d{1,2})\b/);
   if (x) return withYear(Number(x[1]), Number(x[2]));
+  const wd = readWeekday(s, today);
+  if (wd !== undefined) return wd;
   x = s.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/);
   if (x) {
     const d = Number(x[1]);
