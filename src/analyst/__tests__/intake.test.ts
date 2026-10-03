@@ -59,7 +59,7 @@ describe("deadlines: code must confirm the date", () => {
   const SAT = "2026-10-03";
   it.each([
     ["by fri", "2026-10-09"], ["by Monday", "2026-10-05"], ["before Wednesday", "2026-10-06"], ["周五前", "2026-10-08"], ["Friday 前", "2026-10-08"], ["星期三之前", "2026-10-06"], ["礼拜一", "2026-10-05"],
-    ["on or before October 20", "2026-10-20"], ["10月12日（含）之前", "2026-10-12"], ["最晚10月9日", "2026-10-09"], ["by Oct 9", "2026-10-09"],
+    ["on or before October 20", "2026-10-20"], ["8号之前", "2026-10-07"], ["9号", "2026-10-09"], ["2号前", "2026-11-01"], ["10月12日（含）之前", "2026-10-12"], ["最晚10月9日", "2026-10-09"], ["by Oct 9", "2026-10-09"],
   ])("readDate(%s) on a Saturday = %s", (s, v) => expect(readDate(s as string, SAT)).toBe(v));
   it("'by Friday' said on a Friday means today", () => expect(readDate("by Friday", TODAY)).toBe("2026-10-02"));
   it("relative weeks are not guessed", () => expect(readDate("by next Friday", SAT)).toBeNull());

@@ -80,7 +80,7 @@ function readNamedDate(span: string, today: string): string | null {
   if (x) return withYear(Number(x[1]), Number(x[2]));
   const wd = readWeekday(s, today);
   if (wd !== undefined) return wd;
-  x = s.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/);
+  x = s.match(/\b(\d{1,2})(?:st|nd|rd|th)\b/) ?? s.match(/(?<![月\d])(\d{1,2})[日号]/);
   if (x) {
     const d = Number(x[1]);
     return d >= td ? fmt(ty, tm, d) : tm === 12 ? fmt(ty + 1, 1, d) : fmt(ty, tm + 1, d);
