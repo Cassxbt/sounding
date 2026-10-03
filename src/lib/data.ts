@@ -16,7 +16,7 @@ export const FIXTURES: Record<string, string> = {
   "RHIMSUSDT@20261003a": "rhims-20261003T011955Z.json",
   "RHIMSUSDT@20261003b": "rhims-20261003T012016Z.json",
 };
-export const recordedCapture = (symbol: string): BookCapture | null => (FIXTURES[symbol] ? read<BookCapture>(FIXTURES[symbol]) : null);
+export const recordedCapture = (key: string): BookCapture | null => (Object.hasOwn(FIXTURES, key) ? read<BookCapture>(FIXTURES[key]) : null);
 
 export interface Universe { stockInfo: StockInfo[]; states: MarketStates; calendar: Calendar; instruments: InstrumentSpec[]; source: "live" | "recorded"; fetched_utc: string }
 

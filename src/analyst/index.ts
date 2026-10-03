@@ -52,7 +52,8 @@ export async function runAnalyst(args: { result: SoundingResult; evidence: Evide
     if (!parsed) return { output: template, producedBy: "template", provider: "qwen", model, violations: [{ rule: "parse_failed", detail: "model output did not parse" }] };
     const violations = validate(parsed, result, evidence, constraints);
     if (violations.length) {
-      const fallback = templateAnalysis(result, evidence, parsed.constraints, previous);
+      // The fallback answers from the checked intake, never from the rejected model's constraints.
+      const fallback = templateAnalysis(result, evidence, constraints, previous);
       return { output: fallback, producedBy: "template", provider: "qwen", model, violations, modelOutputRejected: parsed };
     }
     return { output: parsed, producedBy: "model", provider: "qwen", model, violations: [] };

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ConstraintsSchema = z.object({
   thesis: z.string().nullable().describe("The trader's stated reason for holding or wanting exposure, verbatim or close"),
-  hardDeadlineNy: z.string().nullable().describe("YYYY-MM-DD in America/New_York by which the position must be flat/filled, if stated as hard"),
+  hardDeadlineNy: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe("YYYY-MM-DD in America/New_York by which the position must be flat/filled, if stated as hard"),
   mustBeFlat: z.boolean().describe("true if the trader said they must be out (or in) by the deadline, not merely prefer"),
   exclusiveExposure: z.boolean().describe("true if the trader only wants this specific company/index, so proxies are excluded"),
   proxyConsent: z.boolean().describe("true only if the trader explicitly consented to substitute exposure"),

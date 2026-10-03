@@ -41,8 +41,10 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onC
     setBusy(false);
     if (!r.ok || !j.analyst) { setErr(j.error ?? j.note ?? "analyst unavailable"); return; }
     const resp = j.analyst as AnalystResp;
-    setState({ resp, evidence: j.evidence, constraints: resp.output.constraints });
-    onConstraints?.(resp.output.constraints);
+    // Carry what the trader stated (checked intake), never the model's output, into the next turn.
+    const carried: Constraints = j.intake?.constraints ?? resp.output.constraints;
+    setState({ resp, evidence: j.evidence, constraints: carried });
+    onConstraints?.(carried);
     if (j.amount && j.amount !== amount) onAmount?.(j.amount);
     setTurns([...next, { role: "assistant", text: resp.output.clarification ?? resp.output.explanation }]);
     const idx = DEMO_TURNS.indexOf(text);
@@ -89,7 +91,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, onC
               <div className="display text-3xl">{out.recommendation ? out.recommendation.replace(/_/g, " ") : out.clarification ? "waiting on your answer" : "none satisfies every hard constraint"}</div>
               {out.changedBecause && <div className="text-[12px] text-ink-2 mt-1">{out.changedBecause}</div>}
             </div>
-            <Constraint c={out.constraints} />
+            <Constraint c={state.constraints} />
           </div>
           <div className="space-y-3">
             <List title="admissible" items={out.admissible} cls="text-within" />

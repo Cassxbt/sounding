@@ -48,8 +48,9 @@ export function relevantEvidenceIds(pack: EvidencePack, c: Constraints): { relev
  */
 export function loosened(stated: Constraints, proposed: Constraints): RuleViolation[] {
   const v: RuleViolation[] = [];
-  if (stated.takerFeeBps !== null && proposed.takerFeeBps !== stated.takerFeeBps)
-    v.push({ rule: "loosened_constraint", detail: `stated taker fee ${stated.takerFeeBps} bps became ${proposed.takerFeeBps}` });
+  // A fee is a fact, not a limit: it must equal what the trader stated, including "not stated".
+  if (proposed.takerFeeBps !== stated.takerFeeBps)
+    v.push({ rule: stated.takerFeeBps === null ? "invented_constraint" : "loosened_constraint", detail: `taker fee ${stated.takerFeeBps ?? "not stated"} became ${proposed.takerFeeBps ?? "none"}` });
   if (stated.mustBeFlat && !proposed.mustBeFlat)
     v.push({ rule: "loosened_constraint", detail: "a stated must-be-flat requirement was dropped" });
   if (stated.hardDeadlineNy && (!proposed.hardDeadlineNy || proposed.hardDeadlineNy > stated.hardDeadlineNy))

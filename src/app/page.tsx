@@ -14,7 +14,7 @@ const PRESETS = [
   { id: "hims-1", label: "Turn 1 · sell 178.4121 rHIMS, ceiling 50", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, note: "5,000 USDT at mid. Must be flat before the CAO transition effective Oct 9 (no time stated) — hard deadline Oct 8." },
   { id: "hims-2", label: "Turn 2 · make it 35 shares", symbol: "RHIMSUSDT", side: "sell", amount: "35", ceiling: 50, note: "Same book, same ceiling. Only the size changed." },
   { id: "ll-stands", label: "Last Look · confirm 21 s later (stands)", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", note: "Read on the Saturday book at 01:19:55 UTC, fee 8 bps. Confirm re-walks the real book captured 21 s later.", confirmNote: "Recorded demo: the confirm walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you click." },
-  { id: "ll-void", label: "Last Look · confirm a decision read on Sep 20 (void)", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", note: "A decision read on the 2026-09-20 book, confirmed against the 2026-10-03 book: the stale decision Last Look exists to stop.", confirmNote: "Recorded demo: confirming a 13-day-old decision against a real later capture." },
+  { id: "ll-void", label: "Last Look · confirm a decision read on Sep 20 (void)", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", note: "A decision read on the 2026-09-20 book, confirmed against the 2026-10-03 book: the stale decision Last Look exists to stop.", confirmNote: "Recorded demo: confirming the Sep 20 decision against a real capture taken 12.7 days later." },
   { id: "hims-precision", label: "rHIMS · sell 178.412132 (6 dp, refused)", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50, note: "rHIMS accepts 4 decimal places. Sounding refuses and suggests a valid size instead of silently rounding." },
   { id: "spy-1k", label: "rSPY · buy 1,000 USDT (thin top)", symbol: "RSPYUSDT", side: "buy", amount: "1000", ceiling: 20, note: "Displayed spread 0.1 bps; the first ask is a ~$150 pin." },
   { id: "spmo-25k", label: "rSPMO · buy 25,000 USDT (insufficient depth)", symbol: "RSPMOUSDT", side: "buy", amount: "25000", ceiling: 50, note: "The visible book cannot cover the order." },
@@ -59,7 +59,7 @@ export default function Page() {
 
   async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string }>) {
     setBusy(true); setErr(null);
-    const fx = over?.fixture !== undefined ? over.fixture : fixture.sound;
+    const fx = over?.fixture !== undefined ? over.fixture || undefined : fixture.sound;
     const fee = over?.userFee !== undefined ? over.userFee : userFee;
     const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: fee === "" ? undefined : Number(fee), mode, previousBpsPreFee: mode === "live" ? prevBps : undefined, fixture: mode === "recorded" ? fx : undefined };
     const r = await fetch("/api/sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

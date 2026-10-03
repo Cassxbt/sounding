@@ -1,4 +1,5 @@
-import { canonicalJson, sha256 } from "./book";
+import { canonicalJson, receiptSignatureValid, sha256 } from "./book";
+import { STABILITY_BPS } from "./index";
 import type { FeeScenario, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
@@ -8,7 +9,10 @@ import { D } from "./types";
  * the sounding the trader read and the book at the moment they confirm.
  */
 
-export const DEFAULT_LASTLOOK_TOLERANCE_BPS = 5;
+/** The engine's stability threshold: the same number that marks a quote unstable between two soundings. */
+export const DEFAULT_LASTLOOK_TOLERANCE_BPS = STABILITY_BPS;
+/** A decision older than this is not confirmed on a fresh book; it is re-sounded. */
+export const MAX_DECISION_AGE_MS = 120_000;
 
 export type LastLookStatus = "STANDS_ON_FRESH_BOOK" | "VOID_GATE" | "VOID_STALE";
 
@@ -21,6 +25,10 @@ export interface LastLookResult {
   driftBps?: string;
   /** VWAP the trader would get, fresh vs original, bps; positive = better for the trader (higher for a sell, lower for a buy) */
   priceDriftBps?: string;
+  /** room left under the ceiling at the deciding fee when the decision was read, bps */
+  headroomBps?: string;
+  /** seconds between the book the trader read and the book confirmed on */
+  gapSeconds: string;
   original: { receipt_sha256: string; exchange_ts: string; allInBps?: string; verdict: FeeScenario["verdict"] };
   fresh: SoundingResult;
   receipt_sha256: string;
@@ -28,8 +36,10 @@ export interface LastLookResult {
 
 export class LastLookInputError extends Error {}
 
+/** Content hash matches (integrity) and, on a signing deployment, the server's signature matches (authenticity). */
 export function verifyReceipt(r: Receipt): boolean {
-  return !!r.receipt_sha256 && sha256(canonicalJson({ ...r, receipt_sha256: undefined })) === r.receipt_sha256;
+  if (!r?.receipt_sha256 || sha256(canonicalJson({ ...r, receipt_sha256: undefined, receipt_sig: undefined })) !== r.receipt_sha256) return false;
+  return receiptSignatureValid(r.receipt_sha256, r.receipt_sig);
 }
 
 /** The fee row that decides: the trader's stated fee, otherwise the worst scenario (a decision must hold at every unknown fee). */
@@ -54,9 +64,16 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
   if (!original.ok || !o || o.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT")
     throw new LastLookInputError("only a decision that was within the ceiling under the deciding fee can be confirmed");
   if (!sameOrder(original, fresh)) throw new LastLookInputError("fresh sounding is for a different order");
+  const gapMs = Number(fresh.receipt.exchange_ts) - Number(original.receipt.exchange_ts);
+  if (!(gapMs >= 0)) throw new LastLookInputError("the confirming book is older than the decision");
 
   const reasons: string[] = [];
   let status: LastLookStatus = "STANDS_ON_FRESH_BOOK";
+  const headroomBps = o.allInBps !== undefined ? (original.ceilingBps - Number(o.allInBps)).toFixed(2) : undefined;
+  if (gapMs > MAX_DECISION_AGE_MS) {
+    status = "VOID_STALE";
+    reasons.push(`the decision was read ${formatGap(gapMs)} before this confirm, beyond the ${MAX_DECISION_AGE_MS / 60_000}-minute limit; re-sound before acting`);
+  }
   let driftBps: string | undefined, priceDriftBps: string | undefined;
   const f = fresh.fees?.find((x) => x.source === o.source && x.feeBps === o.feeBps);
 
@@ -67,7 +84,8 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
     status = "VOID_STALE";
     reasons.push("visible depth no longer covers the full order");
   } else {
-    const drift = D(fresh.leg.bpsPreFeeExact!).minus(original.leg!.bpsPreFeeExact!);
+    // Compared at the precision it is displayed with, so the text never reads "5.00 beyond 5".
+    const drift = D(fresh.leg.bpsPreFeeExact!).minus(original.leg!.bpsPreFeeExact!).toDecimalPlaces(2);
     driftBps = drift.toFixed(2);
     if (f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT") {
       status = "VOID_STALE";
@@ -79,7 +97,7 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
     }
     // The cost is relative to each book's mid; the price itself can move while relative cost stays put.
     const sign = fresh.intent.side === "sell" ? 1 : -1;
-    const pd = D(fresh.leg.vwap!).minus(original.leg!.vwap!).div(original.leg!.vwap!).mul(10000).mul(sign);
+    const pd = D(fresh.leg.vwap!).minus(original.leg!.vwap!).div(original.leg!.vwap!).mul(10000).mul(sign).toDecimalPlaces(2);
     priceDriftBps = pd.toFixed(2);
     if (pd.abs().gt(toleranceBps)) {
       status = "VOID_STALE";
@@ -89,9 +107,14 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
   }
 
   const core = {
-    status, reasons, toleranceBps, decidingFeeBps: o.feeBps, driftBps, priceDriftBps,
+    status, reasons, toleranceBps, decidingFeeBps: o.feeBps, driftBps, priceDriftBps, headroomBps, gapSeconds: (gapMs / 1000).toFixed(1),
     original: { receipt_sha256: original.receipt.receipt_sha256!, exchange_ts: original.receipt.exchange_ts, allInBps: o.allInBps, verdict: o.verdict },
     fresh_receipt_sha256: fresh.receipt.receipt_sha256,
   };
   return { ...core, fresh, receipt_sha256: sha256(canonicalJson(core)) } as LastLookResult;
+}
+
+function formatGap(ms: number): string {
+  const m = ms / 60_000;
+  return m < 120 ? `${m.toFixed(1)} minutes` : m < 2880 ? `${(m / 60).toFixed(1)} hours` : `${(m / 1440).toFixed(1)} days`;
 }

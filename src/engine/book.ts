@@ -1,5 +1,5 @@
 import Decimal from "decimal.js";
-import { createHash } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { BookCapture, Level, LegCost, RawOrderbook } from "./types";
 import { D } from "./types";
 
@@ -21,6 +21,18 @@ function sortKeys(v: unknown): unknown {
   return v;
 }
 export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+
+/**
+ * Receipts carry a public content hash (anyone can recompute it) and, when the server has a key, an HMAC
+ * signature (only this server can produce it). The hash proves integrity; the signature proves we issued it.
+ */
+const receiptKey = () => process.env.SOUNDING_RECEIPT_KEY || "";
+export const signReceiptHash = (hash: string) => (receiptKey() ? createHmac("sha256", receiptKey()).update(hash).digest("hex") : undefined);
+export function receiptSignatureValid(hash: string, sig?: string): boolean {
+  if (!receiptKey()) return true; // unsigned deployment (local dev): integrity only, stated in the UI
+  const want = signReceiptHash(hash)!;
+  return typeof sig === "string" && sig.length === want.length && timingSafeEqual(Buffer.from(sig), Buffer.from(want));
+}
 
 /** Python `json.dumps(sort_keys=True, separators=(",",":"))` equivalent, so hashes match the census. */
 export function rawHash(raw: RawOrderbook): string {

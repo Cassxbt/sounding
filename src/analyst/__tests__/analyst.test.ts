@@ -111,3 +111,11 @@ describe("validator catches compliant-but-bad answers", () => {
     expect(validate(bad, res, evidence()).map((v) => v.rule)).toContain("unpriced_alternative");
   });
 });
+
+describe("tighten-only: the fee is a fact", () => {
+  it("a fee the trader never stated is an invented constraint", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    const invented = { ...out, constraints: { ...out.constraints, takerFeeBps: 5 } };
+    expect(validate(invented, turn1(8), evidence(), C({})).map((v) => v.rule)).toContain("invented_constraint");
+  });
+});

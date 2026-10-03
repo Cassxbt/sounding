@@ -132,6 +132,8 @@ export interface SoundingResult {
 
 export interface Receipt {
   engineVersion: string;
+  /** recorded-fixture evaluation (true) or a live book (false) */
+  historical: boolean;
   symbol: string;
   source: string;
   raw_sha256: string;
@@ -149,6 +151,8 @@ export interface Receipt {
   outputs: unknown;
   /** sha256 of the canonical JSON of every field above */
   receipt_sha256?: string;
+  /** HMAC-SHA256 of receipt_sha256 under the server's key; absent on unsigned (local) deployments */
+  receipt_sig?: string;
 }
 
 export const D = (v: string | number | Decimal) => new Decimal(v);

@@ -1,20 +1,30 @@
 import { NextResponse } from "next/server";
 import { sound } from "@/engine";
-import { lastLook, LastLookInputError, DEFAULT_LASTLOOK_TOLERANCE_BPS } from "@/engine/lastlook";
+import { lastLook, LastLookInputError, verifyReceipt } from "@/engine/lastlook";
 import type { SoundingResult } from "@/engine/types";
 import { liveCapture, recordedCapture, universe } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-interface Body { original: SoundingResult; mode: "recorded" | "live"; toleranceBps?: number; freshFixture?: string }
+interface Body { original: SoundingResult; mode: "recorded" | "live"; freshFixture?: string }
+
+/** A sounding with its receipt is a few hundred KB at most; anything larger is not a sounding. */
+const MAX_BODY_BYTES = 512 * 1024;
 
 /** Last Look: re-walk a fresh book for the exact order the trader is confirming; the decision stands only if nothing material moved. */
 export async function POST(req: Request) {
-  const b = (await req.json()) as Body;
+  const text = await req.text();
+  if (text.length > MAX_BODY_BYTES) return NextResponse.json({ error: "request too large" }, { status: 413 });
+  let b: Body;
+  try { b = JSON.parse(text) as Body; } catch { return NextResponse.json({ error: "body must be JSON" }, { status: 400 }); }
   if (!b.original?.receipt) return NextResponse.json({ error: "original sounding with its receipt is required" }, { status: 400 });
   const r = b.original.receipt;
+  // Nothing is fetched or walked for a receipt this server cannot vouch for.
+  if (!verifyReceipt(r)) return NextResponse.json({ error: "original receipt does not verify; nothing to confirm" }, { status: 422 });
   const mode = b.mode === "live" ? "live" : "recorded";
+  if (r.historical !== (mode === "recorded"))
+    return NextResponse.json({ error: r.historical ? "a recorded decision cannot be confirmed on a live book; re-sound live" : "a live decision is confirmed on a live book only" }, { status: 422 });
   let capture, historical: boolean;
   if (mode === "recorded") {
     capture = b.freshFixture ? recordedCapture(b.freshFixture) : null; historical = true;
@@ -32,7 +42,7 @@ export async function POST(req: Request) {
     stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments,
   });
   try {
-    const look = lastLook(b.original, fresh, Number(b.toleranceBps) || DEFAULT_LASTLOOK_TOLERANCE_BPS);
+    const look = lastLook(b.original, fresh);
     return NextResponse.json({ look, levels: { asks: capture.raw.data.asks.slice(0, 40), bids: capture.raw.data.bids.slice(0, 40) } });
   } catch (e) {
     if (e instanceof LastLookInputError) return NextResponse.json({ error: e.message }, { status: 422 });

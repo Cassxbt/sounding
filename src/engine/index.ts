@@ -1,11 +1,11 @@
 import Decimal from "decimal.js";
-import { buyWithBudget, canonicalJson, decimals, largestBuyWithin, largestSellWithin, rawHash, sellShares, sha256, validateBook, withinCeiling } from "./book";
+import { buyWithBudget, canonicalJson, signReceiptHash, decimals, largestBuyWithin, largestSellWithin, rawHash, sellShares, sha256, validateBook, withinCeiling } from "./book";
 import { eligibilityFor, type StockInfo } from "./eligibility";
 import { classifySession, nextSwitchHint, type Calendar, type MarketStates } from "./session";
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.2.0";
+export const ENGINE_VERSION = "sounding-engine/0.3.0";
 export const DEFAULT_FEE_SCENARIOS_BPS = [0, 10, 20];
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
 export const STABILITY_BPS = 10;
@@ -29,13 +29,14 @@ export interface SoundingInput {
 
 function receiptFor(i: SoundingInput, session: SoundingResult["session"], gate: Receipt["gate"], outputs: unknown): Receipt {
   const r: Receipt = {
-    engineVersion: ENGINE_VERSION, symbol: i.capture.symbol, source: i.capture.source, raw_sha256: i.capture.raw_sha256,
+    engineVersion: ENGINE_VERSION, historical: i.historical, symbol: i.capture.symbol, source: i.capture.source, raw_sha256: i.capture.raw_sha256,
     exchange_ts: i.capture.exchange_ts, request_start_utc: i.capture.request_start_utc, rtt_ms: i.capture.rtt_ms,
     server_requestTime: i.capture.server_requestTime, clock_offset_ms: i.capture.clock_offset_ms,
     evaluated_at_utc: i.now.toISOString(), session, intent: i.intent, ceilingBps: i.ceilingBps,
     feeScenariosBps: i.userFeeBps !== undefined ? [...DEFAULT_FEE_SCENARIOS_BPS, i.userFeeBps] : DEFAULT_FEE_SCENARIOS_BPS, gate, outputs,
   };
-  r.receipt_sha256 = sha256(canonicalJson({ ...r, receipt_sha256: undefined }));
+  r.receipt_sha256 = sha256(canonicalJson({ ...r, receipt_sha256: undefined, receipt_sig: undefined }));
+  r.receipt_sig = signReceiptHash(r.receipt_sha256);
   return r;
 }
 

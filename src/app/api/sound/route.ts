@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   const mode = b.mode === "live" ? "live" : "recorded";
   let capture, historical: boolean;
   if (mode === "recorded") {
-    capture = recordedCapture(b.fixture ?? b.symbol); historical = true;
+    capture = recordedCapture(b.fixture || b.symbol); historical = true;
     if (!capture || capture.symbol !== b.symbol) return NextResponse.json({ error: `no recorded fixture for ${b.symbol}; use live mode` }, { status: 404 });
   } else {
     try { capture = await liveCapture(b.symbol); historical = false; }
