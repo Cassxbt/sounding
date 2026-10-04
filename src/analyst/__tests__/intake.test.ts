@@ -127,10 +127,14 @@ describe("order contract: instrument and side are read and checked like any limi
   it("two instruments, or buy and sell words together, are asked back", () => {
     expect(checkFields([], "sell rHIMS and buy rNVDA", D8, UNI).filter((x) => x.status === "conflict").map((x) => x.name)).toEqual(expect.arrayContaining(["symbol", "side"]));
   });
-  it("a limit that is mentioned but not read is asked back, never defaulted", () => {
-    const f = checkFields([{ name: "sizeShares", value: "178.4121", span: "178.4121" }], "Sell 178.4121 rHIMS, my taker fee is what we agreed, I must be out by Friday", D8, UNI);
+  it("a limit stated with a figure or a date but not read is asked back, never defaulted", () => {
+    const f = checkFields([{ name: "sizeShares", value: "178.4121", span: "178.4121" }], "Sell 178.4121 rHIMS, my taker fee is 万八 or so, I must be out by Friday", D8, UNI);
     const held = f.filter((x) => x.status === "conflict").map((x) => x.name);
     expect(held).toEqual(expect.arrayContaining(["takerFeeBps", "hardDeadlineNy"]));
+  });
+  it("naming a fee with no figure ('the fee we agreed') is not asked: an unknown fee already falls to the worst case", () => {
+    const f = checkFields([{ name: "sizeShares", value: "178.4121", span: "178.4121" }], "Sell 178.4121 rHIMS, my taker fee is what we agreed", D8, UNI);
+    expect(f.find((x) => x.name === "takerFeeBps")).toBeUndefined();
   });
   it("a fully read message raises no question", () => {
     const text = "Sell 178.4121 rHIMS. I pay 0.08% taker, keep it under half a percent all-in, and I must be out before the 8th.";
@@ -158,7 +162,30 @@ describe("ticker reading after ST7", () => {
     expect(checkFields([], "sell 100 rZZZZ, fee 8 bps", D8, UNI).find((f) => f.name === "symbol")).toMatchObject({ status: "conflict" });
   });
   it("the fallback reader also asks about a limit it saw but could not read", () => {
-    const r = regexIntake("Sell 178.4121 rHIMS, my taker fee is what we agreed", EMPTY_CONSTRAINTS, UNI);
+    const r = regexIntake("Sell 178.4121 rHIMS, I pay 千分之0.8 taker", EMPTY_CONSTRAINTS, UNI);
     expect(r.clarification).toMatch(/taker fee/);
+  });
+});
+
+describe("after the held-out whole-task run (development)", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }, { code: "SPMO", symbol: "RSPMOUSDT" }];
+  const D = "2026-09-20";
+  it("a message naming two instruments is asked back even when the model picked one", () => {
+    const f = checkFields([{ name: "symbol", value: "rSPMO", span: "rSPMO" }], "Split it: 1,000 USDT into rSPY and 1,000 USDT into rSPMO.", D, UNI);
+    expect(f.find((x) => x.name === "symbol")?.status).toBe("conflict");
+  });
+  it("two different fees in one sentence are asked back", () => {
+    const f = checkFields([{ name: "takerFeeBps", value: 6, span: "6 bps" }], "Sell 10 rSPY. My taker fee is 6 bps, which is 0.1%.", D, UNI);
+    expect(f.find((x) => x.name === "takerFeeBps")?.status).toBe("conflict");
+  });
+  it("a fee and a ceiling in one sentence are not a contradiction", () => {
+    const f = checkFields([{ name: "takerFeeBps", value: 8, span: "fee 8 bps" }, { name: "ceilingBps", value: 50, span: "ceiling 50 bps" }], "Buy 1,000 USDT of rSPY, fee 8 bps, ceiling 50 bps.", D, UNI);
+    expect(f.filter((x) => x.status === "conflict")).toEqual([]);
+  });
+  it("naming a limit without a value is not a question: 'under the ceiling', 'ceiling 照旧', '含手续费'", () => {
+    for (const t of ["Scratch the deadline, no rush. Just keep it under the ceiling.", "帮我 buy 1,000 USDT of rSPY, ceiling 照旧。", "买 300 USDT rHIMS，含手续费总成本不能超过 5 个基点。"]) {
+      const f = checkFields(t.includes("5 个基点") ? [{ name: "ceilingBps", value: 5, span: "总成本不能超过 5 个基点" }] : [], t, D, UNI);
+      expect(f.filter((x) => x.note === "mentioned but not read").map((x) => x.name)).toEqual([]);
+    }
   });
 });

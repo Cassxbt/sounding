@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { CUES, EARLIEST, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
+import { around, costFigures, CUES, EARLIEST, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -107,6 +107,12 @@ function checkSide(value: string, span: string): IntakeField {
 
 /** Code reads the order from the whole message when the model leaves it out; more than one reading is asked back. */
 function orderFromWords(out: IntakeField[], text: string, listed: Listed[]) {
+  // A message that names more than one instrument is one question, whichever one the model picked.
+  const picked = out.find((f) => f.name === "symbol" && f.status === "accepted");
+  if (picked) {
+    const named = new Set([...readSymbols(text, listed), String(picked.value)]);
+    if (named.size > 1) Object.assign(picked, { status: "conflict", value: [...named].join(", "), source: "code", note: "more than one instrument is named" });
+  }
   if (!out.some((f) => f.name === "symbol")) {
     const unknown = unknownRTickers(text, listed);
     if (unknown.length) { out.push({ name: "symbol", value: unknown.join(", "), span: unknown[0], source: "code", status: "conflict", note: "not an instrument on Bitget's list" }); return orderSide(out, text); }
@@ -125,13 +131,40 @@ function orderSide(out: IntakeField[], text: string) {
   }
 }
 
+/** Figures inside another accepted limit's quoted words belong to that limit. */
+function unclaimed(out: IntakeField[], text: string, own: FieldName) {
+  const claimed = out.filter((f) => f.status === "accepted" && f.name !== own && f.span).map((f) => { const i = text.toLowerCase().indexOf(f.span.toLowerCase()); return i < 0 ? null : [i, i + f.span.length] as const; }).filter((x): x is readonly [number, number] => !!x);
+  return (figs: { at: number; raw: string; bps: number }[]) => figs.filter((g) => !claimed.some(([a, b]) => g.at >= a && g.at < b));
+}
+
+/** Two different figures for one limit in the same sentence ("6 bps, which is 0.1%") are asked back. */
+function contradictions(out: IntakeField[], text: string) {
+  for (const name of ["takerFeeBps", "ceilingBps"] as const) {
+    const f = out.find((x) => x.name === name && x.status === "accepted");
+    if (!f) continue;
+    const i = text.toLowerCase().indexOf(f.span.toLowerCase());
+    if (i < 0) continue;
+    const s = around(text, i);
+    const other = name === "takerFeeBps" ? CUES.ceilingBps : CUES.takerFeeBps;
+    const rival = unclaimed(out, text, name)(costFigures(s.text).map((g) => ({ ...g, at: g.at + s.start })))
+      .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && !other.test(text.slice(Math.max(0, g.at - 30), g.at)));
+    if (rival.length) Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` });
+  }
+}
+
 /** A limit the words mention but no reader produced is a question, not a default. */
 function missingLimits(out: IntakeField[], text: string) {
+  contradictions(out, text);
   const ok = (n: FieldName) => out.some((f) => f.name === n && (f.status === "accepted" || f.status === "rejected_meaning" || f.status === "conflict"));
   const released = out.some((f) => f.name === "releaseDeadline" && f.status === "accepted");
   for (const [name, cue] of Object.entries(CUES) as [keyof typeof CUES, RegExp][]) {
     const m = text.match(cue);
     if (!m || ok(name) || ((name === "hardDeadlineNy" || name === "mustBeFlat") && released)) continue;
+    // Naming a cost limit without a figure ("under the ceiling", "含手续费") states nothing new.
+    if (name === "takerFeeBps" || name === "ceilingBps") {
+      const c = around(text, m.index ?? 0, true);
+      if (!unclaimed(out, text, name)(costFigures(c.text).map((g) => ({ ...g, at: g.at + c.start }))).length) continue;
+    }
     if (name === "mustBeFlat" && !ok("hardDeadlineNy") && !CUES.hardDeadlineNy.test(text)) continue;
     out.push({ name, value: "", span: m[0], source: "code", status: "conflict", note: "mentioned but not read" });
   }
@@ -174,6 +207,7 @@ function clarify(fields: IntakeField[]): string | null {
   const conflict = fields.filter((f) => f.status === "conflict").sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))[0];
   if (!conflict) return null;
   const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
+  if (conflict.note?.startsWith("two figures")) return `Your message gives ${conflict.note.replace("two figures: ", "")} for ${label[conflict.name]}. Which is it?`;
   if (conflict.note === "mentioned but not read") return `You mentioned ${label[conflict.name]} ("${conflict.span}") but I could not read it. What is ${label[conflict.name]}, exactly?`;
   if (conflict.name === "symbol" && conflict.note === "more than one instrument is named") return `Your message names more than one instrument (${conflict.value}). Which one is this order for?`;
   if (conflict.name === "side" && conflict.note === "these words say both buy and sell") return "Your message says both buy and sell. Is this order a buy or a sell?";

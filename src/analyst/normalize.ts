@@ -179,3 +179,26 @@ export const CUES = {
   hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜|明天|今天|月底|截止/i,
   mustBeFlat: /\b(must|have to|has to|need to|needs to|gotta|got to)\b|必须|一定要/i,
 } as const;
+
+/** Every cost figure written in a piece of text, with where it sits: "6 bps", "0.1%", "千分之五", "万8", "half a percent". */
+export function costFigures(text: string): { at: number; raw: string; bps: number }[] {
+  const re = /\d+(?:\.\d+)?\s*(?:bps?\b|basis points?|个?基点|%|percent|per cent)|千分之\s*[\d零一二两三四五六七八九十点.]+|万分之\s*[\d零一二两三四五六七八九十点]+|万\s*[\d零一二两三四五六七八九十]+|(?:half|quarter|three quarters) (?:a |of a )?(?:percent|per cent|%)/gi;
+  const out: { at: number; raw: string; bps: number }[] = [];
+  for (const m of text.matchAll(re)) {
+    const bps = readBps(m[0]);
+    // A percentage that follows a price move ("up 4.5%") is not a cost.
+    const before = text.slice(Math.max(0, (m.index ?? 0) - 16), m.index).toLowerCase();
+    if (bps !== null && !/\b(up|down|rose|fell|gained|lost|jumped|dropped)\b|涨|跌/.test(before)) out.push({ at: m.index ?? 0, raw: m[0], bps });
+  }
+  return out;
+}
+
+/** The sentence or clause around a position: what one figure can be compared against. */
+export function around(text: string, at: number, clause = false): { start: number; text: string } {
+  const marks = clause ? /[.。;；!?！？\n,，]/ : /[.。;；!?！？\n]/;
+  // A full stop or comma between digits is part of a number ("0.1%", "1,000"), not a boundary.
+  const stop = (k: number) => marks.test(text[k]) && !((text[k] === "." || text[k] === ",") && /\d/.test(text[k - 1] ?? "") && /\d/.test(text[k + 1] ?? ""));
+  let s = at; while (s > 0 && !stop(s - 1)) s--;
+  let e = at; while (e < text.length && !stop(e)) e++;
+  return { start: s, text: text.slice(s, e) };
+}
