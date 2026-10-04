@@ -13,6 +13,7 @@ export function Footer() {
         <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
           <Link href="/" className="text-ink-2 hover:text-ink">Desk</Link>
           <Link href="/bitget" className="text-ink-2 hover:text-ink">Built on Bitget</Link>
+          <Link href="/research" className="text-ink-2 hover:text-ink">Research</Link>
           <Link href="/how" className="text-ink-2 hover:text-ink">How it works</Link>
           <Link href="/proof" className="text-ink-2 hover:text-ink">Proof</Link>
         </nav>

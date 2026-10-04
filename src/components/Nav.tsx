@@ -21,6 +21,7 @@ interface Props {
 const PAGES = [
   { href: "/", label: "Desk" },
   { href: "/bitget", label: "Built on Bitget" },
+  { href: "/research", label: "Research" },
   { href: "/how", label: "How it works" },
   { href: "/proof", label: "Proof" },
 ];
