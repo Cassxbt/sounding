@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { sound } from "@/engine";
 import { templateAnalysis } from "../template";
-import { validate } from "../rules";
+import { relevantEvidenceIds, validate } from "../rules";
 import { EMPTY_CONSTRAINTS, replyLanguage } from "..";
 import type { EvidencePack } from "../schema";
 import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
@@ -207,5 +207,23 @@ describe("route admissibility is owned by the engine", () => {
       const c = C({ takerFeeBps: fee, hardDeadlineNy: dl, mustBeFlat: !!dl });
       expect(validate(templateAnalysis(res, evidence(), c), res, evidence(), c)).toEqual([]);
     }
+  });
+});
+
+describe("evidence must be ahead of the decision, not behind it", () => {
+  const pack = (date: string) => ({ ...evidence(), records: [{ ...evidence().records[0], id: "ev", effective_date_ny: date }] });
+  it("an event before the book's date is never relevant", () => {
+    expect(relevantEvidenceIds(pack("2026-09-15"), C({}), "2026-09-20").relevant).toEqual([]);
+  });
+  it("with no deadline, only events within the 14-day horizon are relevant", () => {
+    expect(relevantEvidenceIds(pack("2026-09-30"), C({}), "2026-09-20").relevant).toEqual(["ev"]);
+    expect(relevantEvidenceIds(pack("2026-10-20"), C({}), "2026-09-20").relevant).toEqual([]);
+  });
+  it("a model that marks a past event relevant is flagged", () => {
+    const res = turn1(8);
+    const pk = pack("2026-09-15");
+    const out = templateAnalysis(res, pk, C({ takerFeeBps: 8 }));
+    const bad = { ...out, evidence: [{ recordId: "ev", relevant: true, reason: "x" }] };
+    expect(validate(bad, res, pk, C({ takerFeeBps: 8 })).map((v) => v.rule)).toContain("irrelevant_evidence_used");
   });
 });

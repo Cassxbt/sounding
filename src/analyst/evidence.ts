@@ -43,7 +43,8 @@ export async function evidenceFor(symbol: string, code: string, mode: "recorded"
   const recorded: EvidencePack | null = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
   if (mode === "live") {
     const live = await liveEvidence(symbol, code);
-    if (live && live.records.length) return recorded ? { ...live, records: [...live.records, ...recorded.records] } : live;
+    // A live pack stays live; recorded rows are never mixed in to make it look complete.
+    if (live && live.records.length) return live;
   }
   return recorded ?? { symbol, code, issuer: code, source_kind: "unavailable", records: [] };
 }

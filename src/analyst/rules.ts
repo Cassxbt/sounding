@@ -9,11 +9,21 @@ import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
 export interface RuleViolation { rule: string; detail: string }
 
 
-export function relevantEvidenceIds(pack: EvidencePack, c: Constraints): { relevant: string[]; timeUnknownOnDeadline: string[] } {
+/** Without a deadline, an event counts only if it falls within this many days of the decision. */
+export const EVIDENCE_HORIZON_DAYS = 14;
+
+/** The NY date a decision is made on: the book's own clock. */
+export const asOfNy = (res: SoundingResult) => new Date(Number(res.receipt.exchange_ts)).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+export function relevantEvidenceIds(pack: EvidencePack, c: Constraints, asOf: string): { relevant: string[]; timeUnknownOnDeadline: string[] } {
   const relevant: string[] = []; const timeUnknownOnDeadline: string[] = [];
+  const horizon = new Date(`${asOf}T12:00:00Z`); horizon.setUTCDate(horizon.getUTCDate() + EVIDENCE_HORIZON_DAYS);
   for (const r of pack.records) {
     if (!r.effective_date_ny) continue;
     if (r.issuer !== pack.issuer && r.issuer !== pack.code) continue;
+    // An event before the decision date is history, not a reason to act now.
+    if (r.effective_date_ny < asOf) continue;
+    if (!c.hardDeadlineNy && r.effective_date_ny > horizon.toISOString().slice(0, 10)) continue;
     // an event is relevant only if it falls on/after today's session and on/before the horizon (deadline) when one exists
     if (c.hardDeadlineNy && r.effective_date_ny > c.hardDeadlineNy) {
       // event after the deadline: relevant as the reason for the deadline when it is the next day; ordering is unambiguous
@@ -83,7 +93,7 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
     v.push({ rule: "overclaim_plan_step", detail: "a re-quote or partial size was described as satisfying the hard exit" });
 
   // evidence typing: only issuer-matched, dated records may be marked relevant
-  const { relevant, timeUnknownOnDeadline } = relevantEvidenceIds(pack, c);
+  const { relevant, timeUnknownOnDeadline } = relevantEvidenceIds(pack, c, asOfNy(res));
   const known = new Set(pack.records.map((r) => r.id));
   for (const e of out.evidence) {
     if (!known.has(e.recordId)) v.push({ rule: "unknown_evidence", detail: e.recordId });

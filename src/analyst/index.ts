@@ -1,7 +1,7 @@
 import type { SoundingResult } from "@/engine/types";
 import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
 import { templateAnalysis } from "./template";
-import { validate, type RuleViolation } from "./rules";
+import { asOfNy, validate, type RuleViolation } from "./rules";
 import { QWEN, qwenAnalyze, qwenAvailable } from "./qwen";
 
 export const EMPTY_CONSTRAINTS: Constraints = { thesis: null, hardDeadlineNy: null, mustBeFlat: false, exclusiveExposure: false, proxyConsent: false, takerFeeBps: null };
@@ -28,7 +28,8 @@ Rules you must follow:
 - If the engine flags FEE_SENSITIVE and the trader has not stated their taker fee, ask for the fee before recommending.
 - Never state a fill probability, a price target, a catalyst, or "safe". Never invent numbers: every bps figure you write must be one the engine produced.
 - Under a hard exit, requote_at_switch is admissible only if the deadline is after nextSessionNy in the engine output (null = no session before any deadline); otherwise exclude it.
-- An evidence record with no effective date is never relevant.
+- An evidence record with no effective date is never relevant. A record dated before asOfNy (the book's own date) is never relevant. Without a deadline, only records within 14 days after asOfNy can be relevant.
+- immediate_cross may be admissible or recommended only when the deciding fee row (the stated fee, else the 20 bps scenario) is WITHIN_CEILING_ON_THIS_SNAPSHOT. The recommendation must be one of the routes you list as admissible.
 - requote_at_switch is only a chance to reassess later: it never satisfies a hard exit and can never be the recommendation under one. largest_within_ceiling is a partial with an unpriced remainder. If no full-size route is within the ceiling now, say no priced route satisfies the hard exit on this snapshot.
 - Classify EVERY alternative the engine priced as either admissible or excluded; none may be left out, even while you ask a clarification.
 - Never use the words guarantee, certain, certainty, safe, risk-free, or say an order "will fill"; the future book is unknown. Say "may fill" / "conditional on this snapshot". The same applies in any language.
@@ -49,7 +50,7 @@ export function buildUserPrompt(result: SoundingResult, evidence: EvidencePack, 
   const engineView = {
     symbol: result.symbol, session: result.session, sessionDetail: result.sessionDetail, weekendTradable: result.weekendTradable,
     intent: result.intent, ceilingBps: result.ceilingBps, referenceMid: result.referenceMid, leg: result.leg, fees: result.fees, feeSensitive: result.feeSensitive,
-    alternatives: result.alternatives, nextSessionNy: result.nextSessionNy, exchange_ts: result.receipt.exchange_ts, historical: result.freshness.historical,
+    alternatives: result.alternatives, nextSessionNy: result.nextSessionNy, asOfNy: asOfNy(result), exchange_ts: result.receipt.exchange_ts, historical: result.freshness.historical,
   };
   return `ENGINE OUTPUT (authoritative, do not alter):\n${JSON.stringify(engineView, null, 1)}\n\nEVIDENCE PACK (${evidence.source_kind}):\n${JSON.stringify(evidence.records, null, 1)}\n\nCONSTRAINTS SO FAR:\n${JSON.stringify(constraints)}\n\n${previous ? `PREVIOUS ANALYSIS:\n${JSON.stringify(previous)}\n\n` : ""}CONVERSATION:\n${turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n")}\n\nREPLY LANGUAGE: ${replyLanguage(lastUser(turns)) === "zh" ? "Simplified Chinese" : "English"}\n\nUpdate the constraints from the conversation, then produce the analysis.`;
 }

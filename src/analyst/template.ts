@@ -1,6 +1,6 @@
 import type { SoundingResult } from "@/engine/types";
 import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
-import { relevantEvidenceIds } from "./rules";
+import { asOfNy, relevantEvidenceIds } from "./rules";
 
 /**
  * Deterministic baseline. Same schema as the model, no LLM. It is the fallback when the model is
@@ -10,7 +10,7 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
   const alts = res.alternatives ?? [];
   const kinds = alts.map((a) => a.kind);
   const admissible: AnalystOutput["admissible"] = []; const excluded: AnalystOutput["excluded"] = [];
-  const { relevant, timeUnknownOnDeadline } = relevantEvidenceIds(pack, c);
+  const { relevant, timeUnknownOnDeadline } = relevantEvidenceIds(pack, c, asOfNy(res));
   const worstWithin = (res.fees ?? []).every((f) => f.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT");
   const anyWithin = (res.fees ?? []).some((f) => f.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT");
   const feeKnown = c.takerFeeBps !== null;
