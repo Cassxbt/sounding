@@ -189,3 +189,22 @@ describe("after the held-out whole-task run (development)", () => {
     }
   });
 });
+
+describe("contradictions are restatements, not distinctions (development)", () => {
+  const UNI = [{ code: "COIN", symbol: "RCOINUSDT" }, { code: "MSTR", symbol: "RMSTRUSDT" }, { code: "AMZN", symbol: "RAMZNUSDT" }];
+  const D = "2026-10-07";
+  it.each([
+    ["Selling 75 rCOIN. Fees on my tier: maker 0.02%, taker 0.06%.", 6, "taker 0.06%"],
+    ["My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp.", 10, "regular 10bp"],
+    ["Bitget default taker 是 0.1%, 但我用 BGB 抵扣, 实际付 0.08%.", 8, "实际付 0.08%"],
+    ["卖出 rAMZN 25 股，手续费千分之一，哦不对，我刚升了VIP，现在吃单是万分之七。", 7, "现在吃单是万分之七"],
+  ])("%s keeps the trader's own fee", (text, value, span) => {
+    expect(checkFields([{ name: "takerFeeBps", value: value as number, span: span as string }], text as string, D, UNI).find((x) => x.name === "takerFeeBps")?.status).toBe("accepted");
+  });
+  it("'6 bps, which is 0.1%' and '6 or 10 bps' are still asked", () => {
+    for (const t of ["My taker fee is 6 bps, which is 0.1%.", "taker fee 6 bps or 0.1%, not sure"]) expect(checkFields([{ name: "takerFeeBps", value: 6, span: "6 bps" }], t, D, UNI).find((x) => x.name === "takerFeeBps")?.status).toBe("conflict");
+  });
+  it("'今天跌了8%' is not a deadline", () => {
+    expect(checkFields([], "rMSTR 今天跌了8%，我想抄底买 2000 USDT 的。", D, UNI).find((x) => x.name === "hardDeadlineNy")).toBeUndefined();
+  });
+});

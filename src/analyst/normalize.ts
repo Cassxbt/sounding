@@ -176,7 +176,7 @@ export function readSide(text: string): "buy" | "sell" | "both" | null {
 export const CUES = {
   takerFeeBps: /\b(taker|fees?|commission)\b|手续费|费率|吃单/i,
   ceilingBps: /\b(ceiling|cap|capped|all[- ]?in|at most|no more than|max(?:imum)?)\b|上限|不超过|最多|别超/i,
-  hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜|明天|今天|月底|截止/i,
+  hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|(?:\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|明天|今天|月底)\s*(?:前|之前|以前|内|之内|截止)|最晚|截止/i,
   mustBeFlat: /\b(must|have to|has to|need to|needs to|gotta|got to)\b|必须|一定要/i,
 } as const;
 

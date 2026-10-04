@@ -146,8 +146,14 @@ function contradictions(out: IntakeField[], text: string) {
     if (i < 0) continue;
     const s = around(text, i);
     const other = name === "takerFeeBps" ? CUES.ceilingBps : CUES.takerFeeBps;
+    // Only a figure tied to this one as the same thing or an alternative ("6 bps, which is 0.1%", "6 or 10 bps")
+    // contradicts it; a maker fee, someone else's fee or a corrected figure is a distinction the reader resolved.
+    const tied = (g: { at: number; raw: string }) => {
+      const [a, b] = g.at < i ? [g.at + g.raw.length, i] : [i + f.span.length, g.at];
+      return b - a <= 25 && /which is|that is|i\.e\.|\bor\b|=|也就是|即|或者|或/i.test(text.slice(a, b));
+    };
     const rival = unclaimed(out, text, name)(costFigures(s.text).map((g) => ({ ...g, at: g.at + s.start })))
-      .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && !other.test(text.slice(Math.max(0, g.at - 30), g.at)));
+      .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && !other.test(text.slice(Math.max(0, g.at - 30), g.at)) && tied(g));
     if (rival.length) Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` });
   }
 }
