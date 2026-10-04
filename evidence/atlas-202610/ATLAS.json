@@ -1,0 +1,194 @@
+{
+ "schedule": "evidence/atlas-202610/SCHEDULE.md",
+ "rounds": 3,
+ "first": "2026-10-03T23:58:55.230Z",
+ "last": "2026-10-04T00:58:55.138Z",
+ "bySession": {
+  "weekend_mm": 3
+ },
+ "failedBooks": 0,
+ "totalBooks": 270,
+ "cells": {
+  "weekend_mm|buy|1000|30": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 155,
+   "topYesSizeNo": 25,
+   "feeFlip10to20": 90
+  },
+  "weekend_mm|buy|1000|50": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 33,
+   "topYesSizeNo": 3,
+   "feeFlip10to20": 12
+  },
+  "weekend_mm|buy|5000|30": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 212,
+   "topYesSizeNo": 82,
+   "feeFlip10to20": 86
+  },
+  "weekend_mm|buy|5000|50": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 55,
+   "topYesSizeNo": 25,
+   "feeFlip10to20": 21
+  },
+  "weekend_mm|buy|25000|30": {
+   "snapshots": 270,
+   "insufficient": 3,
+   "overAtSize": 215,
+   "topYesSizeNo": 85,
+   "feeFlip10to20": 27
+  },
+  "weekend_mm|buy|25000|50": {
+   "snapshots": 270,
+   "insufficient": 3,
+   "overAtSize": 167,
+   "topYesSizeNo": 137,
+   "feeFlip10to20": 48
+  },
+  "weekend_mm|sell|1000|30": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 144,
+   "topYesSizeNo": 14,
+   "feeFlip10to20": 82
+  },
+  "weekend_mm|sell|1000|50": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 33,
+   "topYesSizeNo": 3,
+   "feeFlip10to20": 18
+  },
+  "weekend_mm|sell|5000|30": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 197,
+   "topYesSizeNo": 67,
+   "feeFlip10to20": 74
+  },
+  "weekend_mm|sell|5000|50": {
+   "snapshots": 270,
+   "insufficient": 0,
+   "overAtSize": 65,
+   "topYesSizeNo": 35,
+   "feeFlip10to20": 38
+  },
+  "weekend_mm|sell|25000|30": {
+   "snapshots": 270,
+   "insufficient": 3,
+   "overAtSize": 221,
+   "topYesSizeNo": 91,
+   "feeFlip10to20": 19
+  },
+  "weekend_mm|sell|25000|50": {
+   "snapshots": 270,
+   "insufficient": 3,
+   "overAtSize": 170,
+   "topYesSizeNo": 140,
+   "feeFlip10to20": 47
+  }
+ },
+ "flips": {
+  "weekend_mm|buy|+5s|fee8": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|buy|+5s|fee10": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|buy|+5s|fee20": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|sell|+5s|fee8": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|sell|+5s|fee10": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|sell|+5s|fee20": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+15s|fee8": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+15s|fee10": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+15s|fee20": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|sell|+15s|fee8": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|sell|+15s|fee10": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|sell|+15s|fee20": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+30s|fee8": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+30s|fee10": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|buy|+30s|fee20": {
+   "pairs": 36,
+   "changed": 1
+  },
+  "weekend_mm|sell|+30s|fee8": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|sell|+30s|fee10": {
+   "pairs": 36,
+   "changed": 0
+  },
+  "weekend_mm|sell|+30s|fee20": {
+   "pairs": 36,
+   "changed": 0
+  }
+ },
+ "roundsDetail": [
+  {
+   "round": 0,
+   "started_utc": "2026-10-03T23:58:55.230Z",
+   "session": "weekend_mm",
+   "books": 90,
+   "failed": 0
+  },
+  {
+   "round": 1,
+   "started_utc": "2026-10-04T00:28:55.301Z",
+   "session": "weekend_mm",
+   "books": 90,
+   "failed": 0
+  },
+  {
+   "round": 2,
+   "started_utc": "2026-10-04T00:58:55.138Z",
+   "session": "weekend_mm",
+   "books": 90,
+   "failed": 0
+  }
+ ]
+}

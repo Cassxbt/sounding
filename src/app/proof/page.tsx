@@ -60,6 +60,7 @@ export default async function Proof() {
     { label: "Two real captures 21 seconds apart, Oct 3", r: lastLook(at("RHIMSUSDT@20261003a", 8), at("RHIMSUSDT@20261003b", 8)) },
     { label: "The Sep 20 decision re-checked on the Oct 3 book", r: lastLook(yours, at("RHIMSUSDT@20261003b", 8)) },
   ];
+  const whole = (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-heldout/results.json"), "utf8")) as { summary: Record<"model" | "template", { tasks: number; complete: number; safeAbstain: number; critical: number }> }).summary;
   const runs = [
     { name: "Blind set 1, before fixes", note: "40 messages, today = 2026-10-03; published with its five wrong deadlines", s: evalFile("paraphrase-eval-20261003/results.json") },
     { name: "Blind set 2, held out", note: "40 new messages by a second writer, today = 2026-10-07; run once at commit bcf771a", s: evalFile("paraphrase-eval-v2-heldout/results.json"), lead: true },
@@ -127,6 +128,26 @@ export default async function Proof() {
             </table>
           </div>
           <p className="mt-4 text-[13px] text-ink-3">Prompts, gold values, every value each reader extracted, and the scoring script are in the repository under evidence/ and scripts/paraphrase-eval.ts.</p>
+        </Block>
+
+        <Block title="Whole tasks, end to end" state="published">
+          <p className="max-w-3xl text-[15px] leading-relaxed text-ink-2">Thirty complete tasks written blind: starting controls, one to three chat turns in English, 中文 or both, and the right outcome. Some must be answered, some must be asked back, some name a stock with no book. Every turn runs through the real route. Critical means the wrong order was priced, a route broke the trader&rsquo;s ceiling or deadline, or it acted where it had to ask.</p>
+          <div className="mt-8 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-[14px]">
+              <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">run</th><th className="pb-3 font-normal">complete</th><th className="pb-3 font-normal">asked when it could answer</th><th className="pb-3 font-normal">critical</th></tr></thead>
+              <tbody>
+                {[{ name: "Qwen, checked", s: whole.model, lead: true }, { name: "Regex reader and template, no model", s: whole.template }].map((r) => (
+                  <tr key={r.name} className={`border-t border-rule-soft ${r.lead ? "text-ink" : "text-ink-2"}`}>
+                    <td className="py-3 pr-4">{r.name}</td>
+                    <td className="mono">{r.s.complete} / {r.s.tasks}</td>
+                    <td className="mono">{r.s.safeAbstain}</td>
+                    <td className={`mono ${r.s.critical ? "text-over" : "text-within"}`}>{r.s.critical}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-[13px] text-ink-3">Held-out run, once, at commit 78e5291. Its three critical errors (two instruments in one message, two fees in one sentence) are published with it in evidence/wholetask-eval-heldout, and were fixed afterwards; a re-run on the same set after that is a development number, not this one.</p>
         </Block>
 
         <Block title="The book is Bitget's book" state="published">

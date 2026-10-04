@@ -311,7 +311,7 @@ export default function Page() {
             <a href="/proof" className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink">Every proof, and what it cannot check <ArrowRight size={13} /></a>
             <a href="/how" className="inline-flex items-center gap-1.5 text-ink-2 hover:text-ink">How a decision is made <ArrowRight size={13} /></a>
           </div>
-          <div className="mt-10"><Proof eligible={uni?.eligibleCount} total={uni?.total} source={uni ? (uni.source === "live" ? "live" : `recorded ${uni.fetched_utc.slice(0, 10)}`) : undefined} /></div>
+          <div className="mt-10"><Proof /></div>
         </section>
 
         {res && (
