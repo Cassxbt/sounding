@@ -1,0 +1,940 @@
+{
+  "today_ny": "2026-09-20",
+  "written_by": "blind writer agent (whole-task)",
+  "tasks": [
+    {
+      "id": "W01",
+      "lang": "en",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "178.4121",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "buy 1,000 USDT of rSPY"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Chat overrides instrument and side; fee and ceiling unstated so taken from controls."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W02",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": null
+      },
+      "turns": [
+        "Buy 2,500 USDT of rSPY by Thursday. I pay 0.08% taker."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "2500"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": "2026-09-24",
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "0.08% = 8 bps; 'by Thursday' includes Thursday 2026-09-24; no instruction to be flat."
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W03",
+      "lang": "en",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "250",
+        "ceilingBps": 60,
+        "userFeeBps": 10
+      },
+      "turns": [
+        "I need to be completely out of my 250 rHIMS by Wednesday, no exceptions."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RHIMSUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "250"
+        },
+        "takerFeeBps": 10,
+        "ceilingBps": 60,
+        "hardDeadlineNy": "2026-09-23",
+        "mustBeFlat": true,
+        "expect": "answer",
+        "why": "'by Wednesday' includes 2026-09-23; 'completely out, no exceptions' = hard deadline, must be flat."
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W04",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "buy",
+        "amount": "500",
+        "ceilingBps": 35,
+        "userFeeBps": 6
+      },
+      "turns": [
+        "Sell 40 rSPMO instead."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "40"
+        },
+        "takerFeeBps": 6,
+        "ceilingBps": 35,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Side flipped to sell with a share size; fee and ceiling from controls."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W05",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Buy 3 shares of rSPY"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "3"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "Buy sized only in shares; buys are sized in USDT, so ask for the USDT amount."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W06",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Buy 1,000 USDT of rTSLA"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RTSLAUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "no_book",
+        "why": "rTSLA has no recorded book; must not answer for rSPY from the controls."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W07",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "2000",
+        "ceilingBps": 45,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Split it: 1,000 USDT into rSPY and 1,000 USDT into rSPMO."
+      ],
+      "gold": {
+        "order": {
+          "symbol": null,
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 45,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "Two instruments in one request; the assistant handles one order, so ask which (order.symbol left null)."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W08",
+      "lang": "en",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "120",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Sell 120 rHIMS.",
+        "Actually make the ceiling 30."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RHIMSUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "120"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 30,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Later turn lowers ceiling from 50 to 30."
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W09",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "5000",
+        "ceilingBps": 25,
+        "userFeeBps": 5
+      },
+      "turns": [
+        "Buy 5,000 USDT of rSPY. Ceiling is 0 bps all-in, I won't pay anything over mid."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "5000"
+        },
+        "takerFeeBps": 5,
+        "ceilingBps": 0,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Zero ceiling is a valid, readable limit; the answer should show it cannot be met (fee alone is 5 bps) rather than ask."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W10",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "sell",
+        "amount": "75",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Sell all 75 rSPMO by Tuesday, must be flat.",
+        "Scratch the deadline, no rush. Just keep it under the ceiling."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "75"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Deadline and flat requirement cancelled in turn 2."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W11",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "sell",
+        "amount": "10",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Sell 10 rSPY. My taker fee is 6 bps, which is 0.1%."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "10"
+        },
+        "takerFeeBps": null,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "6 bps and 0.1% (10 bps) contradict each other; ask which fee applies (takerFeeBps left null)."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W12",
+      "lang": "en",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "178.4121",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Sell 2,000 USDT worth of rHIMS."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RHIMSUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "2000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "Sell sized only in USDT; sells are sized in shares, so ask for the share count."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W13",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "sell",
+        "amount": "15",
+        "ceilingBps": 30,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Dump all 15 rSPY before Friday. I have to be flat."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "15"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 30,
+        "hardDeadlineNy": "2026-09-24",
+        "mustBeFlat": true,
+        "expect": "answer",
+        "why": "'before Friday' excludes Friday, so last day is Thursday 2026-09-24; must be flat."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W14",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "buy",
+        "amount": "800",
+        "ceilingBps": 60,
+        "userFeeBps": null
+      },
+      "turns": [
+        "Buy 800 USDT of rSPMO.",
+        "Fee is eight basis points.",
+        "Tighten the ceiling to 10 bps."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "800"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 10,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Fee given in words (8 bps); ceiling tightened to 10 in final turn."
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W15",
+      "lang": "en",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Actually I want to sell rSPY, not buy."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "sell"
+        },
+        "size": null,
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "Side changed to sell with no share count; controls amount is USDT for the old buy, so it cannot be reused (size null)."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W16",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "178.4121",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "不卖了，改成买入 rSPY，1000 USDT。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "聊天改了标的和方向；费率和上限沿用控件。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W17",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1500",
+        "ceilingBps": 45,
+        "userFeeBps": null
+      },
+      "turns": [
+        "买 1500 USDT 的 rSPY，我的吃单手续费是万8。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1500"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 45,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "万8 = 0.08% = 8 bps；上限来自控件。"
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W18",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "sell",
+        "amount": "60",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "最晚周三（含周三）要把 60 股 rSPMO 全部卖完，必须清仓。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "60"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": "2026-09-23",
+        "mustBeFlat": true,
+        "expect": "answer",
+        "why": "含周三 = by Wednesday 2026-09-23；必须清仓 = must be flat。"
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W19",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "buy",
+        "amount": "500",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "帮我买 500 USDT 的 rNVDA。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RNVDAUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "500"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "no_book",
+        "why": "rNVDA 没有记录的盘口，不能拿 rHIMS 回答。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W20",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "买 20 股 rSPMO。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "20"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "买单只给了股数，买单需按 USDT 计，需追问金额。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W21",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "sell",
+        "amount": "8",
+        "ceilingBps": 50,
+        "userFeeBps": 6
+      },
+      "turns": [
+        "卖出 8 股 rSPY。",
+        "上限改成 30 个基点。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "8"
+        },
+        "takerFeeBps": 6,
+        "ceilingBps": 30,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "第二轮把上限从 50 改为 30。"
+      },
+      "adversarial": false
+    },
+    {
+      "id": "W22",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "300",
+        "ceilingBps": 45,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "周五前要把 300 股 rHIMS 卖光，必须清仓。",
+        "算了，不设截止时间了，慢慢卖。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RHIMSUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "300"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 45,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "第二轮取消截止时间与清仓要求。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W23",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "2000",
+        "ceilingBps": 50,
+        "userFeeBps": 10
+      },
+      "turns": [
+        "改成卖出 rSPMO 30 股，手续费按万分之六算。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "30"
+        },
+        "takerFeeBps": 6,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "标的和方向都改了；万分之六 = 6 bps 覆盖控件的 10；上限沿用 50。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W24",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "买 rSPY 和 rHIMS 各 500 USDT。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": null,
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "500"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "一次提了两个标的，需追问只做哪一个（order.symbol 置 null）。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W25",
+      "lang": "zh",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "buy",
+        "amount": "300",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "买 300 USDT rHIMS，含手续费总成本不能超过 5 个基点。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RHIMSUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "300"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 5,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "上限 5 bps（低于 8 bps 费率），应直接回答无法满足而非追问。"
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W26",
+      "lang": "mixed",
+      "controls": {
+        "symbol": "RHIMSUSDT",
+        "side": "sell",
+        "amount": "178.4121",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "帮我 buy 1,000 USDT of rSPY, ceiling 照旧。"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Instrument and side overridden; 'ceiling 照旧' keeps controls ceiling 40."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W27",
+      "lang": "mixed",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "sell",
+        "amount": "12",
+        "ceilingBps": 35,
+        "userFeeBps": null
+      },
+      "turns": [
+        "Sell 12 rSPY, fee 万8, 周二前 must be flat."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "12"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 35,
+        "hardDeadlineNy": "2026-09-21",
+        "mustBeFlat": true,
+        "expect": "answer",
+        "why": "万8 = 8 bps; 周二前 = before Tuesday, so last day Monday 2026-09-21; must be flat."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W28",
+      "lang": "mixed",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "sell",
+        "amount": "50",
+        "ceilingBps": 40,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "sell 50 股 rQQQ"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RQQQUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "50"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 40,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "no_book",
+        "why": "rQQQ has no recorded book; must not answer for rSPMO."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W29",
+      "lang": "mixed",
+      "controls": {
+        "symbol": "RSPYUSDT",
+        "side": "buy",
+        "amount": "1000",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "buy 1000U rSPY, ceiling 改成 20 还是 25…我还没想好"
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPYUSDT",
+          "side": "buy"
+        },
+        "size": {
+          "unit": "USDT",
+          "value": "1000"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": null,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "ask",
+        "why": "Trader changes the ceiling but gives two values and is undecided; ask (ceilingBps null)."
+      },
+      "adversarial": true
+    },
+    {
+      "id": "W30",
+      "lang": "mixed",
+      "controls": {
+        "symbol": "RSPMOUSDT",
+        "side": "buy",
+        "amount": "600",
+        "ceilingBps": 50,
+        "userFeeBps": 8
+      },
+      "turns": [
+        "Switch to sell, 卖 25 股 rSPMO by Friday, 必须清仓.",
+        "Deadline 取消, no need to be flat."
+      ],
+      "gold": {
+        "order": {
+          "symbol": "RSPMOUSDT",
+          "side": "sell"
+        },
+        "size": {
+          "unit": "shares",
+          "value": "25"
+        },
+        "takerFeeBps": 8,
+        "ceilingBps": 50,
+        "hardDeadlineNy": null,
+        "mustBeFlat": false,
+        "expect": "answer",
+        "why": "Side flipped to sell 25 shares; deadline and flat cancelled in turn 2."
+      },
+      "adversarial": true
+    }
+  ]
+}
