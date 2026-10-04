@@ -177,7 +177,10 @@ function missingLimits(out: IntakeField[], text: string) {
     // Naming a cost limit without a figure ("under the ceiling", "含手续费") states nothing new.
     if (name === "takerFeeBps" || name === "ceilingBps") {
       const c = around(text, m.index ?? 0, true);
-      if (!unclaimed(out, text, name)(costFigures(c.text).map((g) => ({ ...g, at: g.at + c.start }))).length) continue;
+      const end = (m.index ?? 0) + m[0].length;
+      const d = text.slice(end, end + 12).search(/\d/);
+      const bare = d >= 0 && d <= 8 && unclaimed(out, text, name)([{ at: end + d, raw: "", bps: 0 }]).length > 0;
+      if (!bare && !unclaimed(out, text, name)(costFigures(c.text).map((g) => ({ ...g, at: g.at + c.start }))).length) continue;
     }
     if (name === "mustBeFlat" && !ok("hardDeadlineNy") && !CUES.hardDeadlineNy.test(text)) continue;
     out.push({ name, value: "", span: m[0], source: "code", status: "conflict", note: "mentioned but not read" });

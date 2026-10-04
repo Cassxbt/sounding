@@ -224,3 +224,10 @@ describe("someone else's fee, and an undecided choice (development)", () => {
     }
   });
 });
+
+describe("a cost limit followed by bare numbers is a stated limit (development)", () => {
+  it("'ceiling 改成 20 还是 25' with no ceiling read is asked, never left at the old ceiling", () => {
+    const f = checkFields([{ name: "sizeQuoteUsdt", value: "1000", span: "1000U" }], "buy 1000U rSPY, ceiling 改成 20 还是 25…我还没想好", "2026-09-20", [{ code: "SPY", symbol: "RSPYUSDT" }]);
+    expect(f.find((x) => x.name === "ceilingBps")?.status).toBe("conflict");
+  });
+});
