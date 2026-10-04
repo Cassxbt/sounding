@@ -41,17 +41,18 @@ export function SoundingLine({ side, levels, mid, qty, levelsConsumed = 0, avgBp
   const maxQ = Math.max(...all.map((l) => l.q), 1e-9);
   const consumedDepth = depth(all[Math.min(all.length, Math.max(1, levelsConsumed)) - 1]?.bps ?? 0);
   const req = qty ? Number(qty) : 0;
-  let cum = 0;
+  // Shares available above each level, so the level the order stops in shows only the part it takes.
+  const before = all.map((_, i) => all.slice(0, i).reduce((t, l) => t + l.q, 0));
   const rows = all.map((l, i) => {
-    const before = cum; cum += l.q;
+    const cum = before[i] + l.q;
     const consumed = i < levelsConsumed;
-    const frac = consumed ? (req > 0 && cum > req ? Math.max(0, (req - before) / l.q) : 1) : 0;
+    const frac = consumed ? (req > 0 && cum > req ? Math.max(0, (req - before[i]) / l.q) : 1) : 0;
     return { ...l, i, consumed, frac, y: depth(l.bps) };
   });
   // A size label under a depth marker's badge is hidden rather than overprinted.
   const markerYs = [avgBps ? depth(Number(avgBps)) : null, budgetBps ? depth(budgetBps) : null].filter((y): y is number => y !== null);
-  let lastLabel = -100;
-  const labelled = new Set(rows.filter((r) => { if (r.y - lastLabel >= 4.2) { lastLabel = r.y; return true; } return false; }).map((r) => r.i));
+  // Label a level only when it sits far enough below the last labelled one to be read.
+  const labelled = rows.reduce<{ last: number; ids: Set<number> }>((acc, r) => (r.y - acc.last >= 4.2 ? { last: r.y, ids: acc.ids.add(r.i) } : acc), { last: -100, ids: new Set() }).ids;
 
   const line = useTransform(progress, [0, 1], ["0%", `${consumedDepth}%`]);
 

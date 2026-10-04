@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Mark } from "./ui/Mark";
 
 /** Every page closes on what Sounding will never do. */
@@ -10,10 +11,10 @@ export function Footer() {
           Books from Bitget&rsquo;s public spot order book; eligibility from stock-info; sessions from Bitget&rsquo;s market states and calendar, with daylight saving computed locally. Weekend liquidity is market-maker liquidity, and unfilled weekend limit orders are cancelled at the session switch. Analyst: Qwen 3.8 Max, held to code-checked rules. Built for Bitget AI Base Camp S2 by xi labs.
         </p>
         <nav aria-label="Pages" className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
-          <a href="/" className="text-ink-2 hover:text-ink">Desk</a>
-          <a href="/bitget" className="text-ink-2 hover:text-ink">Built on Bitget</a>
-          <a href="/how" className="text-ink-2 hover:text-ink">How it works</a>
-          <a href="/proof" className="text-ink-2 hover:text-ink">Proof</a>
+          <Link href="/" className="text-ink-2 hover:text-ink">Desk</Link>
+          <Link href="/bitget" className="text-ink-2 hover:text-ink">Built on Bitget</Link>
+          <Link href="/how" className="text-ink-2 hover:text-ink">How it works</Link>
+          <Link href="/proof" className="text-ink-2 hover:text-ink">Proof</Link>
         </nav>
       </div>
     </footer>

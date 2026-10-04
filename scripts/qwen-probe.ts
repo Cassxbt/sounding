@@ -19,6 +19,6 @@ console.log("variant", variant, "| prompt chars", JSON.stringify(body).length);
 const t0 = Date.now();
 const r = await fetch("https://hackathon.bitgetops.com/v1/chat/completions", { method: "POST", signal: AbortSignal.timeout(300_000), headers: { "content-type": "application/json", authorization: `Bearer ${process.env.BITGET_QWEN_API_KEY}` }, body: JSON.stringify(body) });
 const text = await r.text(); console.log("HTTP", r.status, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
-try { const j = JSON.parse(text); console.log("usage", JSON.stringify(j.usage)); const c = j.choices?.[0]?.message?.content ?? ""; console.log("content head:", c.slice(0, 600)); const p = AnalystOutputSchema.safeParse(JSON.parse(c.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""))); console.log("schema parse:", p.success ? "OK" : p.error.issues.slice(0, 3)); } catch (e) { console.log(text.slice(0, 500)); }
+try { const j = JSON.parse(text); console.log("usage", JSON.stringify(j.usage)); const c = j.choices?.[0]?.message?.content ?? ""; console.log("content head:", c.slice(0, 600)); const p = AnalystOutputSchema.safeParse(JSON.parse(c.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""))); console.log("schema parse:", p.success ? "OK" : p.error.issues.slice(0, 3)); } catch { console.log(text.slice(0, 500)); }
 }
 main();

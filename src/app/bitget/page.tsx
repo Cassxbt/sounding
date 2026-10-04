@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Prohibit } from "@phosphor-icons/react/ssr";
 import { Nav } from "@/components/Nav";
@@ -65,8 +66,8 @@ export default async function Bitget() {
 
         <section className="border-t border-rule-soft py-16">
           <div className="flex flex-wrap gap-3">
-            <a href="/" className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[14px] font-medium text-paper transition-transform duration-[var(--dur-micro)] hover:-translate-y-px">Try it on the desk <ArrowRight size={14} /></a>
-            <a href="/proof" className="inline-flex items-center gap-2 rounded-full border border-rule px-5 py-3 text-[14px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">See the proof</a>
+            <Link href="/" className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-3 text-[14px] font-medium text-paper transition-transform duration-[var(--dur-micro)] hover:-translate-y-px">Try it on the desk <ArrowRight size={14} /></Link>
+            <Link href="/proof" className="inline-flex items-center gap-2 rounded-full border border-rule px-5 py-3 text-[14px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">See the proof</Link>
           </div>
         </section>
       </main>

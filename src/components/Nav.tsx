@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
@@ -38,10 +39,10 @@ export function Nav({ mode, onMode, eligible, total, source }: Props) {
     <header className="sticky top-3 z-40 px-4">
       <a href="#main" className="sr-only rounded-full bg-ink px-4 py-2 text-[13px] text-paper focus:not-sr-only focus:absolute focus:left-4 focus:top-0 focus:z-50">Skip to content</a>
       <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center gap-2 rounded-full border rule bg-paper-2/80 py-1.5 pl-3 pr-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-paper-2/60 sm:gap-3 sm:pl-4">
-        <a href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, the desk">
+        <Link href="/" className="flex items-center gap-2 text-ink" aria-label="Sounding, the desk">
           <Mark live={mode === "live"} />
           <span className="text-[15px] font-medium tracking-tight">Sounding</span>
-        </a>
+        </Link>
         <ul className="ml-3 hidden items-center gap-1 md:flex">
           {PAGES.map((p) => (
             <li key={p.href}>

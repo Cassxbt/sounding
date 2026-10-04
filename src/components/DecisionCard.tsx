@@ -18,6 +18,12 @@ interface Props {
 
 const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
 
+/** Two decimals, unless rounding would hide which side of the ceiling the exact cost is on. */
+function precise(res: SoundingResult, feeBps: number, shown: string): string {
+  const exact = res.leg?.bpsPreFeeExact ? Number(res.leg.bpsPreFeeExact) + feeBps : NaN;
+  return Number.isFinite(exact) && Number(shown) === res.ceilingBps && exact !== res.ceilingBps ? exact.toFixed(4) : shown;
+}
+
 /** Counts to the engine's figure once; the figure itself is never rounded differently from the receipt. */
 function Figure({ value }: { value: string }) {
   const reduce = useReducedMotion();
@@ -122,7 +128,7 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
       ) : (
         <div className="mt-4">
           <div className="flex items-end gap-3">
-            <span className="display text-[76px] leading-[0.9] tracking-[-0.02em] text-ink sm:text-[92px]"><Figure value={d!.allInBps!} /></span>
+            <span className="display text-[76px] leading-[0.9] tracking-[-0.02em] text-ink sm:text-[92px]"><Figure value={precise(res, d!.feeBps, d!.allInBps!)} /></span>
             <span className="mb-2 mono text-[13px] text-ink-3">bps all-in</span>
           </div>
           <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium ${within ? "bg-within-bg text-within" : "bg-over-bg text-over"}`}>

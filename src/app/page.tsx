@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowDown, ArrowRight, CaretDown, Clock, DownloadSimple, Hourglass, Lightning, Play, Scissors, Sliders } from "@phosphor-icons/react";
 import { Nav } from "@/components/Nav";
@@ -18,7 +18,7 @@ import type { Alternative, SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
 interface Universe { source: string; fetched_utc: string; total: number; eligibleCount: number; eligible: { symbol: string; code: string; name: string }[]; session: { state: string; detail: string; ny: { tzName: string; weekday: string; date: string } }; now_utc: string }
-interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe: { source: string; fetched_utc: string }; capture: Record<string, unknown> }
+interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe?: { source: string; fetched_utc: string }; capture: Record<string, unknown>; fixtureFile?: string }
 interface Preset { id: string; label: string; outcome: string; tone: "within" | "over" | "warn"; symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee?: number; fixture?: string; confirmFixture?: string; confirmNote?: string }
 
 const PRESETS: Preset[] = [
@@ -45,7 +45,6 @@ const plain = (t: string) => t
   .replace(/^band eligibility unverified$/, "price-band eligibility not verified")
   .replace(/_/g, " ");
 
-const FIXTURE_FILES: Record<string, string> = { RHIMSUSDT: "rhims-20260920T090235Z", RSPYUSDT: "rspy-20260920T0902Z", RSPMOUSDT: "rspmo-20260920T0902Z" };
 
 export default function Page() {
   const [mode, setMode] = useState<Mode>("recorded");
@@ -62,6 +61,7 @@ export default function Page() {
   const [prevBps, setPrevBps] = useState<string | undefined>();
   const [age, setAge] = useState(0);
   const [terms, setTerms] = useState(false);
+  const [epoch, setEpoch] = useState(0);
   const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
   const reduce = useReducedMotion();
   const [deletion, setDeletion] = useState<{ rows: DeletionRow[] } | null>(null);
@@ -82,14 +82,24 @@ export default function Page() {
   const expired = !!resp && !resp.result.freshness.historical && age > 5000;
 
   // The mode is passed in by callers that change it; React state would still hold the old one here.
+  // Only the latest request may land; an earlier, slower one is dropped.
+  const latest = useRef(0);
   async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string; mode: Mode }>) {
+    const id = ++latest.current;
     setBusy(true); setErr(null);
     const m = over?.mode ?? mode;
     const fx = over?.fixture !== undefined ? over.fixture || undefined : fixture.sound;
     const fee = over?.userFee !== undefined ? over.userFee : userFee;
     const body = { symbol: over?.symbol ?? symbol, side: over?.side ?? side, amount: over?.amount ?? amount, ceilingBps: over?.ceiling ?? ceiling, userFeeBps: fee === "" ? undefined : Number(fee), mode: m, previousBpsPreFee: m === "live" ? prevBps : undefined, fixture: m === "recorded" ? fx : undefined };
-    const r = await fetch("/api/sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    const j = await r.json();
+    let r: Response, j;
+    try {
+      r = await fetch("/api/sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      j = await r.json();
+    } catch {
+      if (id === latest.current) { setBusy(false); setErr("Could not reach the engine. Try again."); }
+      return;
+    }
+    if (id !== latest.current) return;
     setBusy(false);
     if (!r.ok) { setErr(j.error ?? "request failed"); setResp(null); return; }
     setResp(j); setAge(0);
@@ -98,29 +108,30 @@ export default function Page() {
   function preset(p: Preset) {
     const fx = p.fixture ? { sound: p.fixture, confirm: p.confirmFixture, confirmNote: p.confirmNote } : {};
     const fee = p.userFee !== undefined ? String(p.userFee) : "";
-    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setMode("recorded"); setFixture(fx); setUserFee(fee); setActive(p.id);
+    setSymbol(p.symbol); setSide(p.side); setAmount(p.amount); setCeiling(p.ceiling); setMode("recorded"); setFixture(fx); setUserFee(fee); setActive(p.id); setEpoch((e) => e + 1);
     setTimeout(() => run({ symbol: p.symbol, side: p.side, amount: p.amount, ceiling: p.ceiling, fixture: fx.sound ?? "", userFee: fee, mode: "recorded" }), 0);
   }
   function switchMode(m: Mode) {
-    setMode(m); setFixture({}); setActive("");
+    setMode(m); setFixture({}); setActive(""); setEpoch((e) => e + 1);
     setTimeout(() => run({ fixture: "", mode: m }), 0);
   }
 
   const res = resp?.result;
   const code = uni?.eligible.find((s) => s.symbol === symbol)?.code ?? symbol.replace(/^R|USDT$/g, "");
   const d = res ? decidingRow(res) : undefined;
-  const replayCmd = useMemo(() => (res && FIXTURE_FILES[symbol] ? `pnpm replay fixtures/${FIXTURE_FILES[symbol]}.json ${side} ${amount} ${ceiling}${userFee ? ` ${userFee}` : ""}` : ""), [res, symbol, side, amount, ceiling, userFee]);
+  // The command replays the exact recorded book this result was priced on.
+  const replayCmd = useMemo(() => (res && resp?.fixtureFile ? `pnpm replay fixtures/${resp.fixtureFile} ${res.intent.side} ${res.intent.side === "sell" ? res.intent.baseQty : res.intent.quoteBudget} ${res.ceilingBps}${res.fees?.find((f) => f.source === "user") ? ` ${res.fees.find((f) => f.source === "user")!.feeBps}` : ""}` : ""), [res, resp]);
   const freshness = !res ? "" : res.freshness.historical ? `recorded · ${new Date(Number(res.receipt.exchange_ts)).toISOString().slice(0, 16).replace("T", " ")}Z` : expired ? "live · expired, re-sound" : `live · ${(age / 1000).toFixed(1)} s old`;
 
   const controls = (
     <>
       <Pill label="Side">
-        <select aria-label="Side" value={side} onChange={(e) => { const s = e.target.value as "buy" | "sell"; setSide(s); setActive(""); run({ side: s }); }} className="appearance-none bg-transparent pr-5 focus:outline-none">
+        <select aria-label="Side" value={side} onChange={(e) => { const s = e.target.value as "buy" | "sell"; setSide(s); setActive(""); setEpoch((e) => e + 1); run({ side: s }); }} className="appearance-none bg-transparent pr-5 focus:outline-none">
           <option value="sell">Sell</option><option value="buy">Buy</option>
         </select>
       </Pill>
       <Pill label="Instrument">
-        <select aria-label="Instrument" value={symbol} onChange={(e) => { setSymbol(e.target.value); setFixture({}); setActive(""); run({ symbol: e.target.value, fixture: "" }); }} className="max-w-[9.5rem] appearance-none bg-transparent pr-5 focus:outline-none">
+        <select aria-label="Instrument" value={symbol} onChange={(e) => { setSymbol(e.target.value); setFixture({}); setActive(""); setEpoch((x) => x + 1); run({ symbol: e.target.value, fixture: "" }); }} className="max-w-[9.5rem] appearance-none bg-transparent pr-5 focus:outline-none">
           {(uni?.eligible ?? [{ symbol, code, name: "" }]).map((s) => <option key={s.symbol} value={s.symbol}>r{s.code}</option>)}
         </select>
       </Pill>
@@ -132,7 +143,7 @@ export default function Page() {
           <Field label={side === "sell" ? "Shares" : "USDT"} value={amount} onChange={setAmount} />
           <Field label="Ceiling, bps" value={String(ceiling)} onChange={(v) => setCeiling(Number(v) || 0)} />
           <Field label="Your fee, bps" value={userFee} onChange={setUserFee} placeholder="unknown" />
-          <button type="button" onClick={() => { setActive(""); run(); }} className="col-span-3 rounded-full border border-rule py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">Sound these terms</button>
+          <button type="button" onClick={() => { setActive(""); setEpoch((e) => e + 1); run(); }} className="col-span-3 rounded-full border border-rule py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">Sound these terms</button>
         </div>
       )}
     </>
@@ -163,10 +174,15 @@ export default function Page() {
             </motion.p>
             <motion.div initial={{ opacity: 0, y: reduce ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} className="mt-9">
               <AnalystPanel
-                key={`${symbol}-${side}-${mode}-${fixture.sound ?? ""}`}
+                key={`chat-${epoch}`}
                 symbol={symbol} side={side} amount={amount} ceiling={ceiling} mode={mode} userFee={userFee} fixture={fixture.sound}
                 prefix={controls}
-                onTerms={(t) => { setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setActive(""); setTimeout(() => run({ amount: t.amount, ceiling: t.ceiling, userFee: t.userFee }), 0); }}
+                onTurn={(t) => {
+                  // The card shows the very result the analyst ruled on: one order, one book, one receipt.
+                  if (t.symbol !== symbol) setFixture({});
+                  setSymbol(t.symbol); setSide(t.side); setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setActive("");
+                  if (t.priced) { latest.current++; setBusy(false); setErr(null); setResp({ ...t.priced, universe: resp?.universe }); setAge(0); }
+                }}
               />
             </motion.div>
           </div>

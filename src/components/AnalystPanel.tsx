@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp, Code, Eye, MinusCircle, Quotes, SealCheck, ShieldWarning, Sliders, CheckCircle, CircleNotch, Scales, Files } from "@phosphor-icons/react";
 import { Mark } from "./ui/Mark";
+import type { SoundingResult } from "@/engine/types";
+import type { AnswerCheck } from "@/lib/answercheck";
 import type { AnalystOutput, Constraints, EvidencePack } from "@/analyst/schema";
 import type { FieldName, Intake, IntakeField } from "@/analyst/intake";
 
@@ -19,8 +21,8 @@ interface Props {
   seed?: string;
   /** instrument and side controls, shown inside the composer */
   prefix?: ReactNode;
-  /** size, ceiling and fee the engine used for this turn, when the trader's words changed them; the page re-sounds on them so Last Look confirms the same terms */
-  onTerms?: (t: { amount: string; ceiling: number; userFee: string }) => void;
+  /** the order and terms this turn priced, and the book it priced them on; the page shows that same result, so chat and card never disagree */
+  onTurn?: (t: TurnResult) => void;
 }
 
 const DEMO_TURNS = [
@@ -36,7 +38,12 @@ const EXAMPLES: { label: string; text: string }[] = [
   { label: "Mixed", text: "sell 178.4121 rHIMS, taker 万8, all-in 不超过 50bp, before the 8th 必须 flat" },
 ];
 
-export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fixture, prefix, onTerms }: Props) {
+export interface TurnResult {
+  symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee: string;
+  priced?: { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; capture: Record<string, unknown>; fixtureFile?: string };
+}
+
+export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fixture, prefix, onTurn }: Props) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState(DEMO_TURNS[0]);
   const [state, setState] = useState<{ resp: AnalystResp; evidence: EvidencePack; constraints: Constraints } | null>(null);
@@ -44,6 +51,8 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [arm, setArm] = useState<"model" | "template">("model");
+  const [order, setOrder] = useState<{ symbol: string; side: "buy" | "sell" } | null>(null);
+  const [check, setCheck] = useState<AnswerCheck | null>(null);
   // A reply that arrives after the panel was reset (new symbol, side or mode) must not re-sound the page.
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => pending.current?.abort(), []);
@@ -69,7 +78,14 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
       return;
     }
     setBusy(false);
-    if (!r.ok || !j.analyst) { setErr(j.error ?? j.note ?? "analyst unavailable"); if (j.constraints && state) setState({ ...state, constraints: j.constraints }); return; }
+    if (!r.ok) { setErr(j.error ?? "analyst unavailable"); return; }
+    if (!j.analyst) {
+      // The engine refused, or the named order has no book here: say so in the thread, and show the refusal on the card.
+      setTurns([...next, { role: "assistant", text: j.note ?? "Nothing was priced." }]);
+      if (j.constraints && state) setState({ ...state, constraints: j.constraints });
+      if (j.order) onTurn?.({ symbol: j.order.symbol, side: j.order.side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling, userFee, priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile } : undefined });
+      return;
+    }
     const resp = j.analyst as AnalystResp;
     const read = j.intake as Intake | undefined;
     if (read) setProv((p) => {
@@ -83,9 +99,15 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
     // Carry what the trader stated (checked intake), never the model's output, into the next turn.
     const carried: Constraints = j.constraints ?? j.intake?.constraints ?? resp.output.constraints;
     setState({ resp, evidence: j.evidence, constraints: carried });
-    const terms = { amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling, userFee: j.userFeeBps === null || j.userFeeBps === undefined ? userFee : String(j.userFeeBps) };
-    if (terms.amount !== amount || terms.ceiling !== ceiling || terms.userFee !== userFee) onTerms?.(terms);
-    setTurns([...next, { role: "assistant", text: resp.output.clarification ?? resp.output.explanation }]);
+    setOrder(j.order ?? null); setCheck(j.answerCheck ?? null);
+    onTurn?.({
+      symbol: j.order?.symbol ?? symbol, side: j.order?.side ?? side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling,
+      userFee: j.userFeeBps === null || j.userFeeBps === undefined ? userFee : String(j.userFeeBps),
+      priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile } : undefined,
+    });
+    const switched = j.order && (j.order.symbol !== symbol || j.order.side !== side);
+    const lead = switched ? `Priced the order you named: ${j.order.side} r${String(j.order.symbol).replace(/^R|USDT$/g, "")}. ` : "";
+    setTurns([...next, { role: "assistant", text: lead + (resp.output.clarification ?? resp.output.explanation) }]);
     const idx = DEMO_TURNS.indexOf(text);
     if (idx >= 0 && idx < DEMO_TURNS.length - 1) setInput(DEMO_TURNS[idx + 1]);
   }
@@ -169,7 +191,15 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
 
       {out && state && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="space-y-5">
-          <ConstraintCard c={state.constraints} prov={prov} ceiling={ceiling} amount={amount} side={side} />
+          {check && (
+            <div className={`flex items-start gap-2 rounded-xl px-3 py-2.5 text-[13px] ${check.status === "stands" ? "bg-within-bg/70 text-within" : "bg-over-bg/70 text-over"}`}>
+              {check.status === "stands" ? <CheckCircle size={16} weight="fill" className="mt-px shrink-0" /> : <ShieldWarning size={16} className="mt-px shrink-0" />}
+              <span>{check.status === "stands"
+                ? `Re-priced on a fresh Bitget book before answering, ${(check.gapMs / 1000).toFixed(1)} s later: the answer stands (cost moved ${check.driftBps ?? "0.00"} bps).`
+                : `The book moved while this answer was written (${(check.gapMs / 1000).toFixed(1)} s): ${check.reasons.join("; ")}. No route is offered; re-sound before acting.`}</span>
+            </div>
+          )}
+          <ConstraintCard c={state.constraints} prov={prov} ceiling={ceiling} amount={amount} side={order?.side ?? side} symbol={order?.symbol ?? symbol} />
 
           <div className="rounded-[18px] border border-rule-soft bg-paper-2/50 p-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -242,8 +272,10 @@ const SOURCE: Record<IntakeField["source"], { label: string; icon: ReactNode }> 
   code: { label: "code-read", icon: <Code size={14} className="text-within" /> },
 };
 
-function ConstraintCard({ c, prov, ceiling, amount, side }: { c: Constraints; prov: { fields: Provenance; held: IntakeField[]; reader: Intake["reader"] | null }; ceiling: number; amount: string; side: "buy" | "sell" }) {
+function ConstraintCard({ c, prov, ceiling, amount, side, symbol }: { c: Constraints; prov: { fields: Provenance; held: IntakeField[]; reader: Intake["reader"] | null }; ceiling: number; amount: string; side: "buy" | "sell"; symbol: string }) {
   const rows: { k: string; v: string; f?: IntakeField }[] = [
+    { k: "instrument", v: `r${symbol.replace(/^R|USDT$/g, "")}`, f: prov.fields.symbol?.value === symbol ? prov.fields.symbol : undefined },
+    { k: "side", v: side, f: prov.fields.side?.value === side ? prov.fields.side : undefined },
     // A quote is shown only beside the value it produced; a later form edit shows as "set in the form".
     { k: "size", v: `${amount} ${side === "buy" ? "USDT" : "sh"}`, f: same(prov.fields[side === "buy" ? "sizeQuoteUsdt" : "sizeShares"], amount) },
     { k: "ceiling", v: `${ceiling} bps`, f: same(prov.fields.ceilingBps, ceiling) },
@@ -254,7 +286,7 @@ function ConstraintCard({ c, prov, ceiling, amount, side }: { c: Constraints; pr
   ];
   return (
     <div className="rounded-[18px] border border-rule-soft bg-paper-2/50 p-5">
-      <div className="eyebrow mb-3 flex items-center gap-1.5"><Scales size={13} /> what you said · what the engine used</div>
+      <div className="eyebrow mb-3 flex items-center gap-1.5"><Scales size={13} /> the order contract · what you said, what the engine used</div>
       <ul className="divide-y divide-rule-soft">
         {rows.map(({ k, v, f }) => (
           <li key={k} className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 gap-y-1 py-2.5 sm:grid-cols-[110px_120px_minmax(0,1fr)] sm:items-baseline">

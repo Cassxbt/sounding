@@ -52,8 +52,10 @@ export default async function Proof() {
   const d = decidingRow(yours)!;
   const leg = yours.leg!;
   const capture = recordedCapture("RHIMSUSDT")!;
-  let left = Number(leg.qty);
-  const walked = capture.raw.data.bids.slice(0, leg.levelsConsumed).map(([p, q]) => { const take = Math.min(left, Number(q)); left -= take; return { p, q: String(Number(q)), take: take.toFixed(4) }; });
+  const walked = capture.raw.data.bids.slice(0, leg.levelsConsumed).reduce<{ left: number; rows: { p: string; q: string; take: string }[] }>(
+    (acc, [p, q]) => { const take = Math.min(acc.left, Number(q)); return { left: acc.left - take, rows: [...acc.rows, { p, q: String(Number(q)), take: take.toFixed(4) }] }; },
+    { left: Number(leg.qty), rows: [] },
+  ).rows;
   const looks = [
     { label: "Two real captures 21 seconds apart, Oct 3", r: lastLook(at("RHIMSUSDT@20261003a", 8), at("RHIMSUSDT@20261003b", 8)) },
     { label: "The Sep 20 decision re-checked on the Oct 3 book", r: lastLook(yours, at("RHIMSUSDT@20261003b", 8)) },
@@ -78,7 +80,7 @@ export default async function Proof() {
           <blockquote className="max-w-3xl border-l-2 border-sea pl-4 text-[16px] leading-relaxed text-ink">&ldquo;{LEAD_TEXT}&rdquo;</blockquote>
           <p className="display mt-8 text-[30px] leading-tight text-ink sm:text-[36px]">{d.allInBps} bps all-in at your {d.feeBps} bps fee: <span className="text-within">within</span> your {yours.ceilingBps} bps ceiling.</p>
           {yours.worstCase && <p className="mt-3 text-[16px] text-ink-2">On the same book at the worst-case {yours.worstCase.feeBps} bps fee: {yours.worstCase.allInBps} bps, <span className="text-over">over</span>; the largest size that fits there is {yours.worstCase.clipQty} shares.</p>}
-          <p className="mt-3 text-[14px] text-ink-3">Recorded Saturday rHIMS book, {iso(capture.exchange_ts)}. Pre-fee {leg.bpsPreFee} bps against the {yours.referenceMid} mid; proceeds {leg.cash} USDT at a VWAP of {leg.vwap}.</p>
+          <p className="mt-3 text-[14px] text-ink-3">Recorded Sunday rHIMS book, {iso(capture.exchange_ts)}. Pre-fee {leg.bpsPreFee} bps against the {yours.referenceMid} mid; proceeds {leg.cash} USDT at a VWAP of {leg.vwap}.</p>
           <div className="mt-8 grid gap-8 md:grid-cols-2">
             <table className="mono w-full text-[12px]">
               <caption className="eyebrow mb-3 text-left">the walk</caption>
