@@ -7,7 +7,8 @@ for (const l of readFileSync(".env.local", "utf8").split("\n")) { const m = l.ma
  *  COMPLETE      right order and terms, and a recommendation consistent with the engine's verdict for the gold order
  *  SAFE_ABSTAIN  a question where an answer was possible (not credited, not penalised)
  *  CRITICAL      wrong order priced; cross recommended over the gold ceiling; a non-exit route recommended under a hard exit;
- *                acting when the gold says ask; answering for an instrument with no book; pricing a size, fee or ceiling other than the gold
+ *                acting when the gold says ask; answering for an instrument with no book; pricing a size, fee or ceiling other than the gold;
+ *                and, on ANY turn, a question shown beside a priced card or an admissible route, or a figure in the reply that the shown book did not produce
  * Usage: pnpm exec tsx scripts/wholetask-eval.ts <tasks.json> <outDir> [arms=template,model]
  */
 
@@ -18,7 +19,8 @@ type Verdict = "COMPLETE" | "SAFE_ABSTAIN" | "CRITICAL";
 interface Priced { symbol: string; ceilingBps: number; intent: { side: "buy"; quoteBudget: string } | { side: "sell"; baseQty: string }; fees?: { source: string; feeBps: number }[] }
 interface Reply {
   order?: { symbol: string; side: "buy" | "sell" }; amount?: string; ceilingBps?: number; userFeeBps?: number | null; result?: Priced | null; note?: string; error?: string; status?: number; constraints?: unknown;
-  analyst?: { output?: { recommendation: string | null; clarification: string | null; explanation: string } } | null;
+  analyst?: { output?: { recommendation: string | null; clarification: string | null; explanation: string; admissible?: { kind: string }[] } } | null;
+  actionable?: boolean;
 }
 
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(String(v).replace(/,/g, "")));
@@ -38,6 +40,7 @@ async function main() {
       let ctl = { ...t.controls };
       let constraints: unknown, previous: unknown, j: Reply = {};
       const turns: { role: "user" | "assistant"; text: string }[] = [];
+      const surface: string[] = [];
       const t0 = Date.now();
       for (const text of t.turns) {
         turns.push({ role: "user", text });
@@ -47,6 +50,12 @@ async function main() {
         if (!r.ok) { j = { error: j.error, status: r.status }; break; }
         const out = j.analyst?.output;
         turns.push({ role: "assistant", text: out?.clarification ?? out?.explanation ?? j.note ?? "" });
+        // Every rendered turn: a question must stand alone, and every figure shown must be the shown book's.
+        if (out?.clarification && (j.result || (out.admissible?.length ?? 0) > 0 || j.actionable)) surface.push(`turn ${turns.length / 2}: asked while showing a priced card or route`);
+        if (j.result && out && !out.clarification) {
+          const shown = new Set([...(j.result.fees ?? []).map((f) => (f as { allInBps?: string }).allInBps).filter(Boolean) as string[], String((j.result as { leg?: { bpsPreFee?: string } }).leg?.bpsPreFee ?? ""), String(j.result.ceilingBps), ...(j.result.fees ?? []).map((f) => String(f.feeBps))]);
+          for (const m of out.explanation.matchAll(/(\d+(?:\.\d+)?)\s*(?:bps|个?基点)/g)) if (![...shown].some((x) => Number(x) === Number(m[1]))) surface.push(`turn ${turns.length / 2}: ${m[1]} bps is not on the shown card`);
+        }
         constraints = j.constraints ?? constraints; previous = out ?? previous;
         // The desk adopts the order and terms the route priced.
         if (j.order) ctl = { ...ctl, symbol: j.order.symbol, side: j.order.side, amount: j.amount ?? ctl.amount, ceilingBps: j.ceilingBps ?? ctl.ceilingBps, userFeeBps: j.userFeeBps ?? ctl.userFeeBps };
@@ -59,7 +68,9 @@ async function main() {
       const reasons: string[] = [];
       let verdict: Verdict;
 
-      if (g.expect === "no_book") {
+      reasons.push(...surface);
+      if (surface.length) verdict = "CRITICAL";
+      else if (g.expect === "no_book") {
         verdict = rec ? "CRITICAL" : res === null || res === undefined ? "COMPLETE" : "CRITICAL";
         if (verdict === "CRITICAL") reasons.push(rec ? `recommended ${rec} for an order with no book` : `priced ${res?.symbol} instead of saying there is no book`);
       } else if (g.expect === "ask") {

@@ -68,7 +68,7 @@ export default function Research() {
           <p className="mt-5 max-w-2xl text-[16px] leading-relaxed text-ink-2">The schedule was written before the first capture: every eligible book, raw, every half hour until 2026-10-08, across weekend, overnight and US sessions, with a dozen names re-read 5, 15 and 30 seconds later to see how fast an answer goes stale. Failures stay in the record.</p>
           {a ? (
             <>
-              <p className="mt-6 text-[14px] text-ink-3">{a.rounds} rounds so far, {a.first?.slice(0, 16).replace("T", " ")} to {a.last?.slice(0, 16).replace("T", " ")} UTC · {a.totalBooks - a.failedBooks} of {a.totalBooks} books read · sessions: {sessions.map((s) => `${SESSION[s] ?? s} ${a.bySession[s]}`).join(", ")}</p>
+              <p className="mt-6 text-[14px] text-ink-3">{a.rounds} rounds analysed{a.metadataOutageRounds ? ` (plus ${a.metadataOutageRounds} of ${a.attemptedRounds} attempted where Bitget's metadata could not be read; kept in the record, left out of every rate)` : ""}, {a.first?.slice(0, 16).replace("T", " ")} to {a.last?.slice(0, 16).replace("T", " ")} UTC · {a.totalBooks - a.failedBooks} of {a.totalBooks} books read · sessions: {sessions.map((s) => `${SESSION[s] ?? s} ${a.bySession[s]}`).join(", ")}</p>
               <div className="mt-8 overflow-x-auto">
                 <table className="w-full min-w-[640px] text-[14px]">
                   <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">session</th><th className="pb-3 font-normal">best ask yes, full size no · 5,000 USDT buy, 50 bps</th><th className="pb-3 font-normal">same · 25,000 USDT</th><th className="pb-3 font-normal">answer changed 30 s later · 5,000 USDT, 20 bps fee</th></tr></thead>

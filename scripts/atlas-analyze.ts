@@ -31,7 +31,7 @@ function costs(raw: Raw, side: "buy" | "sell", notional: number) {
 const files = readdirSync(dir).filter((f) => f.endsWith(".json.gz")).sort();
 const cells = new Map<string, { snapshots: number; insufficient: number; overAtSize: number; topYesSizeNo: number; feeFlip10to20: number }>();
 const flips = new Map<string, { pairs: number; changed: number }>();
-const rounds: { round: number; started_utc: string; session: string; books: number; failed: number }[] = [];
+const rounds: { round: number; started_utc: string; session: string; books: number; failed: number; metadataFailed: boolean }[] = [];
 const bump = <T extends object>(m: Map<string, T>, k: string, init: T) => m.get(k) ?? (m.set(k, init), m.get(k)!);
 
 for (const f of files) {
@@ -39,7 +39,10 @@ for (const f of files) {
   const states = r.states.body?.data as never, calendar = r.calendar.body?.data as never;
   const session = classifySession(new Date(r.started_utc), states ? { stateList: (states as { stateList?: unknown }).stateList ?? states } as never : null, calendar).state;
   const ok = r.books.filter((b) => b.status === 200 && b.body);
-  rounds.push({ round: r.round, started_utc: r.started_utc, session, books: r.books.length, failed: r.books.length - ok.length });
+  // A round whose Bitget metadata could not be read has no universe; it is an outage, not a liquidity observation.
+  const metadataFailed = !r.eligible.length;
+  rounds.push({ round: r.round, started_utc: r.started_utc, session: metadataFailed ? "metadata_outage" : session, books: r.books.length, failed: r.books.length - ok.length, metadataFailed });
+  if (metadataFailed) continue;
   for (const b of ok) for (const side of ["buy", "sell"] as const) for (const size of SIZES) {
     const c = costs(b.body!, side, size);
     if (!c) continue;
@@ -68,8 +71,9 @@ for (const f of files) {
 }
 
 const result = {
-  schedule: "evidence/atlas-202610/SCHEDULE.md", rounds: rounds.length, first: rounds[0]?.started_utc, last: rounds.at(-1)?.started_utc,
-  bySession: Object.fromEntries([...new Set(rounds.map((r) => r.session))].map((s) => [s, rounds.filter((r) => r.session === s).length])),
+  schedule: "evidence/atlas-202610/SCHEDULE.md", rounds: rounds.filter((r) => !r.metadataFailed).length, attemptedRounds: rounds.length, metadataOutageRounds: rounds.filter((r) => r.metadataFailed).length,
+  first: rounds[0]?.started_utc, last: rounds.at(-1)?.started_utc,
+  bySession: Object.fromEntries([...new Set(rounds.filter((r) => !r.metadataFailed).map((r) => r.session))].map((s) => [s, rounds.filter((r) => r.session === s).length])),
   failedBooks: rounds.reduce((t, r) => t + r.failed, 0), totalBooks: rounds.reduce((t, r) => t + r.books, 0),
   cells: Object.fromEntries([...cells].map(([k, v]) => [k, v])),
   flips: Object.fromEntries([...flips].map(([k, v]) => [k, v])),
