@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readBps, readDate, readQty, spanInText } from "../normalize";
-import { applyFields, checkFields } from "../intake";
+import { applyFields, checkFields, regexIntake } from "../intake";
 import { EMPTY_CONSTRAINTS } from "..";
 
 const TODAY = "2026-10-02";
@@ -140,5 +140,25 @@ describe("order contract: instrument and side are read and checked like any limi
       { name: "mustBeFlat", value: true, span: "I must be out before the 8th" },
     ], text, D8, UNI);
     expect(f.filter((x) => x.status !== "accepted")).toEqual([]);
+  });
+});
+
+describe("ticker reading after ST7", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }, { code: "ALL", symbol: "RALLUSDT" }, { code: "ON", symbol: "RONUSDT" }, { code: "NOW", symbol: "RNOWUSDT" }, { code: "IT", symbol: "RITUSDT" }];
+  const D8 = "2026-10-03";
+  it("'Sell it ALL' is not an order for rALL, and 'rHIMS ON Monday' names one instrument", () => {
+    expect(checkFields([], "Sell it ALL, fee 8 bps", D8, UNI).find((f) => f.name === "symbol")).toBeUndefined();
+    expect(checkFields([], "sell rHIMS ON Monday, fee 8 bps", D8, UNI).find((f) => f.name === "symbol")).toMatchObject({ status: "accepted", value: "RHIMSUSDT" });
+  });
+  it("a bare ticker counts when the model names it as the instrument, but never a common word", () => {
+    expect(checkFields([{ name: "symbol", value: "SPY", span: "SPY" }], "buy 1000 USDT of SPY", D8, UNI).find((f) => f.name === "symbol")).toMatchObject({ status: "accepted", value: "RSPYUSDT" });
+    expect(checkFields([{ name: "symbol", value: "ALL", span: "ALL" }], "sell it ALL", D8, UNI).find((f) => f.name === "symbol")?.status).toBe("conflict");
+  });
+  it("an r-ticker not on Bitget's list is asked back, never replaced by the controls", () => {
+    expect(checkFields([], "sell 100 rZZZZ, fee 8 bps", D8, UNI).find((f) => f.name === "symbol")).toMatchObject({ status: "conflict" });
+  });
+  it("the fallback reader also asks about a limit it saw but could not read", () => {
+    const r = regexIntake("Sell 178.4121 rHIMS, my taker fee is what we agreed", EMPTY_CONSTRAINTS, UNI);
+    expect(r.clarification).toMatch(/taker fee/);
   });
 });

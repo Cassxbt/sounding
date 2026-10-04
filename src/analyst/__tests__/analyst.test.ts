@@ -235,3 +235,14 @@ describe("invented numbers are caught in Chinese units too", () => {
     expect(validate({ ...out, explanation: "总成本为39.89个基点。" }, turn1(8), evidence()).map((v) => v.rule)).not.toContain("invented_number");
   });
 });
+
+describe("a cross is an opportunity, not an achieved exit", () => {
+  it("claiming the cross satisfies the hard exit is flagged, in English and Chinese", () => {
+    const c = C({ takerFeeBps: 8, hardDeadlineNy: "2026-10-07", mustBeFlat: true });
+    const out = templateAnalysis(turn1(8), evidence(), c);
+    for (const reason of ["Crossing now satisfies your must-be-flat deadline.", "立即吃单满足清仓要求。", "This gets you flat before the deadline."]) {
+      const bad = { ...out, admissible: out.admissible.map((a) => (a.kind === "immediate_cross" ? { ...a, reason } : a)) };
+      expect(validate(bad, turn1(8), evidence(), c).map((v) => v.rule)).toContain("overclaim_plan_step");
+    }
+  });
+});

@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { CUES, EARLIEST, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, type Listed } from "./normalize";
+import { CUES, EARLIEST, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -92,7 +92,7 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
 function checkSymbol(value: string, span: string, listed: Listed[]): IntakeField {
   const base = { name: "symbol" as const, value, span, source: "model" as const };
   const model = resolveSymbol(value, listed);
-  const code = readSymbols(span, listed);
+  const code = readSymbols(span, listed, true);
   if (!model) return { ...base, status: "conflict", note: "not an instrument on Bitget's list" };
   if (code.length === 1 && code[0] === model) return { ...base, value: model, source: "model+code", status: "accepted" };
   return { ...base, status: "conflict", note: code.length ? `code reads ${code.join(", ")}` : "code cannot find that instrument in these words" };
@@ -108,10 +108,16 @@ function checkSide(value: string, span: string): IntakeField {
 /** Code reads the order from the whole message when the model leaves it out; more than one reading is asked back. */
 function orderFromWords(out: IntakeField[], text: string, listed: Listed[]) {
   if (!out.some((f) => f.name === "symbol")) {
+    const unknown = unknownRTickers(text, listed);
+    if (unknown.length) { out.push({ name: "symbol", value: unknown.join(", "), span: unknown[0], source: "code", status: "conflict", note: "not an instrument on Bitget's list" }); return orderSide(out, text); }
     const syms = readSymbols(text, listed);
     if (syms.length === 1) out.push({ name: "symbol", value: syms[0], span: syms[0], source: "code", status: "accepted", note: "read by code from your message" });
     else if (syms.length > 1) out.push({ name: "symbol", value: syms.join(", "), span: syms.join(", "), source: "code", status: "conflict", note: "more than one instrument is named" });
   }
+  orderSide(out, text);
+}
+
+function orderSide(out: IntakeField[], text: string) {
   if (!out.some((f) => f.name === "side")) {
     const side = readSide(text);
     if (side === "buy" || side === "sell") out.push({ name: "side", value: side, span: side, source: "code", status: "accepted", note: "read by code from your message" });
@@ -181,7 +187,14 @@ export function regexIntake(text: string, prior: Constraints, listed?: Listed[])
   // Even the baseline never prices an order other than the one named: code reads the instrument and side.
   const fields: IntakeField[] = [];
   if (listed) orderFromWords(fields, text, listed);
-  const order = applyFields(prior, fields);
+  // Limits the regex did read count as read; a limit it saw a cue for but could not read is asked back.
+  const read = (name: FieldName) => fields.push({ name, value: true, span: "", source: "code", status: "accepted" });
+  const fresh = extractConstraints(text, { ...prior, takerFeeBps: null, hardDeadlineNy: null, mustBeFlat: false }).constraints;
+  if (fresh.takerFeeBps !== null) read("takerFeeBps");
+  if (fresh.hardDeadlineNy) read("hardDeadlineNy");
+  if (fresh.mustBeFlat) read("mustBeFlat");
+  missingLimits(fields, text);
+  const order = applyFields(prior, fields.filter((f) => f.name === "symbol" || f.name === "side"));
   return { constraints: x.constraints, symbol: order.symbol, side: order.side, sizeShares: x.sizeShares, sizeQuoteUsdt: x.sizeQuote, fields, clarification: clarify(fields), reader: "regex" };
 }
 

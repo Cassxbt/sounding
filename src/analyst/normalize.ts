@@ -125,18 +125,24 @@ const round = (v: number) => Math.round(v * 1e6) / 1e6;
 
 export interface Listed { code: string; symbol: string }
 const NOT_TICKERS = new Set(["USDT", "USD", "BPS", "BP", "NY", "UTC", "ETF", "AM", "PM", "OK", "CN", "EN", "VWAP", "API"]);
+/** Words a trader writes in capitals for emphasis that are also listed codes; never read as an instrument. */
+const COMMON_WORDS = new Set(["ALL", "IT", "NOW", "ON", "OUT", "LOW", "SO", "AT", "BE", "ARE", "FOR", "ANY", "CAN", "GO", "HE", "ONE", "BIG", "KEY", "REAL", "CASH", "MAIN", "FAST", "SAFE", "OPEN", "HOLD", "CLOSE", "BUY", "SELL", "FEE", "MAX", "CAP", "NEW", "TOP", "OR", "AND", "NO", "YES", "UP", "DOWN", "BY", "TO", "OF", "IN", "MY", "ME", "WE", "US", "PAY", "TAX", "EARN", "LIFE", "WELL", "GOOD", "BEST", "EAT", "RUN", "PLAY", "CAR", "HOME", "LOVE", "GAME", "MOVE", "TRUE", "TEAM"]);
 
-/** rToken symbols named in the words: "rSPY", "rhims", "SPY", "NVDA". Lower-case words are never tickers unless r-prefixed. */
-export function readSymbols(text: string, listed: Listed[]): string[] {
+/**
+ * rToken symbols named in the words. Explicit forms ("rSPY", "RSPYUSDT") always count. A bare code ("SPY") or a
+ * lower-case r-form ("rhims") counts only with `loose`, used when the model has already said that word is the
+ * instrument; common words written in capitals never count.
+ */
+export function readSymbols(text: string, listed: Listed[], loose = false): string[] {
   const byCode = new Map(listed.map((l) => [l.code.toUpperCase(), l.symbol]));
   const found = new Set<string>();
   for (const t of text.match(/[A-Za-z][A-Za-z0-9.]{0,7}/g) ?? []) {
     const tok = t.replace(/\.$/, "");
     const candidates: string[] = [];
-    if (/^r[A-Z0-9]/.test(tok)) candidates.push(tok.slice(1));
-    else if (/^r[a-z]{3,}$/.test(tok)) candidates.push(tok.slice(1).toUpperCase());
-    else if (/^[A-Z][A-Z0-9.]{1,}$/.test(tok)) { candidates.push(tok); if (/^R[A-Z]{2,}$/.test(tok)) candidates.push(tok.slice(1)); }
-    else if (/^R[A-Z]{2,}USDT$/i.test(tok)) candidates.push(tok.slice(1, -4).toUpperCase());
+    if (/^R[A-Z]{2,}USDT$/i.test(tok)) candidates.push(tok.slice(1, -4).toUpperCase());
+    else if (/^r[A-Z0-9]/.test(tok)) candidates.push(tok.slice(1));
+    else if (loose && /^r[a-z]{3,}$/.test(tok)) candidates.push(tok.slice(1).toUpperCase());
+    else if (loose && /^[A-Z][A-Z0-9.]{1,}$/.test(tok) && !COMMON_WORDS.has(tok)) { candidates.push(tok); if (/^R[A-Z]{2,}$/.test(tok)) candidates.push(tok.slice(1)); }
     for (const c of candidates) {
       if (NOT_TICKERS.has(c)) continue;
       const s = byCode.get(c.toUpperCase());
@@ -146,11 +152,17 @@ export function readSymbols(text: string, listed: Listed[]): string[] {
   return [...found];
 }
 
+/** r-tickers in the words that are not on Bitget's list ("rZZZZ"): named, so never silently replaced. */
+export function unknownRTickers(text: string, listed: Listed[]): string[] {
+  const codes = new Set(listed.map((l) => l.code.toUpperCase()));
+  return [...new Set((text.match(/\br[A-Z][A-Z0-9]{1,6}\b/g) ?? []).filter((t) => !codes.has(t.slice(1))))];
+}
+
 /** One instrument value, from whatever form the model wrote it in. */
 export function resolveSymbol(value: string, listed: Listed[]): string | null {
   const v = value.trim();
   if (listed.some((l) => l.symbol === v.toUpperCase())) return v.toUpperCase();
-  return readSymbols(v.length <= 7 && /^[a-z]+$/.test(v) ? `r${v}` : v, listed)[0] ?? readSymbols(v.toUpperCase(), listed)[0] ?? null;
+  return readSymbols(v, listed, true)[0] ?? (/^[a-z]+$/.test(v) ? readSymbols(`r${v}`, listed, true)[0] : undefined) ?? null;
 }
 
 const BUY = /\b(buy|buying|bought|purchase|long|accumulate)\b|买入|购买|加仓|买/i;

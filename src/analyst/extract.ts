@@ -29,6 +29,7 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   const sh = t.match(/(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(\d+(?:\.\d+)?)\s*(?:shares|sh|r[a-z]{1,6})\b/) ?? t.match(/(\d+(?:\.\d+)?)\s*(?:shares|sh)\b/);
   const q = t.match(/((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*usdt/);
   if (sh) sizeShares = sh[1];
-  else if (q && /budget|buy|spend/.test(t)) sizeQuote = q[1].replace(/,/g, "");
+  // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
+  else if (q) sizeQuote = q[1].replace(/,/g, "");
   return { constraints: c, sizeShares, sizeQuote };
 }
