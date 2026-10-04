@@ -65,6 +65,8 @@ const same = (a: unknown, b: unknown) => (typeof a === "number" || typeof b === 
 
 export function checkFields(proposed: { name: string; value: unknown; span: string }[], text: string, today: string, listed?: Listed[]): IntakeField[] {
   const out: IntakeField[] = [];
+  // A minus sign just outside the quoted words still belongs to the number the words quote.
+  const signed = (span: string) => { const i = text.indexOf(span); return i > 0 && /(?:^|[^A-Za-z])[-−]\s*$/.test(text.slice(Math.max(0, i - 3), i)) && /^\s*\d/.test(span); };
   for (const p of proposed) {
     if (!NAMES.includes(p.name as FieldName) || p.value === null || p.value === undefined || typeof p.span !== "string") continue;
     const name = p.name as FieldName;
@@ -73,8 +75,9 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     if (name === "hardDeadlineNy") { out.push(checkDeadline(value, p.span, today)); continue; }
     if (name === "symbol") { if (listed) out.push(checkSymbol(String(value), p.span, listed)); continue; }
     if (name === "side") { out.push(checkSide(String(value), p.span)); continue; }
+    if ((name === "takerFeeBps" || name === "ceilingBps") && signed(p.span)) { out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "a negative figure" }); continue; }
     // A typed size must be a positive number; "-100" or "0" is a question, never another size.
-    if ((name === "sizeShares" || name === "sizeQuoteUsdt") && (/[-−]\s*\d/.test(p.span) || !(Number(String(value).replace(/,/g, "")) > 0))) {
+    if ((name === "sizeShares" || name === "sizeQuoteUsdt") && (/[-−]\s*\d/.test(p.span) || signed(p.span) || !(Number(String(value).replace(/,/g, "")) > 0))) {
       out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "not a positive size" });
       continue;
     }
@@ -261,6 +264,7 @@ function clarify(fields: IntakeField[]): string | null {
   const conflict = fields.filter((f) => f.status === "conflict").sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))[0];
   if (!conflict) return null;
   const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
+  if (conflict.note === "a negative figure") return `"-${conflict.span}" is negative. What is ${label[conflict.name]}, exactly?`;
   if (conflict.note === "not a positive size") return `"${conflict.span}" is not a size that can be traded. How many ${conflict.name === "sizeQuoteUsdt" ? "USDT do you want to spend" : "shares do you want to trade"}?`;
   if (conflict.note === "someone else's fee") return `"${conflict.span}" sounds like someone else's fee. What is your own taker fee, exactly?`;
   if (conflict.note?.startsWith("two values")) return `Your message gives two different values for ${label[conflict.name]} (${conflict.note.replace("two values: ", "")}). Which is it?`;

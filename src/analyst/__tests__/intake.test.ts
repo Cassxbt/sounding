@@ -271,3 +271,16 @@ describe("ST8: reading rules that let a limit slip (development)", () => {
     expect(costFigures("rAMD +3% today, after a 3% drop, spread 0.3%")).toEqual([]);
   });
 });
+
+describe("a sign outside the quoted words still belongs to the number (development, after v2 X20)", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }];
+  it("'卖出-20股' quoted as '20股' is not a 20-share sell", () => {
+    expect(checkFields([{ name: "sizeShares", value: "20", span: "20股" }], "rHIMS卖出-20股。", "2026-09-20", UNI).find((x) => x.name === "sizeShares")?.status).toBe("conflict");
+  });
+  it("'fee -8 bps' quoted as '8 bps' is not an 8 bps fee", () => {
+    expect(checkFields([{ name: "takerFeeBps", value: 8, span: "8 bps" }], "sell 10 rHIMS, fee -8 bps", "2026-09-20", UNI).find((x) => x.name === "takerFeeBps")?.status).not.toBe("accepted");
+  });
+  it("a hyphen between words is not a sign: 'all-in 50 bps'", () => {
+    expect(checkFields([{ name: "ceilingBps", value: 50, span: "50 bps" }], "sell 10 rHIMS, all-in 50 bps", "2026-09-20", UNI).find((x) => x.name === "ceilingBps")?.status).toBe("accepted");
+  });
+});
