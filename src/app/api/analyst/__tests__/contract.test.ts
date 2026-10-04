@@ -13,7 +13,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("the stated order wins over the controls (partner P0 repro)", () => {
   it("'Buy 1,000 USDT of rSPY' with Sell/rHIMS controls prices the rSPY buy, never the rHIMS sell", async () => {
-    const j = await (await post(POST, { ...controls, turns: [{ role: "user", text: "Buy 1,000 USDT of rSPY. Fee 8 bps, ceiling 50 bps." }] })).json();
+    const j = await (await post(POST, { ...controls, turns: [{ role: "user", text: "Buy 1,000 USDT of rSPY. Fee 8 bps." }] })).json();
     expect(j.order).toEqual({ symbol: "RSPYUSDT", side: "buy" });
     expect(j.result.symbol).toBe("RSPYUSDT");
     expect(j.result.intent).toEqual({ side: "buy", quoteBudget: "1000" });

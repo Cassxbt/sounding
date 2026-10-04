@@ -62,6 +62,9 @@ export default function Page() {
   const [age, setAge] = useState(0);
   const [terms, setTerms] = useState(false);
   const [epoch, setEpoch] = useState(0);
+  // One state for every surface: an open question or a withdrawn answer leaves nothing actionable on the page.
+  const [held, setHeld] = useState<string | null>(null);
+  const [withdrawn, setWithdrawn] = useState(false);
   const [fixture, setFixture] = useState<{ sound?: string; confirm?: string; confirmNote?: string }>({});
   const reduce = useReducedMotion();
   const [deletion, setDeletion] = useState<{ rows: DeletionRow[] } | null>(null);
@@ -90,7 +93,7 @@ export default function Page() {
   const latest = useRef(0);
   async function run(over?: Partial<{ symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; fixture: string; userFee: string; mode: Mode }>) {
     const id = ++latest.current;
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setHeld(null); setWithdrawn(false);
     const m = over?.mode ?? mode;
     const fx = over?.fixture !== undefined ? over.fixture || undefined : fixture.sound;
     const fee = over?.userFee !== undefined ? over.userFee : userFee;
@@ -185,6 +188,7 @@ export default function Page() {
                   // The card shows the very result the analyst ruled on: one order, one book, one receipt.
                   if (t.symbol !== symbol) setFixture({});
                   setSymbol(t.symbol); setSide(t.side); setAmount(t.amount); setCeiling(t.ceiling); setUserFee(t.userFee); setActive("");
+                  setHeld(t.question ?? null); setWithdrawn(!t.question && t.actionable === false);
                   if (t.priced) { latest.current++; setBusy(false); setErr(null); setResp({ ...t.priced, universe: resp?.universe }); setAge(0); }
                 }}
               />
@@ -193,7 +197,19 @@ export default function Page() {
 
           <motion.aside initial={{ opacity: 0, y: reduce ? 0 : 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }} className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
             {err && <div className="rounded-2xl bg-over-bg px-4 py-3 text-[14px] text-over">{err}</div>}
-            {res ? <DecisionCard res={res} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} /> : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/50" />}
+            {held ? (
+              <section aria-live="polite" className="rounded-[22px] border rule bg-paper-2/70 p-5 sm:p-6">
+                <span className="eyebrow">the answer · waiting on you</span>
+                <div className="display mt-5 text-[34px] leading-[1.05] text-ink">One question first.</div>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-2">{held}</p>
+                <p className="mt-4 text-[13px] text-ink-3">Nothing is priced or offered until it is answered.</p>
+              </section>
+            ) : res ? (
+              <>
+                {withdrawn && <div className="rounded-2xl bg-over-bg px-4 py-3 text-[14px] text-over">The live book moved while the answer was written. The route was withdrawn; the card shows the fresh book. Re-sound before acting.</div>}
+                <DecisionCard res={res} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} />
+              </>
+            ) : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/50" />}
             <div className="rounded-[22px] border border-rule-soft p-2">
               <div className="eyebrow px-3 pt-2 pb-1">recorded cases</div>
               <ul>
@@ -211,7 +227,7 @@ export default function Page() {
           </motion.aside>
         </section>
 
-        {res?.ok && res.leg && resp && (
+        {!held && res?.ok && res.leg && resp && (
           <section id="walk" className="grid gap-10 border-t border-rule-soft py-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
             <div className="lg:sticky lg:top-28 lg:self-start">
               <Reveal>
@@ -246,7 +262,7 @@ export default function Page() {
           </section>
         )}
 
-        {res?.ok && res.alternatives && (
+        {!held && res?.ok && res.alternatives && (
           <section className="border-t border-rule-soft py-20">
             <Reveal>
               <h2 className="display max-w-2xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Every route it priced, and what each costs you.</h2>
@@ -277,7 +293,7 @@ export default function Page() {
             <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">The slippage you accepted is the slippage you confirm.</h2>
           </Reveal>
           <div className="mt-10">
-            {res?.ok && d?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" && (mode === "live" || fixture.confirm) ? (
+            {!held && !withdrawn && res?.ok && d?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" && (mode === "live" || fixture.confirm) ? (
               <LastLookPanel key={`ll-${res.receipt.receipt_sha256}`} original={res} mode={mode} confirmFixture={fixture.confirm} confirmNote={fixture.confirmNote} />
             ) : (
               <div className="flex flex-wrap items-center gap-4 rounded-[22px] border border-rule-soft p-5 sm:p-7">

@@ -5,7 +5,8 @@ import { LiveMetadataUnavailable, universe } from "@/lib/data";
 import { bookFor, errorJson, HttpError, parseAmount, parseTerms } from "@/lib/terms";
 import { answerTimeCheck, type AnswerCheck } from "@/lib/answercheck";
 import { evidenceFor } from "@/analyst/evidence";
-import { EMPTY_CONSTRAINTS, runAnalyst, type AnalystTurn } from "@/analyst";
+import { EMPTY_CONSTRAINTS, replyLanguage, runAnalyst, type AnalystTurn } from "@/analyst";
+import { validate } from "@/analyst/rules";
 import { intake } from "@/analyst/intake";
 import { templateAnalysis } from "@/analyst/template";
 import { nyClock } from "@/engine/session";
@@ -48,6 +49,8 @@ export async function POST(req: Request) {
     const constraints: Constraints = { ...read.constraints, takerFeeBps: read.constraints.takerFeeBps ?? terms.userFeeBps ?? null };
     // A size that does not read as a positive number is treated as not stated, and asked for.
     const positive = (v?: string) => { try { return v ? parseAmount(v) : undefined; } catch { return undefined; } };
+    // An open question means nothing is priced: no card, no routes, only the question.
+    if (read.clarification) return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, read.clarification), producedBy: "template", violations: [] }, constraints, intake: read });
     const sized = positive(order.side === "buy" ? read.sizeQuoteUsdt : read.sizeShares);
     const otherUnit = order.side === "buy" ? read.sizeShares : read.sizeQuoteUsdt;
     // A size in the other unit is never swapped for the controls' size: buys are USDT, sells are shares.
@@ -68,6 +71,11 @@ export async function POST(req: Request) {
     }
     const ceilingBps = read.ceilingBps ?? terms.ceilingBps;
     const userFee = constraints.takerFeeBps ?? undefined;
+    // Values read from the chat are held to the same bounds as values typed in the form.
+    for (const [field, v, bound] of [["fee", userFee, "0 to 1,000"], ["ceiling", ceilingBps, "0 to 10,000"]] as const) {
+      try { parseTerms(field === "fee" ? { userFeeBps: v } : { ceilingBps: v }); }
+      catch { return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, `A ${field} of ${v} bps is outside ${bound} bps. What is your ${field === "fee" ? "taker fee" : "cost ceiling"}, exactly?`), producedBy: "template", violations: [] }, constraints, intake: read }); }
+    }
     const price = (capture = book.capture, now = book.historical ? new Date(Number(capture.exchange_ts)) : new Date()): SoundingResult =>
       sound({ capture, intent, ceilingBps, now, historical: book.historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee });
     let result = price();
@@ -88,9 +96,19 @@ export async function POST(req: Request) {
       const again = price(fresh.capture, new Date());
       answerCheck = answerTimeCheck(result, again);
       result = again; capture = fresh.capture;
-      if (answerCheck.status === "moved" && analyst.output.recommendation) analyst.output = { ...analyst.output, recommendation: null, bindingConstraint: `the book moved while the answer was written: ${answerCheck.reasons.join("; ")}. Re-sound before acting.` };
+      if (answerCheck.status === "moved") {
+        // One neutral answer: nothing written against the old book survives next to the new one.
+        const moved = `The Bitget book moved while this answer was being written: ${answerCheck.reasons.join("; ")}. Nothing is recommended on the old book; re-sound to price it again.`;
+        analyst.output = { ...analyst.output, recommendation: null, admissible: [], excluded: [], clarification: null, bindingConstraint: moved, explanation: moved, changedBecause: null };
+      } else {
+        // It stands, but every number shown must be the fresh book's: an answer that no longer checks out is rebuilt on it.
+        const again2 = validate(analyst.output, result, evidence, constraints, replyLanguage(lastUser));
+        if (again2.length) analyst.output = templateAnalysis(result, evidence, constraints, b.previous);
+      }
     }
-    return NextResponse.json({ ...base, result, levels: levelsOf(capture), capture, evidence, analyst, answerCheck });
+    // A decision is actionable only with no question open and no withdrawn answer.
+    const actionable = !analyst.output.clarification && answerCheck?.status !== "moved";
+    return NextResponse.json({ ...base, result, levels: levelsOf(capture), capture, evidence, analyst, answerCheck, actionable });
   } catch (e) {
     if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is priced on recorded rules` }, { status: 503 });
     const j = errorJson(e);

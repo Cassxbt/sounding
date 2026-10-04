@@ -40,6 +40,10 @@ const EXAMPLES: { label: string; text: string }[] = [
 
 export interface TurnResult {
   symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee: string;
+  /** an open question: nothing is actionable until it is answered */
+  question?: string;
+  /** false when a question is open or a live answer was withdrawn */
+  actionable?: boolean;
   priced?: { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; capture: Record<string, unknown>; fixtureFile?: string; sessionInputs?: unknown };
 }
 
@@ -103,9 +107,11 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
     onTurn?.({
       symbol: j.order?.symbol ?? symbol, side: j.order?.side ?? side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling,
       userFee: j.userFeeBps === null || j.userFeeBps === undefined ? userFee : String(j.userFeeBps),
+      question: j.result ? undefined : resp.output.clarification ?? undefined,
+      actionable: j.actionable !== false,
       priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile, sessionInputs: j.sessionInputs } : undefined,
     });
-    const switched = j.order && (j.order.symbol !== symbol || j.order.side !== side);
+    const switched = j.result && j.order && (j.order.symbol !== symbol || j.order.side !== side);
     const lead = switched ? `Priced the order you named: ${j.order.side} r${String(j.order.symbol).replace(/^R|USDT$/g, "")}. ` : "";
     setTurns([...next, { role: "assistant", text: lead + (resp.output.clarification ?? resp.output.explanation) }]);
     const idx = DEMO_TURNS.indexOf(text);
