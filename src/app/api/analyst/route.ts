@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { sound } from "@/engine";
-import type { Intent } from "@/engine/types";
-import { liveCapture, recordedCapture, universe } from "@/lib/data";
+import type { Intent, SoundingResult } from "@/engine/types";
+import { LiveMetadataUnavailable, universe } from "@/lib/data";
+import { bookFor, errorJson, HttpError, parseAmount, parseTerms } from "@/lib/terms";
+import { answerTimeCheck, type AnswerCheck } from "@/lib/answercheck";
 import { evidenceFor } from "@/analyst/evidence";
 import { EMPTY_CONSTRAINTS, runAnalyst, type AnalystTurn } from "@/analyst";
 import { intake } from "@/analyst/intake";
@@ -13,37 +15,85 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 interface Body {
-  symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live";
+  symbol: string; side: "buy" | "sell"; amount: string; ceilingBps?: unknown; userFeeBps?: unknown; mode: "recorded" | "live";
   turns: AnalystTurn[]; constraints?: Constraints; previous?: AnalystOutput; analyst?: "model" | "template"; fixture?: string;
 }
+
+/** An answer with no route: the question that must be settled before anything can be priced. */
+const ask = (constraints: Constraints, clarification: string): AnalystOutput => ({
+  constraints, clarification, admissible: [], excluded: [], recommendation: null, bindingConstraint: clarification, evidence: [], changedBecause: null, explanation: clarification,
+});
+
+const levelsOf = (c: { raw: { data: { asks: [string, string][]; bids: [string, string][] } } }) => ({ asks: c.raw.data.asks.slice(0, 40), bids: c.raw.data.bids.slice(0, 40) });
 
 export async function POST(req: Request) {
   const b = (await req.json()) as Body;
   const mode = b.mode === "live" ? "live" : "recorded";
-  let capture, historical: boolean;
-  // The analyst reads the same recorded book the page shows.
-  if (mode === "recorded") { capture = recordedCapture(b.fixture || b.symbol); historical = true; if (!capture || capture.symbol !== b.symbol) return NextResponse.json({ error: "no fixture" }, { status: 404 }); }
-  else { try { capture = await liveCapture(b.symbol); historical = false; } catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 502 }); } }
-  const u = await universe(mode);
-  const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
-  // Checked intake: Qwen reads the words, code verifies the cited span and re-reads it; the regex arm is the baseline.
-  const lastUser = [...(b.turns ?? [])].reverse().find((t) => t.role === "user")?.text ?? "";
-  const read = await intake(lastUser, { ...EMPTY_CONSTRAINTS, ...(b.constraints ?? {}) }, nyClock(now).date, b.analyst === "template" ? "template" : "model");
-  let amount = b.amount;
-  if (b.side === "sell" && read.sizeShares) amount = read.sizeShares;
-  if (b.side === "buy" && read.sizeQuoteUsdt) amount = read.sizeQuoteUsdt;
-  const intent: Intent = b.side === "buy" ? { side: "buy", quoteBudget: amount } : { side: "sell", baseQty: amount };
-  // A fee typed in the form is stated by the trader too; a fee stated in chat takes precedence.
-  const constraints: Constraints = { ...read.constraints, takerFeeBps: read.constraints.takerFeeBps ?? (b.userFeeBps === undefined || b.userFeeBps === null ? null : Number(b.userFeeBps)) };
-  const ceilingBps = read.ceilingBps ?? (Number(b.ceilingBps) || 50);
-  const userFee = constraints.takerFeeBps ?? undefined;
-  const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee === null ? undefined : userFee });
-  if (!result.ok) return NextResponse.json({ result, intake: read, constraints, analyst: null, amount, note: `engine refused: ${result.gate}${result.suggestion ? `; use ${result.suggestion.baseQty ?? `${result.suggestion.quoteBudget} USDT`} instead` : ""}` });
-  const code = u.stockInfo.find((s) => s.symbol === b.symbol)?.code ?? b.symbol.replace(/^R|USDT$/g, "");
-  const evidence = await evidenceFor(b.symbol, code, mode);
-  // A conflict between what Qwen read and what code reads is asked back, never resolved by guessing.
-  const analyst = read.clarification
-    ? { output: { ...templateAnalysis(result, evidence, constraints, b.previous), clarification: read.clarification, recommendation: null }, producedBy: "template" as const, violations: [] }
-    : await runAnalyst({ result, evidence, turns: b.turns ?? [], constraints, previous: b.previous, mode: b.analyst });
-  return NextResponse.json({ result, evidence, analyst, amount, ceilingBps, userFeeBps: userFee ?? null, constraints, intake: read });
+  try {
+    const terms = parseTerms(b);
+    const controlsAmount = parseAmount(b.amount);
+    const u = await universe(mode);
+    const listed = u.stockInfo.map((s) => ({ code: s.code, symbol: s.symbol }));
+    const codeOf = (sym: string) => u.stockInfo.find((s) => s.symbol === sym)?.code ?? sym.replace(/^R|USDT$/g, "");
+
+    // "Today" for reading dates is the clock of the book on the controls, so recorded dates resolve as they did then.
+    const controlsBook = await bookFor(mode, b.symbol, b.fixture);
+    const today = nyClock(controlsBook.historical ? new Date(Number(controlsBook.capture.exchange_ts)) : new Date()).date;
+    const lastUser = [...(b.turns ?? [])].reverse().find((t) => t.role === "user")?.text ?? "";
+    const read = await intake(lastUser, { ...EMPTY_CONSTRAINTS, ...(b.constraints ?? {}) }, today, b.analyst === "template" ? "template" : "model", listed);
+
+    // The order is what the words say; the controls only fill what the words leave out.
+    const order = { symbol: read.symbol ?? b.symbol, side: read.side ?? b.side };
+    const switched = order.symbol !== b.symbol || order.side !== b.side;
+    const constraints: Constraints = { ...read.constraints, takerFeeBps: read.constraints.takerFeeBps ?? terms.userFeeBps ?? null };
+    // A size that does not read as a positive number is treated as not stated, and asked for.
+    const positive = (v?: string) => { try { return v ? parseAmount(v) : undefined; } catch { return undefined; } };
+    const sized = positive(order.side === "buy" ? read.sizeQuoteUsdt : read.sizeShares);
+    const otherUnit = order.side === "buy" ? read.sizeShares : read.sizeQuoteUsdt;
+    if (!sized && switched) {
+      const q = order.side === "buy"
+        ? `${otherUnit ? "A buy is priced by the USDT you spend, not shares. " : ""}How many USDT do you want to spend on r${codeOf(order.symbol)}?`
+        : `${otherUnit ? "A sell is priced in shares, not USDT. " : ""}How many shares of r${codeOf(order.symbol)} do you want to sell?`;
+      return NextResponse.json({ result: null, order, analyst: { output: ask(constraints, q), producedBy: "template", violations: [] }, constraints, intake: read });
+    }
+    const amount = sized ?? controlsAmount;
+    const intent: Intent = order.side === "buy" ? { side: "buy", quoteBudget: amount } : { side: "sell", baseQty: amount };
+
+    let book;
+    try { book = switched ? await bookFor(mode, order.symbol) : controlsBook; }
+    catch (e) {
+      if (e instanceof HttpError && e.status === 404) return NextResponse.json({ result: null, order, analyst: null, constraints, intake: read, note: `No recorded book for r${codeOf(order.symbol)}. Switch to live to sound it.` });
+      throw e;
+    }
+    const ceilingBps = read.ceilingBps ?? terms.ceilingBps;
+    const userFee = constraints.takerFeeBps ?? undefined;
+    const price = (capture = book.capture, now = book.historical ? new Date(Number(capture.exchange_ts)) : new Date()): SoundingResult =>
+      sound({ capture, intent, ceilingBps, now, historical: book.historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee });
+    let result = price();
+    let capture = book.capture;
+    const base = { order, amount, ceilingBps, userFeeBps: userFee ?? null, constraints, intake: read, fixtureFile: book.fixtureFile };
+    if (!result.ok) return NextResponse.json({ ...base, result, levels: levelsOf(capture), capture, analyst: null, note: `engine refused: ${result.gate}${result.suggestion ? `; use ${result.suggestion.baseQty ?? `${result.suggestion.quoteBudget} USDT`} instead` : ""}` });
+
+    const evidence = await evidenceFor(order.symbol, codeOf(order.symbol), mode);
+    // A conflict between what Qwen read and what code reads is asked back, never resolved by guessing.
+    const analyst = read.clarification
+      ? { output: { ...templateAnalysis(result, evidence, constraints, b.previous), clarification: read.clarification, recommendation: null }, producedBy: "template" as const, violations: [] }
+      : await runAnalyst({ result, evidence, turns: b.turns ?? [], constraints, previous: b.previous, mode: b.analyst });
+
+    // The model took seconds; a live book did not wait. Price the order again and withdraw the route if it moved.
+    let answerCheck: AnswerCheck | undefined;
+    if (!book.historical) {
+      const fresh = await bookFor("live", order.symbol);
+      const again = price(fresh.capture, new Date());
+      answerCheck = answerTimeCheck(result, again);
+      result = again; capture = fresh.capture;
+      if (answerCheck.status === "moved" && analyst.output.recommendation) analyst.output = { ...analyst.output, recommendation: null, bindingConstraint: `the book moved while the answer was written: ${answerCheck.reasons.join("; ")}. Re-sound before acting.` };
+    }
+    return NextResponse.json({ ...base, result, levels: levelsOf(capture), capture, evidence, analyst, answerCheck });
+  } catch (e) {
+    if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is priced on recorded rules` }, { status: 503 });
+    const j = errorJson(e);
+    if (j) return NextResponse.json(j.body, { status: j.status });
+    throw e;
+  }
 }

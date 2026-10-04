@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { sound } from "@/engine";
 import { lastLook, LastLookInputError, verifyReceipt } from "@/engine/lastlook";
 import type { SoundingResult } from "@/engine/types";
-import { liveCapture, recordedCapture, universe } from "@/lib/data";
+import { liveCapture, LiveMetadataUnavailable, recordedCapture, universe } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -34,7 +34,9 @@ export async function POST(req: Request) {
     try { capture = await liveCapture(r.symbol); historical = false; }
     catch (e) { return NextResponse.json({ error: `live book unavailable: ${(e as Error).message}` }, { status: 502 }); }
   }
-  const u = await universe(mode);
+  let u;
+  try { u = await universe(mode); }
+  catch (e) { if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is confirmed on recorded rules` }, { status: 503 }); throw e; }
   const outputs = (r.outputs ?? {}) as { fees?: { source: string; feeBps: number }[] };
   const userFee = outputs.fees?.find((f) => f.source === "user")?.feeBps;
   const fresh = sound({

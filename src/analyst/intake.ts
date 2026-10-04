@@ -176,20 +176,24 @@ function clarify(fields: IntakeField[]): string | null {
 }
 
 /** Regex-only reading: the baseline arm, and the fallback when Qwen is unavailable. */
-export function regexIntake(text: string, prior: Constraints): Intake {
+export function regexIntake(text: string, prior: Constraints, listed?: Listed[]): Intake {
   const x = extractConstraints(text, prior);
-  return { constraints: x.constraints, sizeShares: x.sizeShares, sizeQuoteUsdt: x.sizeQuote, fields: [], clarification: null, reader: "regex" };
+  // Even the baseline never prices an order other than the one named: code reads the instrument and side.
+  const fields: IntakeField[] = [];
+  if (listed) orderFromWords(fields, text, listed);
+  const order = applyFields(prior, fields);
+  return { constraints: x.constraints, symbol: order.symbol, side: order.side, sizeShares: x.sizeShares, sizeQuoteUsdt: x.sizeQuote, fields, clarification: clarify(fields), reader: "regex" };
 }
 
-export async function intake(text: string, prior: Constraints, todayNy: string, mode: "model" | "template" = "model"): Promise<Intake> {
-  if (mode === "template" || !qwenAvailable() || !text.trim()) return regexIntake(text, prior);
+export async function intake(text: string, prior: Constraints, todayNy: string, mode: "model" | "template" = "model", listed?: Listed[]): Promise<Intake> {
+  if (mode === "template" || !qwenAvailable() || !text.trim()) return regexIntake(text, prior, listed);
   try {
     const { json } = await qwenJson(SYSTEM.replace("TODAY", todayNy), text, "intake", INTAKE_TIMEOUT_MS);
     const proposed = (json as { fields?: { name: string; value: unknown; span: string }[] } | null)?.fields;
-    if (!Array.isArray(proposed)) return regexIntake(text, prior);
-    const fields = checkFields(proposed, text, todayNy);
+    if (!Array.isArray(proposed)) return regexIntake(text, prior, listed);
+    const fields = checkFields(proposed, text, todayNy, listed);
     return { ...applyFields(prior, fields), fields, clarification: clarify(fields), reader: "qwen" };
   } catch {
-    return regexIntake(text, prior);
+    return regexIntake(text, prior, listed);
   }
 }

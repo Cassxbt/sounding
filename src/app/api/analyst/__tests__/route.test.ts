@@ -16,7 +16,8 @@ describe("/api/analyst", () => {
     const j = await (await ask({ ...base, userFeeBps: 8, fixture: "RHIMSUSDT@20261003a" })).json();
     expect(j.result.receipt.exchange_ts).toBe(recordedCapture("RHIMSUSDT@20261003a")!.exchange_ts);
   });
-  it("refuses a fixture for a different symbol", async () => {
-    expect((await ask({ ...base, fixture: "RSPYUSDT" })).status).toBe(404);
+  it("a recorded book for a different symbol is never used: the order's own book is", async () => {
+    const j = await (await ask({ ...base, fixture: "RSPYUSDT" })).json();
+    expect(j.result.symbol).toBe("RHIMSUSDT");
   });
 });

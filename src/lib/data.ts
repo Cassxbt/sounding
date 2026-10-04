@@ -36,7 +36,8 @@ async function getJson<T>(path: string, ms = 8000): Promise<T> {
   return r.json();
 }
 
-/** Live eligibility/session inputs with a 10-minute cache; falls back to the recorded snapshot, labeled. */
+/** Live eligibility/session inputs with a 10-minute cache. Live fails closed: an answer on a live book is never
+ *  decided with recorded rules, so a failed fetch is an error, not a fallback. */
 export async function universe(mode: "live" | "recorded"): Promise<Universe> {
   if (mode === "recorded") return recordedUniverse();
   if (cache && Date.now() - cache.at < 600_000) return cache.u;
@@ -51,10 +52,12 @@ export async function universe(mode: "live" | "recorded"): Promise<Universe> {
     const instruments = ins.data.filter((x) => reality.has(x.symbol));
     cache = { at: Date.now(), u: { stockInfo: si.data, states: st.data, calendar: cal.data, instruments, source: "live", fetched_utc: new Date().toISOString() } };
     return cache.u;
-  } catch {
-    return recordedUniverse();
+  } catch (e) {
+    throw new LiveMetadataUnavailable((e as Error).message);
   }
 }
+
+export class LiveMetadataUnavailable extends Error {}
 
 /** Live public spot book with request timing and a measured clock offset (local vs server requestTime). */
 export async function liveCapture(symbol: string): Promise<BookCapture> {

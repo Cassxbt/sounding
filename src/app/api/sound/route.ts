@@ -1,29 +1,33 @@
 import { NextResponse } from "next/server";
 import { sound } from "@/engine";
 import type { Intent } from "@/engine/types";
-import { liveCapture, recordedCapture, universe } from "@/lib/data";
+import { LiveMetadataUnavailable, universe } from "@/lib/data";
+import { bookFor, errorJson, parseAmount, parseTerms } from "@/lib/terms";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps: number; userFeeBps?: number; mode: "recorded" | "live"; previousBpsPreFee?: string; fixture?: string }
+interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps?: unknown; userFeeBps?: unknown; mode: "recorded" | "live"; previousBpsPreFee?: string; fixture?: string }
 
 export async function POST(req: Request) {
   const b = (await req.json()) as Body;
-  if (!b.symbol || !b.side || !b.amount || !(Number(b.amount) > 0)) return NextResponse.json({ error: "symbol, side, positive amount required" }, { status: 400 });
-  const intent: Intent = b.side === "buy" ? { side: "buy", quoteBudget: b.amount } : { side: "sell", baseQty: b.amount };
+  if (!b.symbol || (b.side !== "buy" && b.side !== "sell")) return NextResponse.json({ error: "symbol and side (buy or sell) required" }, { status: 400 });
   const mode = b.mode === "live" ? "live" : "recorded";
-  let capture, historical: boolean;
-  if (mode === "recorded") {
-    capture = recordedCapture(b.fixture || b.symbol); historical = true;
-    if (!capture || capture.symbol !== b.symbol) return NextResponse.json({ error: `no recorded fixture for ${b.symbol}; use live mode` }, { status: 404 });
-  } else {
-    try { capture = await liveCapture(b.symbol); historical = false; }
-    catch (e) { return NextResponse.json({ error: `live book unavailable: ${(e as Error).message}` }, { status: 502 }); }
+  try {
+    const amount = parseAmount(b.amount);
+    const { ceilingBps, userFeeBps } = parseTerms(b);
+    const intent: Intent = b.side === "buy" ? { side: "buy", quoteBudget: amount } : { side: "sell", baseQty: amount };
+    const u = await universe(mode);
+    const { capture, historical, fixtureFile } = await bookFor(mode, b.symbol, b.fixture);
+    const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
+    const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps, previousBpsPreFee: b.previousBpsPreFee });
+    const levels = { asks: capture.raw.data.asks.slice(0, 40), bids: capture.raw.data.bids.slice(0, 40) };
+    // The full capture travels with the result, so a downloaded receipt can be replayed.
+    return NextResponse.json({ result, levels, universe: { source: u.source, fetched_utc: u.fetched_utc }, capture, fixtureFile });
+  } catch (e) {
+    if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is priced on recorded rules` }, { status: 503 });
+    const j = errorJson(e);
+    if (j) return NextResponse.json(j.body, { status: j.status });
+    throw e;
   }
-  const u = await universe(mode);
-  const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
-  const result = sound({ capture, intent, ceilingBps: Number(b.ceilingBps) || 50, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: b.userFeeBps === undefined || b.userFeeBps === null ? undefined : Number(b.userFeeBps), previousBpsPreFee: b.previousBpsPreFee });
-  const levels = { asks: capture.raw.data.asks.slice(0, 40), bids: capture.raw.data.bids.slice(0, 40) };
-  return NextResponse.json({ result, levels, universe: { source: u.source, fetched_utc: u.fetched_utc }, capture: { ...capture, raw: undefined } });
 }
