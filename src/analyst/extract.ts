@@ -26,9 +26,10 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   if (thesis) c.thesis = thesis[1].trim();
 
   // "sell 178.412132 rHIMS", "make it 35 shares", "35 sh"
-  const sh = t.match(/(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(\d+(?:\.\d+)?)\s*(?:shares|sh|r[a-z]{1,6})\b/) ?? t.match(/(\d+(?:\.\d+)?)\s*(?:shares|sh)\b/);
-  const q = t.match(/((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*usdt/);
-  if (sh) sizeShares = sh[1];
+  // A signed number is never a size: "sell -100 shares" is a question, not a 100-share sell.
+  const sh = t.match(/(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(\d+(?:\.\d+)?)\s*(?:shares|sh|r[a-z]{1,6})\b/) ?? t.match(/(?<![-−\d.])(\d+(?:\.\d+)?)\s*(?:shares|sh)\b/);
+  const q = t.match(/(?<![-−\d.,])((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*usdt/);
+  if (sh && Number(sh[1]) > 0) sizeShares = sh[1];
   // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
   else if (q) sizeQuote = q[1].replace(/,/g, "");
   return { constraints: c, sizeShares, sizeQuote };

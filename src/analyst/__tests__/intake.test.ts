@@ -179,12 +179,13 @@ describe("after the held-out whole-task run (development)", () => {
     expect(f.find((x) => x.name === "takerFeeBps")?.status).toBe("conflict");
   });
   it("a fee and a ceiling in one sentence are not a contradiction", () => {
-    const f = checkFields([{ name: "takerFeeBps", value: 8, span: "fee 8 bps" }, { name: "ceilingBps", value: 50, span: "ceiling 50 bps" }], "Buy 1,000 USDT of rSPY, fee 8 bps, ceiling 50 bps.", D, UNI);
+    const f = checkFields([{ name: "sizeQuoteUsdt", value: "1000", span: "1,000 USDT" }, { name: "takerFeeBps", value: 8, span: "fee 8 bps" }, { name: "ceilingBps", value: 50, span: "ceiling 50 bps" }], "Buy 1,000 USDT of rSPY, fee 8 bps, ceiling 50 bps.", D, UNI);
     expect(f.filter((x) => x.status === "conflict")).toEqual([]);
   });
   it("naming a limit without a value is not a question: 'under the ceiling', 'ceiling 照旧', '含手续费'", () => {
     for (const t of ["Scratch the deadline, no rush. Just keep it under the ceiling.", "帮我 buy 1,000 USDT of rSPY, ceiling 照旧。", "买 300 USDT rHIMS，含手续费总成本不能超过 5 个基点。"]) {
-      const f = checkFields(t.includes("5 个基点") ? [{ name: "ceilingBps", value: 5, span: "总成本不能超过 5 个基点" }] : [], t, D, UNI);
+      const size = t.includes("300") ? [{ name: "sizeQuoteUsdt", value: "300", span: "300 USDT" }] : t.includes("1,000") ? [{ name: "sizeQuoteUsdt", value: "1000", span: "1,000 USDT" }] : [];
+      const f = checkFields([...size, ...(t.includes("5 个基点") ? [{ name: "ceilingBps", value: 5, span: "总成本不能超过 5 个基点" }] : [])], t, D, UNI);
       expect(f.filter((x) => x.note === "mentioned but not read").map((x) => x.name)).toEqual([]);
     }
   });

@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { around, costFigures, CUES, EARLIEST, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
+import { around, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -73,6 +73,11 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     if (name === "hardDeadlineNy") { out.push(checkDeadline(value, p.span, today)); continue; }
     if (name === "symbol") { if (listed) out.push(checkSymbol(String(value), p.span, listed)); continue; }
     if (name === "side") { out.push(checkSide(String(value), p.span)); continue; }
+    // A typed size must be a positive number; "-100" or "0" is a question, never another size.
+    if ((name === "sizeShares" || name === "sizeQuoteUsdt") && (/[-−]\s*\d/.test(p.span) || !(Number(String(value).replace(/,/g, "")) > 0))) {
+      out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "not a positive size" });
+      continue;
+    }
     const c = codeRead(name, p.span, today);
     if (c === undefined || c === null) { out.push({ name, value, span: p.span, source: "model", status: "accepted", note: c === null ? "code cannot read this phrase; span verified" : undefined }); continue; }
     if (same(c, value)) out.push({ name, value: c, span: p.span, source: "model+code", status: "accepted" });
@@ -213,6 +218,10 @@ function missingLimits(out: IntakeField[], text: string) {
     if (name === "mustBeFlat" && !ok("hardDeadlineNy") && !CUES.hardDeadlineNy.test(text)) continue;
     out.push({ name, value: "", span: m[0], source: "code", status: "conflict", note: "mentioned but not read" });
   }
+  // A size typed but not read as a positive number is asked; the controls' size is only for messages that state none.
+  const size = text.match(SIZE_CUE);
+  if (size && !out.some((f) => (f.name === "sizeShares" || f.name === "sizeQuoteUsdt") && (f.status === "accepted" || f.status === "conflict")))
+    out.push({ name: /usdt|\bu\b/i.test(size[0]) ? "sizeQuoteUsdt" : "sizeShares", value: "", span: size[0], source: "code", status: "conflict", note: /[-−]\s*\d|(?<![\d.])0(?![\d.])/.test(size[0]) ? "not a positive size" : "mentioned but not read" });
 }
 
 /** A deadline is never taken on the model's word: code must read the same date, and it must not have passed. */
@@ -252,6 +261,7 @@ function clarify(fields: IntakeField[]): string | null {
   const conflict = fields.filter((f) => f.status === "conflict").sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))[0];
   if (!conflict) return null;
   const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
+  if (conflict.note === "not a positive size") return `"${conflict.span}" is not a size that can be traded. How many ${conflict.name === "sizeQuoteUsdt" ? "USDT do you want to spend" : "shares do you want to trade"}?`;
   if (conflict.note === "someone else's fee") return `"${conflict.span}" sounds like someone else's fee. What is your own taker fee, exactly?`;
   if (conflict.note?.startsWith("two values")) return `Your message gives two different values for ${label[conflict.name]} (${conflict.note.replace("two values: ", "")}). Which is it?`;
   if (conflict.note?.startsWith("two figures")) return `Your message gives ${conflict.note.replace("two figures: ", "")} for ${label[conflict.name]}. Which is it?`;
@@ -274,6 +284,8 @@ export function regexIntake(text: string, prior: Constraints, listed?: Listed[])
   if (fresh.takerFeeBps !== null) read("takerFeeBps");
   if (fresh.hardDeadlineNy) read("hardDeadlineNy");
   if (fresh.mustBeFlat) read("mustBeFlat");
+  if (x.sizeShares) read("sizeShares");
+  if (x.sizeQuote) read("sizeQuoteUsdt");
   missingLimits(fields, text);
   const order = applyFields(prior, fields.filter((f) => f.name === "symbol" || f.name === "side"));
   return { constraints: x.constraints, symbol: order.symbol, side: order.side, sizeShares: x.sizeShares, sizeQuoteUsdt: x.sizeQuote, fields, clarification: clarify(fields), reader: "regex" };

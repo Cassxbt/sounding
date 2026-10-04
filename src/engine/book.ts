@@ -127,7 +127,7 @@ export const withinCeiling = (leg: LegCost, feeBps: number, ceilingBps: number) 
 export function largestSellWithin(raw: RawOrderbook, mid: Decimal, ceilingBps: number, feeBps: number, qtyDp: number, minOrderAmount: Decimal): Decimal | null {
   const total = raw.data.bids.reduce((s, [, q]) => s.plus(q), D(0));
   if (total.eq(0)) return null;
-  const ok = (q: Decimal) => { const r = sellShares(raw, q.toString(), mid); return withinCeiling(r, feeBps, ceilingBps) && D(r.cash).gte(minOrderAmount); };
+  const ok = (q: Decimal) => { const r = sellShares(raw, q.toString(), mid); return withinCeiling(r, feeBps, ceilingBps) && D(r.cashExact ?? r.cash).gte(minOrderAmount); };
   let lo = D(0), hi = total;
   for (let i = 0; i < 80; i++) { const m = lo.plus(hi).div(2); if (withinCeiling(sellShares(raw, m.toString(), mid), feeBps, ceilingBps)) lo = m; else hi = m; }
   let q = lo.toDecimalPlaces(qtyDp, Decimal.ROUND_DOWN);

@@ -19,6 +19,8 @@ function cnNumber(t: string): string {
 
 /** Fee or cost in basis points: "8 bps", "8bp", "0.08%", "half a percent", "千分之0.8", "千分之六", "万8". */
 export function readBps(span: string): number | null {
+  // A signed negative cost ("-8 bps") is never read as its unsigned number.
+  if (/[-−]\s*\d/.test(span)) return null;
   const s = span.toLowerCase().replace(/,/g, "").replace(/[零一二两三四五六七八九十点]+/g, cnNumber).trim();
   let m = s.match(/(\d+(?:\.\d+)?)\s*(?:bps?|basis points?|基点)/);
   if (m) return Number(m[1]);
@@ -80,7 +82,12 @@ function readWeekday(s: string, today: string): string | null | undefined {
 function readNamedDate(span: string, today: string): string | null {
   const s = span.toLowerCase().trim();
   const [ty, tm, td] = today.split("-").map(Number);
-  const fmt = (y: number, m: number, d: number) => (m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` : null);
+  // Only real calendar dates: "Feb 31" is not a date.
+  const fmt = (y: number, m: number, d: number) => {
+    if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) return null;
+    const t = new Date(Date.UTC(y, m - 1, d));
+    return t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` : null;
+  };
   // Roll to next year only when the date is well past; a date passed days ago is kept so it can be asked back.
   const withYear = (m: number, d: number) => {
     const ago = (Date.UTC(ty, tm - 1, td) - Date.UTC(ty, m - 1, d)) / 86_400_000;
@@ -112,6 +119,7 @@ function readNamedDate(span: string, today: string): string | null {
 
 /** A positive quantity: "178.4121", "35 shares", "1,000", "1.2k", "1万". */
 export function readQty(span: string): string | null {
+  if (/[-−]\s*\d/.test(span)) return null;
   const m = span.replace(/,/g, "").match(/(\d+(?:\.\d+)?)\s*(k\b|万)?/i);
   if (!m || !(Number(m[1]) > 0)) return null;
   return m[2] ? new Decimal(m[1]).mul(m[2] === "万" ? 10_000 : 1_000).toString() : m[1];
@@ -206,3 +214,6 @@ export function around(text: string, at: number, clause = false): { start: numbe
   let e = at; while (e < text.length && !stop(e)) e++;
   return { start: s, text: text.slice(s, e) };
 }
+
+/** A size was typed: "sell 0 shares", "buy -5 rSPY", "1,000 USDT". Used to ask when no positive size was read. */
+export const SIZE_CUE = /(?:\b(?:sell|buy)\b|卖出?|买入?)\s*[-−]?\s*\d|[-−]?\d[\d,.]*\s*(?:shares?\b|sh\b|股|usdt\b|u\b)/i;
