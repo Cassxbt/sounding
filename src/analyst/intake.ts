@@ -154,7 +154,15 @@ function contradictions(out: IntakeField[], text: string) {
     };
     const rival = unclaimed(out, text, name)(costFigures(s.text).map((g) => ({ ...g, at: g.at + s.start })))
       .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && !other.test(text.slice(Math.max(0, g.at - 30), g.at)) && tied(g));
-    if (rival.length) Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` });
+    if (rival.length) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` }); continue; }
+    // An undecided choice ("20 还是 25", "20 or 25 bps") is a question, whichever number the reader took.
+    const after = text.slice(i + f.span.length, i + f.span.length + 16).match(/^\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b)\s*(\d+(?:\.\d+)?)/i);
+    const before = text.slice(Math.max(0, i - 16), i).match(/(\d+(?:\.\d+)?)\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b)\s*$/i);
+    const alt = after?.[1] ?? before?.[1];
+    if (alt && Number(alt) !== Number(f.value)) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} or ${alt}` }); continue; }
+    // A fee quoted from a clause about someone else's account is theirs, not the trader's.
+    if (name === "takerFeeBps" && /\b(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss|his|her|their)\b|老婆|老公|朋友|同事|哥们|别人|他的|她的|他们/i.test(around(text, i, true).text))
+      Object.assign(f, { status: "conflict", note: "someone else's fee" });
   }
 }
 
@@ -213,6 +221,7 @@ function clarify(fields: IntakeField[]): string | null {
   const conflict = fields.filter((f) => f.status === "conflict").sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))[0];
   if (!conflict) return null;
   const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
+  if (conflict.note === "someone else's fee") return `"${conflict.span}" sounds like someone else's fee. What is your own taker fee, exactly?`;
   if (conflict.note?.startsWith("two figures")) return `Your message gives ${conflict.note.replace("two figures: ", "")} for ${label[conflict.name]}. Which is it?`;
   if (conflict.note === "mentioned but not read") return `You mentioned ${label[conflict.name]} ("${conflict.span}") but I could not read it. What is ${label[conflict.name]}, exactly?`;
   if (conflict.name === "symbol" && conflict.note === "more than one instrument is named") return `Your message names more than one instrument (${conflict.value}). Which one is this order for?`;

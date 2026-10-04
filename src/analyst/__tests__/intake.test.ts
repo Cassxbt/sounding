@@ -208,3 +208,19 @@ describe("contradictions are restatements, not distinctions (development)", () =
     expect(checkFields([], "rMSTR 今天跌了8%，我想抄底买 2000 USDT 的。", D, UNI).find((x) => x.name === "hardDeadlineNy")).toBeUndefined();
   });
 });
+
+describe("someone else's fee, and an undecided choice (development)", () => {
+  const UNI = [{ code: "AMD", symbol: "RAMDUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }];
+  const D = "2026-10-03";
+  it("a fee quoted from someone else's clause is never used", () => {
+    const t = "rAMD 跌了 3%，想 buy 200 USDT worth，我老婆账户 taker 是 5bp，我的是 10bp";
+    expect(checkFields([{ name: "takerFeeBps", value: 5, span: "我老婆账户 taker 是 5bp" }], t, D, UNI).find((x) => x.name === "takerFeeBps")?.status).toBe("conflict");
+    expect(checkFields([{ name: "takerFeeBps", value: 10, span: "我的是 10bp" }], t, D, UNI).find((x) => x.name === "takerFeeBps")?.status).toBe("accepted");
+    expect(checkFields([{ name: "takerFeeBps", value: 4, span: "4bp taker" }], "My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp.", D, UNI).find((x) => x.name === "takerFeeBps")?.status).toBe("conflict");
+  });
+  it("'20 还是 25' and '20 or 25' are an undecided choice, asked back", () => {
+    for (const [t, span] of [["buy 1000U rSPY, ceiling 改成 20 还是 25…我还没想好", "ceiling 改成 20"], ["buy 1000 USDT of rSPY, ceiling 20 or 25 bps", "ceiling 20"]]) {
+      expect(checkFields([{ name: "ceilingBps", value: 20, span }], t, D, UNI).find((x) => x.name === "ceilingBps")?.status).toBe("conflict");
+    }
+  });
+});
