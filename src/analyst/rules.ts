@@ -111,7 +111,7 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   if (out.constraints.takerFeeBps !== null) engineNums.add(String(out.constraints.takerFeeBps));
   if (res.leg?.bpsPreFee) engineNums.add(res.leg.bpsPreFee);
   engineNums.add(String(res.ceilingBps));
-  for (const m of out.explanation.matchAll(/(\d+(?:\.\d+)?)\s*bps/g)) {
+  for (const m of out.explanation.matchAll(/(\d+(?:\.\d+)?)\s*(?:bps|个?基点)/g)) {
     const n = m[1];
     if (![...engineNums].some((e) => Number(e) === Number(n))) v.push({ rule: "invented_number", detail: `${n} bps is not an engine figure` });
   }

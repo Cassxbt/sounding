@@ -227,3 +227,11 @@ describe("evidence must be ahead of the decision, not behind it", () => {
     expect(validate(bad, res, pk, C({ takerFeeBps: 8 })).map((v) => v.rule)).toContain("irrelevant_evidence_used");
   });
 });
+
+describe("invented numbers are caught in Chinese units too", () => {
+  it("'12个基点' and '12 基点' are checked like '12 bps'", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    for (const e of ["总成本为12个基点。", "总成本 12 基点"]) expect(validate({ ...out, explanation: e }, turn1(8), evidence()).map((v) => v.rule)).toContain("invented_number");
+    expect(validate({ ...out, explanation: "总成本为39.89个基点。" }, turn1(8), evidence()).map((v) => v.rule)).not.toContain("invented_number");
+  });
+});
