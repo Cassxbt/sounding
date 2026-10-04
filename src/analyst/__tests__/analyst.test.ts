@@ -180,3 +180,32 @@ describe("reply language is decided by code", () => {
     expect(validate(out, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).not.toContain("reply_language");
   });
 });
+
+describe("route admissibility is owned by the engine", () => {
+  const over = () => turn1(20);
+  it("recommending a cross the engine prices over the ceiling is a violation (partner repro: 51.89 > 50)", () => {
+    const t = templateAnalysis(over(), evidence(), C({ takerFeeBps: 20 }));
+    const bad = { ...t, recommendation: "immediate_cross" as const, admissible: [...t.admissible.filter((a) => a.kind !== "immediate_cross"), { kind: "immediate_cross" as const, reason: "cross now" }], excluded: t.excluded.filter((e) => e.kind !== "immediate_cross") };
+    const rules = validate(bad, over(), evidence(), C({ takerFeeBps: 20 })).map((v) => v.rule);
+    expect(rules).toContain("route_not_admissible");
+  });
+  it("admitting an over-ceiling cross without recommending it is still a violation", () => {
+    const t = templateAnalysis(over(), evidence(), C({ takerFeeBps: 20 }));
+    const bad = { ...t, admissible: [...t.admissible, { kind: "immediate_cross" as const, reason: "x" }], excluded: t.excluded.filter((e) => e.kind !== "immediate_cross") };
+    expect(validate(bad, over(), evidence(), C({ takerFeeBps: 20 })).map((v) => v.rule)).toContain("route_not_admissible");
+  });
+  it("a recommendation must be one of the admissible routes, and no route may be both", () => {
+    const t = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    const notListed = { ...t, admissible: t.admissible.filter((a) => a.kind !== "immediate_cross"), excluded: [...t.excluded, { kind: "immediate_cross" as const, reason: "x" }], recommendation: "immediate_cross" as const };
+    expect(validate(notListed, turn1(8), evidence(), C({ takerFeeBps: 8 })).map((v) => v.rule)).toContain("recommendation_not_admissible");
+    const both = { ...t, excluded: [...t.excluded, { kind: "immediate_cross" as const, reason: "x" }] };
+    expect(validate(both, turn1(8), evidence(), C({ takerFeeBps: 8 })).map((v) => v.rule)).toContain("contradictory_classification");
+  });
+  it("the template passes its own admissibility rules at every fee and deadline state", () => {
+    for (const fee of [0, 8, 10, 20]) for (const dl of [null, "2026-09-21", "2026-10-07"]) {
+      const res = turn1(fee);
+      const c = C({ takerFeeBps: fee, hardDeadlineNy: dl, mustBeFlat: !!dl });
+      expect(validate(templateAnalysis(res, evidence(), c), res, evidence(), c)).toEqual([]);
+    }
+  });
+});

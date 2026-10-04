@@ -1,4 +1,5 @@
 import type { SoundingResult } from "@/engine/types";
+import { decidingRow } from "@/engine/decision";
 import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
 
 /**
@@ -56,6 +57,15 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   for (const a of [...out.admissible, ...out.excluded]) if (!kinds.has(a.kind)) v.push({ rule: "unpriced_alternative", detail: `${a.kind} not in engine output` });
 
   const admissible = new Set(out.admissible.map((a) => a.kind));
+  // Admissibility is the engine's, not the model's: a cross may be admitted or recommended only when the engine
+  // prices the full order within the ceiling at the deciding fee (the stated fee, else the worst scenario).
+  const deciding = decidingRow(res);
+  const crossWithin = res.ok && res.leg?.status === "OK" && deciding?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT";
+  if (!crossWithin && (admissible.has("immediate_cross") || out.recommendation === "immediate_cross"))
+    v.push({ rule: "route_not_admissible", detail: `crossing now is ${deciding?.allInBps ?? "unpriced"} bps at ${deciding?.feeBps ?? "?"} bps fee against a ${res.ceilingBps} bps ceiling` });
+  if (out.recommendation && !admissible.has(out.recommendation)) v.push({ rule: "recommendation_not_admissible", detail: `${out.recommendation} is recommended but not listed as admissible` });
+  const excludedKinds = new Set(out.excluded.map((e) => e.kind));
+  for (const k of admissible) if (excludedKinds.has(k)) v.push({ rule: "contradictory_classification", detail: `${k} is both admissible and excluded` });
   if (c.mustBeFlat && c.hardDeadlineNy) {
     if (admissible.has("resting_limit") || out.recommendation === "resting_limit") v.push({ rule: "hard_constraint", detail: "a resting limit (no_fill_possible) cannot satisfy a must-be-flat deadline" });
     // Unknown next session is treated as none before the deadline, the same as the template.
