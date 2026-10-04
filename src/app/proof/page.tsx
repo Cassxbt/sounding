@@ -60,7 +60,10 @@ export default async function Proof() {
     { label: "Two real captures 21 seconds apart, Oct 3", r: lastLook(at("RHIMSUSDT@20261003a", 8), at("RHIMSUSDT@20261003b", 8)) },
     { label: "The Sep 20 decision re-checked on the Oct 3 book", r: lastLook(yours, at("RHIMSUSDT@20261003b", 8)) },
   ];
-  const whole = (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-heldout/results.json"), "utf8")) as { summary: Record<"model" | "template", { tasks: number; complete: number; safeAbstain: number; critical: number }> }).summary;
+  type WholeSummary = Record<"model" | "template", { tasks: number; complete: number; safeAbstain: number; critical: number }>;
+  const wholeFile = (p: string) => (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-heldout", p), "utf8")) as { summary: WholeSummary }).summary;
+  const whole = wholeFile("results.json");
+  const wholeDev = wholeFile("dev-rerun-8ff1a3e/results.json");
   const runs = [
     { name: "Blind set 1, before fixes", note: "40 messages, today = 2026-10-03; published with its five wrong deadlines", s: evalFile("paraphrase-eval-20261003/results.json") },
     { name: "Blind set 2, held out", note: "40 new messages by a second writer, today = 2026-10-07; run once at commit bcf771a", s: evalFile("paraphrase-eval-v2-heldout/results.json"), lead: true },
@@ -136,7 +139,7 @@ export default async function Proof() {
             <table className="w-full min-w-[560px] text-[14px]">
               <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">run</th><th className="pb-3 font-normal">complete</th><th className="pb-3 font-normal">asked when it could answer</th><th className="pb-3 font-normal">critical</th></tr></thead>
               <tbody>
-                {[{ name: "Qwen, checked", s: whole.model, lead: true }, { name: "Regex reader and template, no model", s: whole.template }].map((r) => (
+                {[{ name: "Qwen, checked · held-out, once", s: whole.model, lead: true }, { name: "Regex reader and template, no model · held-out", s: whole.template }, { name: "Qwen, checked · same set after fixes (development)", s: wholeDev.model }].map((r) => (
                   <tr key={r.name} className={`border-t border-rule-soft ${r.lead ? "text-ink" : "text-ink-2"}`}>
                     <td className="py-3 pr-4">{r.name}</td>
                     <td className="mono">{r.s.complete} / {r.s.tasks}</td>

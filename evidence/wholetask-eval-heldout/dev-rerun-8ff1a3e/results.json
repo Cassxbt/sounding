@@ -1,0 +1,715 @@
+{
+ "summary": {
+  "template": {
+   "tasks": 30,
+   "complete": 13,
+   "safeAbstain": 6,
+   "critical": 11,
+   "medianMs": 3
+  },
+  "model": {
+   "tasks": 30,
+   "complete": 30,
+   "safeAbstain": 0,
+   "critical": 0,
+   "medianMs": 10442
+  }
+ },
+ "rows": [
+  {
+   "id": "W01",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now at full size: 18.09 bps all-in at your 8 bps fee, inside your 40 bps ceiling on this snapshot.",
+   "ms": 13
+  },
+  {
+   "id": "W02",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong fee priced: null"
+   ],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 2500 · ceiling 50 · fee none",
+   "lastReply": "You mentioned your taker fee (\"taker\") but I could not read it. What is your taker fee, exactly?",
+   "ms": 5
+  },
+  {
+   "id": "W03",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: You mentioned your deadline (\"by Wed\") but I could not read it. What is your deadline, exactly?"
+   ],
+   "recommendation": null,
+   "priced": "sell RHIMSUSDT 250 · ceiling 60 · fee 10",
+   "lastReply": "You mentioned your deadline (\"by Wed\") but I could not read it. What is your deadline, exactly?",
+   "ms": 4
+  },
+  {
+   "id": "W04",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 40 · ceiling 35 · fee 6",
+   "lastReply": "Crossing now does not fit your 35 bps ceiling at your 6 bps fee; the route that does is waiting for the next session.",
+   "ms": 16
+  },
+  {
+   "id": "W05",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A buy is priced by the USDT you spend, not shares. How many USDT do you want to spend on rSPY?",
+   "ms": 3
+  },
+  {
+   "id": "W06",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "No recorded book for rTSLA. Switch to live to sound it.",
+   "ms": 2
+  },
+  {
+   "id": "W07",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 1000 · ceiling 45 · fee 8",
+   "lastReply": "Your message names more than one instrument (RSPYUSDT, RSPMOUSDT). Which one is this order for?",
+   "ms": 2
+  },
+  {
+   "id": "W08",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong ceiling priced: 50"
+   ],
+   "recommendation": null,
+   "priced": "sell RHIMSUSDT 120 · ceiling 50 · fee 8",
+   "lastReply": "You mentioned your cost ceiling (\"ceiling\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 6
+  },
+  {
+   "id": "W09",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong ceiling priced: 25"
+   ],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 5000 · ceiling 25 · fee 5",
+   "lastReply": "You mentioned your cost ceiling (\"Ceiling\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 10
+  },
+  {
+   "id": "W10",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 75 · ceiling 40 · fee 8",
+   "lastReply": "Crossing now does not fit your 40 bps ceiling at your 8 bps fee; the route that does is waiting for the next session.",
+   "ms": 21
+  },
+  {
+   "id": "W11",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "acted (immediate_cross) where it should have asked"
+   ],
+   "recommendation": "immediate_cross",
+   "priced": "sell RSPYUSDT 10 · ceiling 40 · fee 6",
+   "lastReply": "Cross now at full size: 6.07 bps all-in at your 6 bps fee, inside your 40 bps ceiling on this snapshot.",
+   "ms": 2
+  },
+  {
+   "id": "W12",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A sell is priced in shares, not USDT. How many shares of rHIMS do you want to sell?",
+   "ms": 1
+  },
+  {
+   "id": "W13",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: You mentioned your deadline (\"before Fri\") but I could not read it. What is your deadline, exactly?"
+   ],
+   "recommendation": null,
+   "priced": "sell RSPYUSDT 15 · ceiling 30 · fee 8",
+   "lastReply": "You mentioned your deadline (\"before Fri\") but I could not read it. What is your deadline, exactly?",
+   "ms": 3
+  },
+  {
+   "id": "W14",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong fee priced: null",
+    "wrong ceiling priced: 60"
+   ],
+   "recommendation": null,
+   "priced": "buy RSPMOUSDT 800 · ceiling 60 · fee none",
+   "lastReply": "You mentioned your cost ceiling (\"ceiling\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 7
+  },
+  {
+   "id": "W15",
+   "lang": "en",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 1000 · ceiling 50 · fee 8",
+   "lastReply": "Your message says both buy and sell. Is this order a buy or a sell?",
+   "ms": 3
+  },
+  {
+   "id": "W16",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: A sell is priced in shares, not USDT. How many shares of rSPY do you want to sell?"
+   ],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A sell is priced in shares, not USDT. How many shares of rSPY do you want to sell?",
+   "ms": 3
+  },
+  {
+   "id": "W17",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong fee priced: null"
+   ],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 1500 · ceiling 45 · fee none",
+   "lastReply": "You mentioned your taker fee (\"吃单\") but I could not read it. What is your taker fee, exactly?",
+   "ms": 3
+  },
+  {
+   "id": "W18",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: You mentioned your deadline (\"最晚\") but I could not read it. What is your deadline, exactly?"
+   ],
+   "recommendation": null,
+   "priced": "sell RSPMOUSDT 60 · ceiling 50 · fee 8",
+   "lastReply": "You mentioned your deadline (\"最晚\") but I could not read it. What is your deadline, exactly?",
+   "ms": 10
+  },
+  {
+   "id": "W19",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "No recorded book for rNVDA. Switch to live to sound it.",
+   "ms": 2
+  },
+  {
+   "id": "W20",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "acted (immediate_cross) where it should have asked"
+   ],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPMOUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now at full size: 27.76 bps all-in at your 8 bps fee, inside your 40 bps ceiling on this snapshot.",
+   "ms": 2
+  },
+  {
+   "id": "W21",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong ceiling priced: 50"
+   ],
+   "recommendation": null,
+   "priced": "sell RSPYUSDT 8 · ceiling 50 · fee 6",
+   "lastReply": "You mentioned your cost ceiling (\"上限\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 5
+  },
+  {
+   "id": "W22",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: You mentioned your deadline (\"截止\") but I could not read it. What is your deadline, exactly?"
+   ],
+   "recommendation": null,
+   "priced": "sell RHIMSUSDT 300 · ceiling 45 · fee 8",
+   "lastReply": "You mentioned your deadline (\"截止\") but I could not read it. What is your deadline, exactly?",
+   "ms": 15
+  },
+  {
+   "id": "W23",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "SAFE_ABSTAIN",
+   "reasons": [
+    "asked: How many shares of rSPMO do you want to sell?"
+   ],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "How many shares of rSPMO do you want to sell?",
+   "ms": 2
+  },
+  {
+   "id": "W24",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 500 · ceiling 50 · fee 8",
+   "lastReply": "Your message names more than one instrument (RSPYUSDT, RHIMSUSDT). Which one is this order for?",
+   "ms": 2
+  },
+  {
+   "id": "W25",
+   "lang": "zh",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong ceiling priced: 40"
+   ],
+   "recommendation": null,
+   "priced": "buy RHIMSUSDT 300 · ceiling 40 · fee 8",
+   "lastReply": "You mentioned your taker fee (\"手续费\") but I could not read it. What is your taker fee, exactly?",
+   "ms": 3
+  },
+  {
+   "id": "W26",
+   "lang": "mixed",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now at full size: 18.09 bps all-in at your 8 bps fee, inside your 40 bps ceiling on this snapshot.",
+   "ms": 2
+  },
+  {
+   "id": "W27",
+   "lang": "mixed",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong fee priced: null"
+   ],
+   "recommendation": null,
+   "priced": "sell RSPYUSDT 12 · ceiling 35 · fee none",
+   "lastReply": "You mentioned your taker fee (\"fee\") but I could not read it. What is your taker fee, exactly?",
+   "ms": 2
+  },
+  {
+   "id": "W28",
+   "lang": "mixed",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "How many shares of rQQQ do you want to sell?",
+   "ms": 2
+  },
+  {
+   "id": "W29",
+   "lang": "mixed",
+   "arm": "template",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 1000 · ceiling 50 · fee 8",
+   "lastReply": "You mentioned your cost ceiling (\"ceiling\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 2
+  },
+  {
+   "id": "W30",
+   "lang": "mixed",
+   "arm": "template",
+   "verdict": "CRITICAL",
+   "reasons": [
+    "wrong size priced: 600"
+   ],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 600 · ceiling 50 · fee 8",
+   "lastReply": "Crossing now does not fit your 50 bps ceiling at your 8 bps fee; the route that does is waiting for the next session.",
+   "ms": 11
+  },
+  {
+   "id": "W01",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now for an all-in cost of 18.09 bps using your stated 8 bps taker fee. This fits because it stays under your 40 bps ceiling on this weekend snapshot.",
+   "ms": 11596
+  },
+  {
+   "id": "W02",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 2500 · ceiling 50 · fee 8",
+   "lastReply": "Cross now for the full 2,500 USDT at an all-in cost of 19.15 bps using your 8 bps taker fee. The binding limit is the 50 bps ceiling, which this route satisfies on this weekend snapshot.",
+   "ms": 11552
+  },
+  {
+   "id": "W03",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "sell RHIMSUSDT 250 · ceiling 60 · fee 10",
+   "lastReply": "Cross now for your full 250 rHIMS at an all-in cost of 44.64 bps using your stated taker fee. Your hard requirement to be completely flat by Wednesday is the binding constraint, excluding any waiting ",
+   "ms": 12917
+  },
+  {
+   "id": "W04",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 40 · ceiling 35 · fee 6",
+   "lastReply": "Wait for the next session to requote. Crossing now costs 75.68 bps all-in for 40 shares, which exceeds your 35 bps ceiling. The binding constraint is that ceiling, so reassessing when US markets reope",
+   "ms": 11241
+  },
+  {
+   "id": "W05",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A buy is priced by the USDT you spend, not shares. How many USDT do you want to spend on rSPY?",
+   "ms": 3272
+  },
+  {
+   "id": "W06",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "No recorded book for rTSLA. Switch to live to sound it.",
+   "ms": 2394
+  },
+  {
+   "id": "W07",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPMOUSDT 1000 · ceiling 45 · fee 8",
+   "lastReply": "Your message names more than one instrument (RSPYUSDT, RSPMOUSDT). Which one is this order for?",
+   "ms": 2873
+  },
+  {
+   "id": "W08",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "sell RHIMSUSDT 120 · ceiling 30 · fee 8",
+   "lastReply": "No priced route satisfies your 30 bps ceiling for the full 120 shares right now. Crossing immediately costs 35.44 bps all-in at your 8 bps fee, which is over the limit. You may wait for the next sessi",
+   "ms": 26053
+  },
+  {
+   "id": "W09",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "buy RSPYUSDT 5000 · ceiling 0 · fee 5",
+   "lastReply": "No priced route satisfies your 0 bps ceiling right now; crossing immediately costs 16.51 bps all-in with your stated 5 bps fee. The only admissible path is to wait for the next US session and requote ",
+   "ms": 10162
+  },
+  {
+   "id": "W10",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "largest_within_ceiling",
+   "priced": "sell RSPMOUSDT 75 · ceiling 40 · fee 8",
+   "lastReply": "With no rush, the largest size within your 40 bps ceiling is 8.5764 shares at 40.00 bps all-in with your 8 bps fee. The full 75-share cross costs 125.79 bps, so the ceiling is the binding constraint l",
+   "ms": 24249
+  },
+  {
+   "id": "W11",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "sell RSPYUSDT 10 · ceiling 40 · fee 8",
+   "lastReply": "Your message gives 6 and 10 bps for your taker fee. Which is it?",
+   "ms": 2976
+  },
+  {
+   "id": "W12",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A sell is priced in shares, not USDT. How many shares of rHIMS do you want to sell?",
+   "ms": 2233
+  },
+  {
+   "id": "W13",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "sell RSPYUSDT 15 · ceiling 30 · fee 8",
+   "lastReply": "Cross now at full size: 8.09 bps all-in at your 8 bps fee, inside your 30 bps ceiling on this snapshot. Because you must be out by 2026-09-24, resting a limit is ruled out.",
+   "ms": 9520
+  },
+  {
+   "id": "W14",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPMOUSDT 800 · ceiling 10 · fee 8",
+   "lastReply": "No priced route satisfies your tightened 10 bps ceiling for the full order on this snapshot. Crossing now costs 26.35 bps all-in with your 8 bps fee, which exceeds the limit. You may post a resting li",
+   "ms": 30684
+  },
+  {
+   "id": "W15",
+   "lang": "en",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "How many shares of rSPY do you want to sell?",
+   "ms": 2644
+  },
+  {
+   "id": "W16",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now at full size: 18.09 bps all-in at your 8 bps fee, inside your 40 bps ceiling on this snapshot.",
+   "ms": 10033
+  },
+  {
+   "id": "W17",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1500 · ceiling 45 · fee 8",
+   "lastReply": "建议立即吃单，按你万8的手续费计算，全量成本为18.68 bps。决定此方案的是45 bps的成本上限，当前报价完全在限额内。",
+   "ms": 10391
+  },
+  {
+   "id": "W18",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "sell RSPMOUSDT 60 · ceiling 50 · fee 8",
+   "lastReply": "No priced route exits the full position inside your 50 bps ceiling at your 8 bps fee on this snapshot. The largest size that fits is listed; the rest is unpriced until the book is read again.",
+   "ms": 13202
+  },
+  {
+   "id": "W19",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "No recorded book for rNVDA. Switch to live to sound it.",
+   "ms": 2771
+  },
+  {
+   "id": "W20",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "A buy is priced by the USDT you spend, not shares. How many USDT do you want to spend on rSPMO?",
+   "ms": 2102
+  },
+  {
+   "id": "W21",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "sell RSPYUSDT 8 · ceiling 30 · fee 6",
+   "lastReply": "建议立即成交，按你6 bps的手续费率计算，全包成本为6.07 bps。决定因素是该成本未超过你设定的30 bps上限，且当前订单簿深度足够一次性卖出8股。",
+   "ms": 18759
+  },
+  {
+   "id": "W22",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "sell RHIMSUSDT 300 · ceiling 45 · fee 8",
+   "lastReply": "Cross now at full size: 44.90 bps all-in at your 8 bps fee, inside your 45 bps ceiling on this snapshot.",
+   "ms": 26319
+  },
+  {
+   "id": "W23",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 30 · ceiling 50 · fee 6",
+   "lastReply": "Crossing now does not fit your 50 bps ceiling at your 6 bps fee; the route that does is waiting for the next session.",
+   "ms": 13970
+  },
+  {
+   "id": "W24",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RHIMSUSDT 500 · ceiling 50 · fee 8",
+   "lastReply": "Your message names more than one instrument (RSPYUSDT, RHIMSUSDT). Which one is this order for?",
+   "ms": 3425
+  },
+  {
+   "id": "W25",
+   "lang": "zh",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "buy RHIMSUSDT 300 · ceiling 5 · fee 8",
+   "lastReply": "本快照上无定价路线能满足5个基点的成本上限，建议等待下一交易时段重新报价。立即买入的总成本为20.49个基点，决定结果的是您的成本上限约束。",
+   "ms": 12362
+  },
+  {
+   "id": "W26",
+   "lang": "mixed",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "buy RSPYUSDT 1000 · ceiling 40 · fee 8",
+   "lastReply": "Cross now for an all-in cost of 18.09 bps using your stated 8 bps taker fee. This fits well within your 40 bps ceiling on this weekend snapshot.",
+   "ms": 10442
+  },
+  {
+   "id": "W27",
+   "lang": "mixed",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "immediate_cross",
+   "priced": "sell RSPYUSDT 12 · ceiling 35 · fee 8",
+   "lastReply": "Cross now at full size: 8.07 bps all-in at your 8 bps fee, inside your 35 bps ceiling on this snapshot. Because you must be out by 2026-09-21, resting a limit and waiting for the next session are rule",
+   "ms": 11877
+  },
+  {
+   "id": "W28",
+   "lang": "mixed",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": null,
+   "lastReply": "No recorded book for rQQQ. Switch to live to sound it.",
+   "ms": 2813
+  },
+  {
+   "id": "W29",
+   "lang": "mixed",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": null,
+   "priced": "buy RSPYUSDT 1000 · ceiling 50 · fee 8",
+   "lastReply": "You mentioned your cost ceiling (\"ceiling\") but I could not read it. What is your cost ceiling, exactly?",
+   "ms": 2490
+  },
+  {
+   "id": "W30",
+   "lang": "mixed",
+   "arm": "model",
+   "verdict": "COMPLETE",
+   "reasons": [],
+   "recommendation": "requote_at_switch",
+   "priced": "sell RSPMOUSDT 25 · ceiling 50 · fee 8",
+   "lastReply": "With no deadline, I recommend waiting for the next session to reassess, as crossing now costs 62.79 bps all-in, which exceeds your 50 bps ceiling. The binding constraint is that no full-size route fit",
+   "ms": 26462
+  }
+ ]
+}

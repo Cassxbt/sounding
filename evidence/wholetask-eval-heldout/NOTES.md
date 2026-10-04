@@ -14,3 +14,7 @@ The three critical errors on the Qwen arm:
 The three safe abstentions were questions the trader did not need: "keep it under the ceiling", "ceiling 照旧" (as before) and "含手续费" (including fees) name a limit without stating one.
 
 Fixes informed by this run come after it; any later run of this set is a development run.
+
+## Development re-run at 8ff1a3e (after fixes informed by this set and by stress tests; not held-out)
+
+Qwen arm 30/30 complete, 0 critical, 0 needless questions; baseline 13/30, 11 critical. The same commit on the paraphrase sets: v2 147/151 and v1 135/138 stated limits, 0 wrong values on both. The fixes are general rules (two instruments named, two figures for one limit, a cost limit stated but not read, someone else's fee), each with tests; this set was not tuned against beyond them.
