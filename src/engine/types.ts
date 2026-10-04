@@ -71,8 +71,10 @@ export interface LegCost {
   status: "OK" | "INSUFFICIENT_VISIBLE_DEPTH";
   /** base shares */
   qty: string;
-  /** quote cash: spend for buy, proceeds for sell (pre-fee) */
+  /** quote cash: spend for buy, proceeds for sell (pre-fee), rounded for display */
   cash: string;
+  /** same cash at full precision; the minimum-order gate compares this */
+  cashExact?: string;
   vwap?: string;
   /** one-leg cost vs reference mid, pre-fee, basis points, rounded for display */
   bpsPreFee?: string;
@@ -155,6 +157,10 @@ export interface Receipt {
   feeScenariosBps: number[];
   gate?: GateCode;
   outputs: unknown;
+  /** the Bitget metadata rows this decision used */
+  metadata: { stockInfo: unknown; instrument: unknown };
+  /** sha256 over those rows plus the market states and calendar */
+  metadata_sha256: string;
   /** sha256 of the canonical JSON of every field above */
   receipt_sha256?: string;
   /** HMAC-SHA256 of receipt_sha256 under the server's key; absent on unsigned (local) deployments */

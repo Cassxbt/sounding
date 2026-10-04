@@ -52,8 +52,11 @@ export function validateBook(raw: RawOrderbook): BookValidity {
   if (asks.length === 0 && bids.length === 0) return { valid: false, code: "NO_EXECUTABLE_QUOTE", detail: "empty book" };
   if (asks.length === 0 || bids.length === 0) return { valid: false, code: "INVALID_BOOK", detail: "one-sided book" };
   for (const [p, q] of [...asks, ...bids]) {
-    if (!(D(p).gt(0)) || D(q).lt(0)) return { valid: false, code: "INVALID_BOOK", detail: `bad level ${p}/${q}` };
+    if (!(D(p).gt(0)) || !D(q).gt(0)) return { valid: false, code: "INVALID_BOOK", detail: `bad level ${p}/${q}` };
   }
+  // Walking assumes best-first order; a book out of order would price the wrong levels first.
+  for (let k = 1; k < asks.length; k++) if (!D(asks[k][0]).gt(asks[k - 1][0])) return { valid: false, code: "INVALID_BOOK", detail: `asks out of order at level ${k + 1}` };
+  for (let k = 1; k < bids.length; k++) if (!D(bids[k][0]).lt(bids[k - 1][0])) return { valid: false, code: "INVALID_BOOK", detail: `bids out of order at level ${k + 1}` };
   const bestAsk = D(asks[0][0]), bestBid = D(bids[0][0]);
   if (bestBid.gte(bestAsk)) return { valid: false, code: "INVALID_BOOK", detail: "crossed or locked" };
   return { valid: true, bestBid, bestAsk, mid: bestBid.plus(bestAsk).div(2) };
@@ -96,10 +99,10 @@ export function buyWithBudget(raw: RawOrderbook, quoteBudget: string, mid: Decim
   const asks = raw.data.asks; const budget = D(quoteBudget);
   const { shares, spent, exhausted, used } = walkForBudget(asks, budget);
   const base = { levelsConsumed: used, visibleNotional: notional(asks).toFixed(2) };
-  if (exhausted || shares.eq(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: shares.toFixed(6), cash: spent.toFixed(2), thinTop: false, ...base };
+  if (exhausted || shares.eq(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), thinTop: false, ...base };
   const vwap = spent.div(shares);
   const bps = vwap.minus(mid).div(mid).mul(10000);
-  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
+  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
 }
 
 /** Sell base shares: walk bids for the full quantity. */
@@ -107,10 +110,10 @@ export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): Le
   const bids = raw.data.bids; const qty = D(baseQty);
   const { cash, unfilled, used } = walkForQty(bids, qty);
   const base = { levelsConsumed: used, visibleNotional: notional(bids).toFixed(2) };
-  if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), thinTop: false, ...base };
+  if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), thinTop: false, ...base };
   const vwap = cash.div(qty);
   const bps = mid.minus(vwap).div(mid).mul(10000);
-  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
+  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
 }
 
 /** true when the exact all-in cost of this leg is at or under the ceiling */

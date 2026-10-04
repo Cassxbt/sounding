@@ -2,6 +2,7 @@ import { canonicalJson, receiptSignatureValid, sha256, signReceiptHash } from ".
 import { DEFAULT_LASTLOOK_TOLERANCE_BPS, MAX_DECISION_AGE_MS, decidingRow } from "./decision";
 import type { FeeScenario, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
+import type Decimal from "decimal.js";
 
 /**
  * Last Look: the decision a trader confirms is re-checked on a fresh book before it stands.
@@ -73,24 +74,24 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
     status = "VOID_STALE";
     reasons.push("visible depth no longer covers the full order");
   } else {
-    // Compared at the precision it is displayed with, so the text never reads "5.00 beyond 5".
-    const drift = D(fresh.leg.bpsPreFeeExact!).minus(original.leg!.bpsPreFeeExact!).toDecimalPlaces(2);
-    driftBps = drift.toFixed(2);
+    // Compared exactly; shown with enough digits that a breach never reads as "10.00 beyond 10".
+    const drift = D(fresh.leg.bpsPreFeeExact!).minus(original.leg!.bpsPreFeeExact!);
+    driftBps = shown(drift, toleranceBps);
     if (f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT") {
       status = "VOID_STALE";
       reasons.push(`verdict flipped: ${f.allInBps} bps all-in now exceeds the ${fresh.ceilingBps} bps ceiling`);
     }
     if (drift.abs().gt(toleranceBps)) {
       status = "VOID_STALE";
-      reasons.push(`execution cost moved ${drift.gt(0) ? "against you" : "in your favour"} by ${drift.abs().toFixed(2)} bps, beyond the ${toleranceBps} bps tolerance; re-read before acting`);
+      reasons.push(`execution cost moved ${drift.gt(0) ? "against you" : "in your favour"} by ${shown(drift.abs(), toleranceBps)} bps, beyond the ${toleranceBps} bps tolerance; re-read before acting`);
     }
     // The cost is relative to each book's mid; the price itself can move while relative cost stays put.
     const sign = fresh.intent.side === "sell" ? 1 : -1;
-    const pd = D(fresh.leg.vwap!).minus(original.leg!.vwap!).div(original.leg!.vwap!).mul(10000).mul(sign).toDecimalPlaces(2);
-    priceDriftBps = pd.toFixed(2);
+    const pd = D(fresh.leg.vwap!).minus(original.leg!.vwap!).div(original.leg!.vwap!).mul(10000).mul(sign);
+    priceDriftBps = shown(pd, toleranceBps);
     if (pd.abs().gt(toleranceBps)) {
       status = "VOID_STALE";
-      reasons.push(`the price you would get moved ${pd.lt(0) ? "against you" : "in your favour"} by ${pd.abs().toFixed(2)} bps since you read it, beyond the ${toleranceBps} bps tolerance${pd.gt(0) ? "; a different market from the one you decided on" : ""}`);
+      reasons.push(`the price you would get moved ${pd.lt(0) ? "against you" : "in your favour"} by ${shown(pd.abs(), toleranceBps)} bps since you read it, beyond the ${toleranceBps} bps tolerance${pd.gt(0) ? "; a different market from the one you decided on" : ""}`);
     }
     if (status === "STANDS_ON_FRESH_BOOK" && !tooOld) reasons.push(`fresh book within ${toleranceBps} bps of the sounding you read on cost and price; still within ceiling at ${f.allInBps} bps`);
   }
@@ -107,6 +108,11 @@ export function lastLook(sent: SoundingResult, fresh: SoundingResult, toleranceB
   };
   const receipt_sha256 = sha256(canonicalJson(core));
   return { ...core, fresh, receipt_sha256, receipt_sig: signReceiptHash(receipt_sha256) };
+}
+
+function shown(v: Decimal, tolerance: number): string {
+  const two = v.toFixed(2);
+  return v.abs().gt(tolerance) && D(two).abs().lte(tolerance) ? v.toFixed(4) : two;
 }
 
 function formatGap(ms: number): string {

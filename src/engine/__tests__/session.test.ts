@@ -47,3 +47,14 @@ describe("nextSessionNy", () => {
   it("weekday session: a boundary falls today", () => expect(nextSessionNy(at("2026-09-22T15:00:00Z"), calendar())).toBe("2026-09-22"));
   it("no calendar -> null", () => expect(nextSessionNy(at("2026-09-20T15:00:00Z"), null)).toBeNull());
 });
+
+describe("next session from the overnight session", () => {
+  it("Friday 21:19 NY overnight: the next session a re-quote can use is Monday, not Friday", () => {
+    const fri = classifySession(new Date("2026-10-03T01:19:55Z"), states(), calendar());
+    expect(fri.clock.date).toBe("2026-10-02");
+    expect(nextSessionNy(fri, calendar())).toBe("2026-10-05");
+  });
+  it("Wednesday 21:00 NY overnight: Thursday", () => {
+    expect(nextSessionNy(classifySession(new Date("2026-09-24T01:00:00Z"), states(), calendar()), calendar())).toBe("2026-09-24");
+  });
+});

@@ -5,7 +5,7 @@ import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type Mar
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.3.2";
+export const ENGINE_VERSION = "sounding-engine/0.4.0";
 export const DEFAULT_FEE_SCENARIOS_BPS = [0, 10, 20];
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
 import { STABILITY_BPS } from "./decision";
@@ -35,7 +35,10 @@ function receiptFor(i: SoundingInput, session: SoundingResult["session"], gate: 
     server_requestTime: i.capture.server_requestTime, clock_offset_ms: i.capture.clock_offset_ms,
     evaluated_at_utc: i.now.toISOString(), session, intent: i.intent, ceilingBps: i.ceilingBps,
     feeScenariosBps: i.userFeeBps !== undefined ? [...DEFAULT_FEE_SCENARIOS_BPS, i.userFeeBps] : DEFAULT_FEE_SCENARIOS_BPS, gate, outputs,
+    metadata: { stockInfo: i.stockInfo?.find((s) => s.symbol === i.capture.symbol) ?? null, instrument: i.instruments?.find((s) => s.symbol === i.capture.symbol) ?? null },
+    metadata_sha256: "",
   };
+  r.metadata_sha256 = sha256(canonicalJson({ ...r.metadata, states: i.states ?? null, calendar: i.calendar ?? null }));
   r.receipt_sha256 = sha256(canonicalJson({ ...r, receipt_sha256: undefined, receipt_sig: undefined }));
   r.receipt_sig = signReceiptHash(r.receipt_sha256);
   return r;
@@ -95,8 +98,8 @@ export function sound(i: SoundingInput): SoundingResult {
   }
   // Cost, one leg
   const leg: LegCost = i.intent.side === "buy" ? buyWithBudget(cap.raw, i.intent.quoteBudget, v.mid) : sellShares(cap.raw, i.intent.baseQty, v.mid);
-  if (leg.status === "OK" && D(leg.cash).lt(spec.minOrderAmount))
-    return fail("BELOW_MIN_ORDER", `order value ${leg.cash} USDT below minimum order amount ${spec.minOrderAmount} USDT`, { weekendTradable: elig.weekendTradable, spec });
+  if (leg.status === "OK" && D(leg.cashExact ?? leg.cash).lt(spec.minOrderAmount))
+    return fail("BELOW_MIN_ORDER", `order value ${D(leg.cashExact ?? leg.cash).toDecimalPlaces(6).toString()} USDT below minimum order amount ${spec.minOrderAmount} USDT`, { weekendTradable: elig.weekendTradable, spec });
   // Gate 6: stability
   if (i.previousBpsPreFee !== undefined && leg.status === "OK" && D(leg.bpsPreFeeExact!).minus(i.previousBpsPreFee).abs().gt(STABILITY_BPS))
     return fail("UNSTABLE_QUOTE", `cost moved ${D(leg.bpsPreFeeExact!).minus(i.previousBpsPreFee).toFixed(2)} bps between snapshots`, { weekendTradable: elig.weekendTradable, referenceMid: v.mid.toString(), leg });

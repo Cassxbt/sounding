@@ -186,3 +186,28 @@ describe("worst-fee contrast on the same book", () => {
     expect(sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50 }).worstCase).toBeUndefined();
   });
 });
+
+describe("audit fixes in the engine", () => {
+  const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
+  it("minimum order is compared on exact proceeds, not the 2 dp display (9.998 USDT is under 10)", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "0.3572" }, ceilingBps: 500 });
+    expect(r.gate).toBe("BELOW_MIN_ORDER");
+  });
+  it("malformed books are refused: zero quantity, and levels out of price order", () => {
+    const z = rhims(); z.raw.data.bids[2] = [z.raw.data.bids[2][0], "0"]; z.raw_sha256 = rawHash(z.raw);
+    expect(validateBook(z.raw)).toMatchObject({ valid: false, code: "INVALID_BOOK" });
+    const u = rhims(); [u.raw.data.bids[0], u.raw.data.bids[1]] = [u.raw.data.bids[1], u.raw.data.bids[0]]; u.raw_sha256 = rawHash(u.raw);
+    expect(validateBook(u.raw)).toMatchObject({ valid: false, code: "INVALID_BOOK" });
+    const a = rhims(); [a.raw.data.asks[0], a.raw.data.asks[1]] = [a.raw.data.asks[1], a.raw.data.asks[0]]; a.raw_sha256 = rawHash(a.raw);
+    expect(validateBook(a.raw)).toMatchObject({ valid: false, code: "INVALID_BOOK" });
+  });
+  it("the receipt digests the metadata the decision used, so changed rules change the receipt", () => {
+    const a = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
+    expect(a.receipt.metadata_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(a.receipt.metadata).toMatchObject({ stockInfo: { symbol: "RHIMSUSDT" }, instrument: { symbol: "RHIMSUSDT" } });
+    const ins = instruments().map((x) => (x.symbol === "RHIMSUSDT" ? { ...x, minOrderAmount: "5" } : x));
+    const b = sound({ ...ctx(), instruments: ins, capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
+    expect(b.receipt.metadata_sha256).not.toBe(a.receipt.metadata_sha256);
+    expect(b.receipt.receipt_sha256).not.toBe(a.receipt.receipt_sha256);
+  });
+});

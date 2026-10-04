@@ -74,13 +74,15 @@ export function nextSwitchHint(sess: SessionResult): string {
 }
 
 /**
- * NY date of the next session a re-quote could use. Inside a weekend or holiday market-maker session it is the
- * next trading day (04:00 NY pre-market, weekends and calendar closures skipped); otherwise a boundary falls today.
+ * NY date of the next session a re-quote could use. Inside a weekend or holiday market-maker session, or in the
+ * evening part of the overnight session (from 20:00 NY), it is the next trading day (04:00 NY pre-market, weekends
+ * and calendar closures skipped); otherwise a boundary falls today.
  * null when the calendar is unavailable: callers treat that as "no session before any deadline".
  */
 export function nextSessionNy(sess: SessionResult, cal: Calendar | null): string | null {
   if (!cal) return null;
-  if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm") return sess.clock.date;
+  const evening = sess.clock.minutes >= 20 * 60;
+  if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm" && !evening) return sess.clock.date;
   const closedDays = new Set(cal.regularConfig.map((d) => d.toUpperCase()));
   const names = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
   const d = new Date(`${sess.clock.date}T00:00:00Z`);
