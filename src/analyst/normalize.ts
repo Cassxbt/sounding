@@ -122,3 +122,48 @@ export function spanInText(span: string, text: string): boolean {
 }
 
 const round = (v: number) => Math.round(v * 1e6) / 1e6;
+
+export interface Listed { code: string; symbol: string }
+const NOT_TICKERS = new Set(["USDT", "USD", "BPS", "BP", "NY", "UTC", "ETF", "AM", "PM", "OK", "CN", "EN", "VWAP", "API"]);
+
+/** rToken symbols named in the words: "rSPY", "rhims", "SPY", "NVDA". Lower-case words are never tickers unless r-prefixed. */
+export function readSymbols(text: string, listed: Listed[]): string[] {
+  const byCode = new Map(listed.map((l) => [l.code.toUpperCase(), l.symbol]));
+  const found = new Set<string>();
+  for (const t of text.match(/[A-Za-z][A-Za-z0-9.]{0,7}/g) ?? []) {
+    const tok = t.replace(/\.$/, "");
+    const candidates: string[] = [];
+    if (/^r[A-Z0-9]/.test(tok)) candidates.push(tok.slice(1));
+    else if (/^r[a-z]{3,}$/.test(tok)) candidates.push(tok.slice(1).toUpperCase());
+    else if (/^[A-Z][A-Z0-9.]{1,}$/.test(tok)) { candidates.push(tok); if (/^R[A-Z]{2,}$/.test(tok)) candidates.push(tok.slice(1)); }
+    else if (/^R[A-Z]{2,}USDT$/i.test(tok)) candidates.push(tok.slice(1, -4).toUpperCase());
+    for (const c of candidates) {
+      if (NOT_TICKERS.has(c)) continue;
+      const s = byCode.get(c.toUpperCase());
+      if (s) { found.add(s); break; }
+    }
+  }
+  return [...found];
+}
+
+/** One instrument value, from whatever form the model wrote it in. */
+export function resolveSymbol(value: string, listed: Listed[]): string | null {
+  const v = value.trim();
+  if (listed.some((l) => l.symbol === v.toUpperCase())) return v.toUpperCase();
+  return readSymbols(v.length <= 7 && /^[a-z]+$/.test(v) ? `r${v}` : v, listed)[0] ?? readSymbols(v.toUpperCase(), listed)[0] ?? null;
+}
+
+const BUY = /\b(buy|buying|bought|purchase|long|accumulate)\b|买入|购买|加仓|买/i;
+const SELL = /\b(sell|selling|dump|exit|close out|unload|offload|trim)\b|\bout of\b|卖出|清仓|减仓|平仓|抛|卖/i;
+export function readSide(text: string): "buy" | "sell" | "both" | null {
+  const b = BUY.test(text), s = SELL.test(text);
+  return b && s ? "both" : b ? "buy" : s ? "sell" : null;
+}
+
+/** Words that mean a limit was stated. A cue with no value read is asked back, never defaulted. */
+export const CUES = {
+  takerFeeBps: /\b(taker|fees?|commission)\b|手续费|费率|吃单/i,
+  ceilingBps: /\b(ceiling|cap|capped|all[- ]?in|at most|no more than|max(?:imum)?)\b|上限|不超过|最多|别超/i,
+  hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜|明天|今天|月底|截止/i,
+  mustBeFlat: /\b(must|have to|has to|need to|needs to|gotta|got to)\b|必须|一定要/i,
+} as const;

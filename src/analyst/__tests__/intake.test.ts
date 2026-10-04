@@ -105,3 +105,40 @@ describe("readers after held-out v2 (development; v2 numbers above are pre-fix)"
     expect(f.find((x) => x.name === "hardDeadlineNy")).toMatchObject({ value: "2026-10-09", source: "code", status: "accepted" });
   });
 });
+
+describe("order contract: instrument and side are read and checked like any limit", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }, { code: "BE", symbol: "RBEUSDT" }, { code: "NVDA", symbol: "RNVDAUSDT" }];
+  const D8 = "2026-10-03";
+  it("accepts the model's instrument and side when code resolves the same from the quoted words", () => {
+    const text = "Buy 1,000 USDT of rSPY. Fee 8 bps, ceiling 50 bps.";
+    const f = checkFields([{ name: "symbol", value: "rSPY", span: "rSPY" }, { name: "side", value: "buy", span: "Buy 1,000 USDT" }], text, D8, UNI);
+    expect(f.find((x) => x.name === "symbol")).toMatchObject({ status: "accepted", value: "RSPYUSDT", source: "model+code" });
+    expect(f.find((x) => x.name === "side")).toMatchObject({ status: "accepted", value: "buy", source: "model+code" });
+  });
+  it("code reads the instrument and side when the model leaves them out", () => {
+    const f = checkFields([], "卖出178.4121股rHIMS，吃单手续费千分之0.8", D8, UNI);
+    expect(f.find((x) => x.name === "symbol")).toMatchObject({ status: "accepted", value: "RHIMSUSDT", source: "code" });
+    expect(f.find((x) => x.name === "side")).toMatchObject({ status: "accepted", value: "sell", source: "code" });
+  });
+  it("ordinary words are not tickers: 'must be out' is not rBE", () => {
+    const f = checkFields([], "Sell 178.4121 rHIMS, I must be out before the 8th", D8, UNI);
+    expect(f.filter((x) => x.name === "symbol").map((x) => x.value)).toEqual(["RHIMSUSDT"]);
+  });
+  it("two instruments, or buy and sell words together, are asked back", () => {
+    expect(checkFields([], "sell rHIMS and buy rNVDA", D8, UNI).filter((x) => x.status === "conflict").map((x) => x.name)).toEqual(expect.arrayContaining(["symbol", "side"]));
+  });
+  it("a limit that is mentioned but not read is asked back, never defaulted", () => {
+    const f = checkFields([{ name: "sizeShares", value: "178.4121", span: "178.4121" }], "Sell 178.4121 rHIMS, my taker fee is what we agreed, I must be out by Friday", D8, UNI);
+    const held = f.filter((x) => x.status === "conflict").map((x) => x.name);
+    expect(held).toEqual(expect.arrayContaining(["takerFeeBps", "hardDeadlineNy"]));
+  });
+  it("a fully read message raises no question", () => {
+    const text = "Sell 178.4121 rHIMS. I pay 0.08% taker, keep it under half a percent all-in, and I must be out before the 8th.";
+    const f = checkFields([
+      { name: "sizeShares", value: "178.4121", span: "178.4121" }, { name: "takerFeeBps", value: 8, span: "I pay 0.08% taker" },
+      { name: "ceilingBps", value: 50, span: "under half a percent" }, { name: "hardDeadlineNy", value: "2026-10-07", span: "before the 8th" },
+      { name: "mustBeFlat", value: true, span: "I must be out before the 8th" },
+    ], text, D8, UNI);
+    expect(f.filter((x) => x.status !== "accepted")).toEqual([]);
+  });
+});
