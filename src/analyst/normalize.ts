@@ -96,6 +96,8 @@ function readNamedDate(span: string, today: string): string | null {
   if (x) return withYear(Number(x[1]), Number(x[2]));
   x = s.match(/\b(\d{1,2})\/(\d{1,2})\b/);
   if (x) return withYear(Number(x[1]), Number(x[2]));
+  x = s.match(/(?<![\d.])(\d{1,2})\.(\d{1,2})(?![\d%.])/);
+  if (x) return withYear(Number(x[1]), Number(x[2]));
   if (/\btoday\b|今天|今日/.test(s)) return today;
   if (/\btomorrow\b|明天|明日/.test(s)) return dayAfter(today);
   const wd = readWeekday(s, today);
@@ -126,7 +128,7 @@ const round = (v: number) => Math.round(v * 1e6) / 1e6;
 export interface Listed { code: string; symbol: string }
 const NOT_TICKERS = new Set(["USDT", "USD", "BPS", "BP", "NY", "UTC", "ETF", "AM", "PM", "OK", "CN", "EN", "VWAP", "API"]);
 /** Words a trader writes in capitals for emphasis that are also listed codes; never read as an instrument. */
-const COMMON_WORDS = new Set(["ALL", "IT", "NOW", "ON", "OUT", "LOW", "SO", "AT", "BE", "ARE", "FOR", "ANY", "CAN", "GO", "HE", "ONE", "BIG", "KEY", "REAL", "CASH", "MAIN", "FAST", "SAFE", "OPEN", "HOLD", "CLOSE", "BUY", "SELL", "FEE", "MAX", "CAP", "NEW", "TOP", "OR", "AND", "NO", "YES", "UP", "DOWN", "BY", "TO", "OF", "IN", "MY", "ME", "WE", "US", "PAY", "TAX", "EARN", "LIFE", "WELL", "GOOD", "BEST", "EAT", "RUN", "PLAY", "CAR", "HOME", "LOVE", "GAME", "MOVE", "TRUE", "TEAM"]);
+const COMMON_WORDS = new Set(["ALL", "IT", "NOW", "ON", "OUT", "LOW", "SO", "AT", "BE", "ARE", "FOR", "ANY", "CAN", "GO", "HE", "ONE", "BIG", "KEY", "REAL", "CASH", "MAIN", "FAST", "SAFE", "OPEN", "HOLD", "CLOSE", "BUY", "SELL", "FEE", "MAX", "CAP", "NEW", "TOP", "OR", "AND", "NO", "YES", "UP", "DOWN", "BY", "TO", "OF", "IN", "MY", "ME", "WE", "US", "PAY", "TAX", "EARN", "LIFE", "WELL", "GOOD", "BEST", "EAT", "RUN", "PLAY", "CAR", "HOME", "LOVE", "GAME", "MOVE", "TRUE", "TEAM", "WAY", "SUN", "AIR", "ICE", "FLY", "BILL", "SNOW", "BOOT", "NICE", "WING", "SITE", "HAS", "AGO"]);
 
 /**
  * rToken symbols named in the words. Explicit forms ("rSPY", "RSPYUSDT") always count. A bare code ("SPY") or a
@@ -175,8 +177,8 @@ export function readSide(text: string): "buy" | "sell" | "both" | null {
 /** Words that mean a limit was stated. A cue with no value read is asked back, never defaulted. */
 export const CUES = {
   takerFeeBps: /\b(taker|fees?|commission)\b|手续费|费率|吃单/i,
-  ceilingBps: /\b(ceiling|cap|capped|all[- ]?in|at most|no more than|max(?:imum)?)\b|上限|不超过|最多|别超/i,
-  hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|(?:\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|明天|今天|月底)\s*(?:前|之前|以前|内|之内|截止)|最晚|截止/i,
+  ceilingBps: /\b(ceiling|cap|capped|all[- ]?in|at most|no more than|max(?:imum)?|under|below|within|between|up to|less than)\b|上限|不超过|最多|别超|以内|之内|控制在|低于/i,
+  hardDeadlineNy: /\b(?:by|before|until|deadline|prior to|ahead of|no later than)\s+(?:the\s+)?(?:\d|mon|tue|wed|thu|fri|sat|sun|today|tomorrow|tonight|end|next|oct|nov|dec|jan|feb|mar|apr|may|jun|jul|aug|sep)|\d{1,2}[./]\d{1,2}\s*(?:之前|以前|前)|(?:\d{1,2}\s*[号日]|周[一二三四五六日天]|星期[一二三四五六日天]|礼拜[一二三四五六日天]|明天|今天|月底)\s*(?:前|之前|以前|内|之内|截止)|最晚|截止/i,
   mustBeFlat: /\b(must|have to|has to|need to|needs to|gotta|got to)\b|必须|一定要/i,
 } as const;
 
@@ -188,16 +190,18 @@ export function costFigures(text: string): { at: number; raw: string; bps: numbe
     const bps = readBps(m[0]);
     // A percentage that follows a price move ("up 4.5%") is not a cost.
     const before = text.slice(Math.max(0, (m.index ?? 0) - 16), m.index).toLowerCase();
-    if (bps !== null && !/\b(up|down|rose|fell|gained|lost|jumped|dropped)\b|涨|跌/.test(before)) out.push({ at: m.index ?? 0, raw: m[0], bps });
+    const after = text.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 12).toLowerCase();
+    const move = /\b(up|down|rose|fell|gained|lost|jumped|dropped|spread)\b|涨|跌|[+\-]\s*$/.test(before) || /^\s*(drop|rise|gain|move|jump|fall|rally|decline|swing|bounce)/.test(after);
+    if (bps !== null && !move) out.push({ at: m.index ?? 0, raw: m[0], bps });
   }
   return out;
 }
 
 /** The sentence or clause around a position: what one figure can be compared against. */
 export function around(text: string, at: number, clause = false): { start: number; text: string } {
-  const marks = clause ? /[.。;；!?！？\n,，]/ : /[.。;；!?！？\n]/;
-  // A full stop or comma between digits is part of a number ("0.1%", "1,000"), not a boundary.
-  const stop = (k: number) => marks.test(text[k]) && !((text[k] === "." || text[k] === ",") && /\d/.test(text[k - 1] ?? "") && /\d/.test(text[k + 1] ?? ""));
+  const marks = clause ? /[.。;；!?！？\n,，…]/ : /[.。;；!?！？\n…]/;
+  // A full stop or comma between digits is part of a number ("0.1%", "1,000"), and a dot inside a word ("e.g", a URL) is not a boundary.
+  const stop = (k: number) => marks.test(text[k]) && !((text[k] === "." || text[k] === ",") && /\d/.test(text[k - 1] ?? "") && /\d/.test(text[k + 1] ?? "")) && !(text[k] === "." && /[A-Za-z]/.test(text[k + 1] ?? ""));
   let s = at; while (s > 0 && !stop(s - 1)) s--;
   let e = at; while (e < text.length && !stop(e)) e++;
   return { start: s, text: text.slice(s, e) };

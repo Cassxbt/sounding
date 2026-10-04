@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readBps, readDate, readQty, spanInText } from "../normalize";
+import { costFigures, readBps, readDate, readQty, spanInText } from "../normalize";
 import { applyFields, checkFields, regexIntake } from "../intake";
 import { EMPTY_CONSTRAINTS } from "..";
 
@@ -229,5 +229,44 @@ describe("a cost limit followed by bare numbers is a stated limit (development)"
   it("'ceiling 改成 20 还是 25' with no ceiling read is asked, never left at the old ceiling", () => {
     const f = checkFields([{ name: "sizeQuoteUsdt", value: "1000", span: "1000U" }], "buy 1000U rSPY, ceiling 改成 20 还是 25…我还没想好", "2026-09-20", [{ code: "SPY", symbol: "RSPYUSDT" }]);
     expect(f.find((x) => x.name === "ceilingBps")?.status).toBe("conflict");
+  });
+});
+
+describe("ST8: reading rules that let a limit slip (development)", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }, { code: "AMD", symbol: "RAMDUSDT" }];
+  const D = "2026-10-03";
+  const status = (f: ReturnType<typeof checkFields>, n: string) => f.filter((x) => x.name === n).map((x) => x.status);
+  it("two different model values for one field are asked, never resolved by order", () => {
+    const f = checkFields([{ name: "side", value: "sell", span: "Sell 50" }, { name: "side", value: "buy", span: "buy 20 back" }], "Sell 50 rHIMS, then buy 20 back", D, UNI);
+    expect(status(f, "side")).toContain("conflict");
+  });
+  it.each(["Sell 10 rHIMS, keep it under 40bp all told", "sell 10 rHIMS below 0.3%", "sell 10 rHIMS, somewhere between 20 and 30 bps", "卖 10 股 rHIMS，成本控制在千分之三以内"])("a ceiling worded '%s' and not read is asked", (t) => {
+    expect(status(checkFields([], t, D, UNI), "ceilingBps")).toContain("conflict");
+  });
+  it("two ceilings in separate clauses are a contradiction even with a fee between them", () => {
+    const f = checkFields([{ name: "ceilingBps", value: 50, span: "cap 50bp" }, { name: "takerFeeBps", value: 8, span: "fee 8bp" }], "sell 10 rHIMS, cap 30bp, fee 8bp, cap 50bp", D, UNI);
+    expect(status(f, "ceilingBps")).toContain("conflict");
+  });
+  it("'taker 8/10bp' is an undecided choice", () => {
+    expect(status(checkFields([{ name: "takerFeeBps", value: 8, span: "taker 8" }], "sell 10 rHIMS, taker 8/10bp", D, UNI), "takerFeeBps")).toContain("conflict");
+  });
+  it("'10.8 之前' is a deadline: read when quoted, asked when omitted", () => {
+    expect(readDate("10.8 之前", D)).toBe("2026-10-07");
+    expect(status(checkFields([], "卖 10 股 rHIMS，10.8 之前必须清仓", D, UNI), "hardDeadlineNy")).toContain("conflict");
+  });
+  it("a second instrument written bare or unknown is caught when the model picked the other", () => {
+    expect(status(checkFields([{ name: "symbol", value: "rHIMS", span: "rHIMS" }], "sell rHIMS and buy SPY with it", D, UNI), "symbol")).toContain("conflict");
+    expect(status(checkFields([{ name: "symbol", value: "rHIMS", span: "rHIMS" }], "sell rHIMS and rZZZZ", D, UNI), "symbol")).toContain("conflict");
+  });
+  it("'I or my wife pay 8bp' and 'what my friend pays too' keep the fee; 'my buddy pays 4bp' does not", () => {
+    expect(status(checkFields([{ name: "takerFeeBps", value: 8, span: "pay 8bp" }], "sell 10 rHIMS, I or my wife pay 8bp", D, UNI), "takerFeeBps")).toEqual(["accepted"]);
+    expect(status(checkFields([{ name: "takerFeeBps", value: 8, span: "8bp" }], "sell 10 rHIMS, fee 8bp which is what my friend pays too", D, UNI), "takerFeeBps")).toEqual(["accepted"]);
+    expect(status(checkFields([{ name: "takerFeeBps", value: 4, span: "4bp" }], "My buddy pays 4bp taker on his VIP account, I'm on the regular 10bp.", D, UNI), "takerFeeBps")).toEqual(["conflict"]);
+  });
+  it("'fee 8bp or 0.08%' is one fee written twice", () => {
+    expect(status(checkFields([{ name: "takerFeeBps", value: 8, span: "fee 8bp" }], "sell 10 rHIMS, fee 8bp or 0.08%", D, UNI), "takerFeeBps")).toEqual(["accepted"]);
+  });
+  it("price moves are not costs: '+3%', 'a 3% drop', 'spread 0.3%'", () => {
+    expect(costFigures("rAMD +3% today, after a 3% drop, spread 0.3%")).toEqual([]);
   });
 });

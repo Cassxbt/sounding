@@ -108,9 +108,12 @@ function checkSide(value: string, span: string): IntakeField {
 /** Code reads the order from the whole message when the model leaves it out; more than one reading is asked back. */
 function orderFromWords(out: IntakeField[], text: string, listed: Listed[]) {
   // A message that names more than one instrument is one question, whichever one the model picked.
+  // Looser readings count here because they can only add a question, never price an order.
   const picked = out.find((f) => f.name === "symbol" && f.status === "accepted");
   if (picked) {
-    const named = new Set([...readSymbols(text, listed), String(picked.value)]);
+    const codeOf = (sym: string) => listed.find((l) => l.symbol === sym)?.code ?? "";
+    const loose = readSymbols(text, listed, true).filter((sym) => codeOf(sym).length >= 3);
+    const named = new Set([...readSymbols(text, listed), ...loose, ...unknownRTickers(text, listed), String(picked.value)]);
     if (named.size > 1) Object.assign(picked, { status: "conflict", value: [...named].join(", "), source: "code", note: "more than one instrument is named" });
   }
   if (!out.some((f) => f.name === "symbol")) {
@@ -137,31 +140,56 @@ function unclaimed(out: IntakeField[], text: string, own: FieldName) {
   return (figs: { at: number; raw: string; bps: number }[]) => figs.filter((g) => !claimed.some(([a, b]) => g.at >= a && g.at < b));
 }
 
-/** Two different figures for one limit in the same sentence ("6 bps, which is 0.1%") are asked back. */
+const MAKER = /\bmaker\b|挂单/i;
+const CORRECTION = /不对|更正|改成|改为|\bactually\b|\bsorry\b|no wait|\bcorrection\b|\binstead\b|\bi mean\b|现在/i;
+const THIRD = /\b(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss|his|her|their)\b|老婆|老公|朋友|同事|哥们|别人|他的|她的|他们/i;
+const FIRST = /\bI\b|\bI'm\b|\bme\b|\bmy\b(?!\s+(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss))|我(?!老婆|老公|朋友|同事|哥们)/i;
+
+/** Which limit a figure belongs to: the nearest cue before it in its sentence. */
+function owner(text: string, at: number): "takerFeeBps" | "ceilingBps" | "maker" | null {
+  const s = around(text, at), head = text.slice(s.start, at);
+  const last = (re: RegExp) => { let k = -1; for (const m of head.matchAll(new RegExp(re.source, re.flags.replace("g", "") + "g"))) k = m.index ?? -1; return k; };
+  const cands = ([["takerFeeBps", last(CUES.takerFeeBps)], ["ceilingBps", last(CUES.ceilingBps)], ["maker", last(MAKER)]] as const).filter((c) => c[1] >= 0).sort((a, b) => b[1] - a[1]);
+  return cands[0]?.[0] ?? null;
+}
+
+/** Two values for one limit are asked back: a restatement that disagrees, an undecided choice, or two ceilings stated. */
 function contradictions(out: IntakeField[], text: string) {
+  // Two accepted values for the same field are a question, never settled by which came first.
+  for (const name of new Set(out.filter((f) => f.status === "accepted").map((f) => f.name))) {
+    const same = out.filter((f) => f.name === name && f.status === "accepted");
+    const values = [...new Set(same.map((f) => String(f.value)))];
+    if (values.length > 1) for (const f of same) Object.assign(f, { status: "conflict", note: `two values: ${values.join(" and ")}` });
+  }
   for (const name of ["takerFeeBps", "ceilingBps"] as const) {
     const f = out.find((x) => x.name === name && x.status === "accepted");
     if (!f) continue;
     const i = text.toLowerCase().indexOf(f.span.toLowerCase());
     if (i < 0) continue;
     const s = around(text, i);
-    const other = name === "takerFeeBps" ? CUES.ceilingBps : CUES.takerFeeBps;
+    const other = name === "takerFeeBps" ? "ceilingBps" : "takerFeeBps";
     // Only a figure tied to this one as the same thing or an alternative ("6 bps, which is 0.1%", "6 or 10 bps")
     // contradicts it; a maker fee, someone else's fee or a corrected figure is a distinction the reader resolved.
     const tied = (g: { at: number; raw: string }) => {
       const [a, b] = g.at < i ? [g.at + g.raw.length, i] : [i + f.span.length, g.at];
-      return b - a <= 25 && /which is|that is|i\.e\.|\bor\b|=|也就是|即|或者|或/i.test(text.slice(a, b));
+      return b - a <= 25 && /which is|that is|i\.e\.|\bor\b|=|也就是|即|或者|或|\//i.test(text.slice(a, b));
     };
+    // Two ceilings stated as ceilings ("cap 30bp, fee 8bp, cap 50bp") are a question unless one corrects the other.
+    const restated = (g: { at: number; raw: string }) => name === "ceilingBps" && owner(text, g.at) === "ceilingBps" && !CORRECTION.test(text.slice(Math.min(g.at, i), Math.max(g.at, i)));
     const rival = unclaimed(out, text, name)(costFigures(s.text).map((g) => ({ ...g, at: g.at + s.start })))
-      .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && !other.test(text.slice(Math.max(0, g.at - 30), g.at)) && tied(g));
+      .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && owner(text, g.at) !== other && owner(text, g.at) !== "maker" && (tied(g) || restated(g)));
     if (rival.length) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` }); continue; }
     // An undecided choice ("20 还是 25", "20 or 25 bps") is a question, whichever number the reader took.
-    const after = text.slice(i + f.span.length, i + f.span.length + 16).match(/^\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b)\s*(\d+(?:\.\d+)?)/i);
-    const before = text.slice(Math.max(0, i - 16), i).match(/(\d+(?:\.\d+)?)\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b)\s*$/i);
-    const alt = after?.[1] ?? before?.[1];
-    if (alt && Number(alt) !== Number(f.value)) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} or ${alt}` }); continue; }
+    const after = text.slice(i + f.span.length, i + f.span.length + 18).match(/^\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b|\/)\s*(\d+(?:\.\d+)?\s*(?:bps?\b|basis points?|个?基点|%)?)/i);
+    const before = text.slice(Math.max(0, i - 18), i).match(/(\d+(?:\.\d+)?\s*(?:bps?\b|个?基点|%)?)\s*(?:还是|或者|或|\bor\b|\/)\s*$/i);
+    const alt = (after?.[1] ?? before?.[1])?.trim();
+    // The same figure in another unit ("8bp or 0.08%") is a restatement, not a choice.
+    const altBps = alt ? (/[a-z%基点]/i.test(alt) ? readBps(alt) : Number(alt)) : null;
+    if (alt && altBps !== null && Number(altBps) !== Number(f.value)) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} or ${alt}` }); continue; }
     // A fee quoted from a clause about someone else's account is theirs, not the trader's.
-    if (name === "takerFeeBps" && /\b(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss|his|her|their)\b|老婆|老公|朋友|同事|哥们|别人|他的|她的|他们/i.test(around(text, i, true).text))
+    // Only the words before the figure say whose fee it is; a trader naming themselves keeps it.
+    const c = around(text, i, true), whose = text.slice(c.start, i + f.span.length);
+    if (name === "takerFeeBps" && THIRD.test(whose.slice(0, whose.search(/\d/) >= 0 ? whose.search(/\d/) : undefined)) && !FIRST.test(whose.slice(0, whose.search(/\d/) >= 0 ? whose.search(/\d/) : undefined)))
       Object.assign(f, { status: "conflict", note: "someone else's fee" });
   }
 }
@@ -225,6 +253,7 @@ function clarify(fields: IntakeField[]): string | null {
   if (!conflict) return null;
   const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
   if (conflict.note === "someone else's fee") return `"${conflict.span}" sounds like someone else's fee. What is your own taker fee, exactly?`;
+  if (conflict.note?.startsWith("two values")) return `Your message gives two different values for ${label[conflict.name]} (${conflict.note.replace("two values: ", "")}). Which is it?`;
   if (conflict.note?.startsWith("two figures")) return `Your message gives ${conflict.note.replace("two figures: ", "")} for ${label[conflict.name]}. Which is it?`;
   if (conflict.note === "mentioned but not read") return `You mentioned ${label[conflict.name]} ("${conflict.span}") but I could not read it. What is ${label[conflict.name]}, exactly?`;
   if (conflict.name === "symbol" && conflict.note === "more than one instrument is named") return `Your message names more than one instrument (${conflict.value}). Which one is this order for?`;
