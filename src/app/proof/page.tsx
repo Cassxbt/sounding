@@ -63,7 +63,7 @@ export default async function Proof() {
   type WholeSummary = Record<"model" | "template", { tasks: number; complete: number; safeAbstain: number; critical: number }>;
   const wholeFile = (p: string) => (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-heldout", p), "utf8")) as { summary: WholeSummary }).summary;
   const whole = wholeFile("results.json");
-  const wholeDev = wholeFile("dev-rerun-8ff1a3e/results.json");
+  const wholeV2 = (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-v2-heldout/results.json"), "utf8")) as { summary: WholeSummary }).summary;
   const runs = [
     { name: "Blind set 1, before fixes", note: "40 messages, today = 2026-10-03; published with its five wrong deadlines", s: evalFile("paraphrase-eval-20261003/results.json") },
     { name: "Blind set 2, held out", note: "40 new messages by a second writer, today = 2026-10-07; run once at commit bcf771a", s: evalFile("paraphrase-eval-v2-heldout/results.json"), lead: true },
@@ -139,7 +139,12 @@ export default async function Proof() {
             <table className="w-full min-w-[560px] text-[14px]">
               <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">run</th><th className="pb-3 font-normal">complete</th><th className="pb-3 font-normal">asked when it could answer</th><th className="pb-3 font-normal">critical</th></tr></thead>
               <tbody>
-                {[{ name: "Qwen, checked · held-out, once", s: whole.model, lead: true }, { name: "Regex reader and template, no model · held-out", s: whole.template }, { name: "Qwen, checked · same set after fixes (development)", s: wholeDev.model }].map((r) => (
+                {[
+                  { name: "Qwen, checked · second blind set, every turn scored", s: wholeV2.model, lead: true },
+                  { name: "Regex reader and template, no model · second blind set", s: wholeV2.template },
+                  { name: "Qwen, checked · first blind set, final answer scored", s: whole.model },
+                  { name: "Regex reader and template · first blind set", s: whole.template },
+                ].map((r) => (
                   <tr key={r.name} className={`border-t border-rule-soft ${r.lead ? "text-ink" : "text-ink-2"}`}>
                     <td className="py-3 pr-4">{r.name}</td>
                     <td className="mono">{r.s.complete} / {r.s.tasks}</td>
@@ -150,7 +155,7 @@ export default async function Proof() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-[13px] text-ink-3">Held-out run, once, at commit 78e5291. Its three critical errors (two instruments in one message, two fees in one sentence) are published with it in evidence/wholetask-eval-heldout, and were fixed afterwards; a re-run on the same set after that is a development number, not this one.</p>
+          <p className="mt-4 text-[13px] text-ink-3">Each set was written by a separate blind agent and run once. The first (at 78e5291) scored only final answers; its three critical errors were fixed afterwards. The second (at 4a8b6d2) scores every turn as rendered, so asking while showing a card counts as critical; its one critical, a negative size quoted without its minus sign, has since been fixed. Every failure is published with its run in evidence/; re-runs after fixes are kept there as development numbers.</p>
         </Block>
 
         <Block title="The book is Bitget's book" state="published">

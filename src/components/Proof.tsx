@@ -8,7 +8,7 @@ import { Reveal } from "./ui/Reveal";
  */
 export function Proof() {
   const tiles = [
-    { icon: ListChecks, n: "24", d: "30", line: "whole tasks done right, written blind and run once through the real route. The same set without the model: 11, with 11 critical errors to its 3.", href: "/proof", go: "Proof" },
+    { icon: ListChecks, n: "28", d: "30", line: "whole tasks done right on a blind set run once, every turn checked as shown. Without the model: 12, with 3 critical errors to its 1.", href: "/proof", go: "Proof" },
     { icon: ChatsCircle, n: "142", d: "151", line: "limits read correctly from 40 blind messages in English, 中文 and mixed. A regex reader got 19.", href: "/proof", go: "Proof" },
     { icon: ChartBar, n: "57", d: "89", line: "names where Bitget's best ask is inside a 50 bps ceiling but a 25,000 USDT buy is not, on one recorded Sunday.", href: "/research", go: "Research" },
   ];
