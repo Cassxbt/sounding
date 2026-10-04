@@ -18,7 +18,7 @@ import type { Alternative, SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
 interface Universe { source: string; fetched_utc: string; total: number; eligibleCount: number; eligible: { symbol: string; code: string; name: string }[]; session: { state: string; detail: string; ny: { tzName: string; weekday: string; date: string } }; now_utc: string }
-interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe?: { source: string; fetched_utc: string }; capture: Record<string, unknown>; fixtureFile?: string }
+interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; universe?: { source: string; fetched_utc: string }; capture: Record<string, unknown>; fixtureFile?: string; sessionInputs?: unknown; previousBpsPreFee?: string }
 interface Preset { id: string; label: string; outcome: string; tone: "within" | "over" | "warn"; symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee?: number; fixture?: string; confirmFixture?: string; confirmNote?: string }
 
 const PRESETS: Preset[] = [
@@ -67,7 +67,11 @@ export default function Page() {
   const [deletion, setDeletion] = useState<{ rows: DeletionRow[] } | null>(null);
 
   useEffect(() => { fetch("/api/deletion").then((r) => r.json()).then(setDeletion).catch(() => setDeletion(null)); }, []);
-  useEffect(() => { fetch(`/api/universe?mode=${mode}`).then((r) => r.json()).then(setUni).catch(() => setUni(null)); }, [mode]);
+  useEffect(() => {
+    fetch(`/api/universe?mode=${mode}`)
+      .then(async (r) => { const j = await r.json(); if (r.ok) setUni(j); else { setUni(null); setErr(j.error ?? "Bitget universe unavailable"); } })
+      .catch(() => { setUni(null); setErr("Bitget universe unavailable"); });
+  }, [mode]);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("task");
     preset(PRESETS.find((x) => x.id === id) ?? PRESETS[0]);
@@ -322,7 +326,8 @@ export default function Page() {
                 <p>Hashes the inputs, the raw Bitget book and every number above{res.receipt.receipt_sig ? ", signed by this server" : ""}. It proves what was read and computed; it does not prove a fill, an executable price or future liquidity.</p>
                 <div className="mono break-all text-[12px] text-ink-3">engine {res.receipt.engineVersion} · book {res.receipt.raw_sha256.slice(0, 16)} · exchange ts {res.receipt.exchange_ts} · rtt {res.receipt.rtt_ms} ms</div>
                 {replayCmd && <pre className="mono overflow-x-auto rounded-xl bg-paper p-3 text-[12px] text-ink-2">{replayCmd}</pre>}
-                <button onClick={() => { const blob = new Blob([JSON.stringify({ receipt: res.receipt, capture: resp!.capture, levels: resp!.levels }, null, 1)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `sounding-${res.symbol}-${res.receipt.exchange_ts}.json`; a.click(); }} className="inline-flex items-center gap-2 rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">
+                <p className="text-ink-3">The download replays offline to the same hash, recorded or live: <span className="mono">pnpm replay --receipt &lt;file&gt;</span></p>
+                <button onClick={() => { const blob = new Blob([JSON.stringify({ receipt: res.receipt, capture: resp!.capture, sessionInputs: resp!.sessionInputs, previousBpsPreFee: resp!.previousBpsPreFee }, null, 1)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `sounding-${res.symbol}-${res.receipt.exchange_ts}.json`; a.click(); }} className="inline-flex items-center gap-2 rounded-full border border-rule px-4 py-2 text-[13px] text-ink transition-colors duration-[var(--dur-micro)] hover:bg-paper-3">
                   <DownloadSimple size={14} /> Download receipt
                 </button>
               </div>

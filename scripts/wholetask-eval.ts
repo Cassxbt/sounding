@@ -15,6 +15,11 @@ interface Controls { symbol: string; side: "buy" | "sell"; amount: string; ceili
 interface Gold { order: { symbol: string; side: "buy" | "sell" }; size: { unit: "USDT" | "shares"; value: string }; takerFeeBps: number | null; ceilingBps: number; hardDeadlineNy: string | null; mustBeFlat: boolean; expect: "answer" | "ask" | "no_book"; why?: string }
 interface Task { id: string; lang: string; controls: Controls; turns: string[]; gold: Gold; adversarial?: boolean }
 type Verdict = "COMPLETE" | "SAFE_ABSTAIN" | "CRITICAL";
+interface Priced { symbol: string; ceilingBps: number; intent: { side: "buy"; quoteBudget: string } | { side: "sell"; baseQty: string }; fees?: { source: string; feeBps: number }[] }
+interface Reply {
+  order?: { symbol: string; side: "buy" | "sell" }; amount?: string; ceilingBps?: number; userFeeBps?: number | null; result?: Priced | null; note?: string; error?: string; status?: number; constraints?: unknown;
+  analyst?: { output?: { recommendation: string | null; clarification: string | null; explanation: string } } | null;
+}
 
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(String(v).replace(/,/g, "")));
 
@@ -31,7 +36,7 @@ async function main() {
   for (const arm of armsArg.split(",") as ("template" | "model")[]) {
     for (const t of set.tasks) {
       let ctl = { ...t.controls };
-      let constraints: unknown, previous: unknown, j: Record<string, any> = {};
+      let constraints: unknown, previous: unknown, j: Reply = {};
       const turns: { role: "user" | "assistant"; text: string }[] = [];
       const t0 = Date.now();
       for (const text of t.turns) {
@@ -70,7 +75,7 @@ async function main() {
         const gold = cap ? sound({ capture: cap, intent: gIntent, ceilingBps: g.ceilingBps, userFeeBps: g.takerFeeBps ?? undefined, now: new Date(Number(cap.exchange_ts)), historical: true, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments }) : null;
         const goldWithin = gold?.ok && decidingRow(gold)?.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT";
         const pricedAmount = res.intent.side === "buy" ? res.intent.quoteBudget : res.intent.baseQty;
-        const pricedFee = res.fees?.find((f: { source: string }) => f.source === "user")?.feeBps ?? null;
+        const pricedFee = res.fees?.find((f) => f.source === "user")?.feeBps ?? null;
         if (res.symbol !== g.order.symbol || res.intent.side !== g.order.side) reasons.push(`wrong order priced: ${res.intent.side} ${res.symbol}`);
         if (num(pricedAmount) !== num(g.size.value) || (g.size.unit === "USDT") !== (res.intent.side === "buy")) reasons.push(`wrong size priced: ${pricedAmount}`);
         if (num(pricedFee) !== num(g.takerFeeBps)) reasons.push(`wrong fee priced: ${pricedFee}`);
@@ -82,7 +87,7 @@ async function main() {
         else if (goldWithin ? rec === "immediate_cross" : rec !== "immediate_cross") verdict = "COMPLETE";
         else { verdict = "SAFE_ABSTAIN"; reasons.push(`no cross recommended though the gold order is within (${rec ?? "none"})`); }
       }
-      rows.push({ id: t.id, lang: t.lang, arm, verdict, reasons, recommendation: rec, priced: res ? `${res.intent.side} ${res.symbol} ${res.intent.side === "buy" ? res.intent.quoteBudget : res.intent.baseQty} · ceiling ${res.ceilingBps} · fee ${res.fees?.find((f: { source: string }) => f.source === "user")?.feeBps ?? "none"}` : null, lastReply: turns.at(-1)?.text?.slice(0, 200), ms });
+      rows.push({ id: t.id, lang: t.lang, arm, verdict, reasons, recommendation: rec, priced: res ? `${res.intent.side} ${res.symbol} ${res.intent.side === "buy" ? res.intent.quoteBudget : res.intent.baseQty} · ceiling ${res.ceilingBps} · fee ${res.fees?.find((f) => f.source === "user")?.feeBps ?? "none"}` : null, lastReply: turns.at(-1)?.text?.slice(0, 200), ms });
       process.stdout.write(verdict === "COMPLETE" ? "." : verdict === "CRITICAL" ? "!" : "?");
     }
   }

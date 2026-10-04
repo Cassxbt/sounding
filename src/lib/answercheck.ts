@@ -10,7 +10,8 @@ export interface AnswerCheck { status: "stands" | "moved"; reasons: string[]; ga
  * route is withdrawn. Same thresholds as Last Look.
  */
 export function answerTimeCheck(original: SoundingResult, fresh: SoundingResult): AnswerCheck {
-  const gapMs = Number(fresh.receipt.exchange_ts) - Number(original.receipt.exchange_ts);
+  // Wall-clock time between the two reads: a quiet book can carry the same exchange timestamp twice.
+  const gapMs = Date.parse(fresh.receipt.request_start_utc) - Date.parse(original.receipt.request_start_utc);
   const reasons: string[] = [];
   if (!fresh.ok) return { status: "moved", reasons: [`the fresh book failed a gate: ${fresh.gate}`], gapMs };
   const o = decidingRow(original), f = decidingRow(fresh);

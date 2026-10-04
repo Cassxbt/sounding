@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps, previousBpsPreFee: b.previousBpsPreFee });
     const levels = { asks: capture.raw.data.asks.slice(0, 40), bids: capture.raw.data.bids.slice(0, 40) };
     // The full capture travels with the result, so a downloaded receipt can be replayed.
-    return NextResponse.json({ result, levels, universe: { source: u.source, fetched_utc: u.fetched_utc }, capture, fixtureFile });
+    return NextResponse.json({ result, levels, universe: { source: u.source, fetched_utc: u.fetched_utc }, capture, fixtureFile, sessionInputs: { states: u.states, calendar: u.calendar }, previousBpsPreFee: b.previousBpsPreFee });
   } catch (e) {
     if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is priced on recorded rules` }, { status: 503 });
     const j = errorJson(e);

@@ -65,3 +65,11 @@ describe("answer-time check", () => {
     void T_RHIMS;
   });
 });
+
+describe("a size in the wrong unit is asked about", () => {
+  it("'sell 1000 USDT of rHIMS' with sell controls asks for shares instead of selling the controls' size", async () => {
+    const j = await (await post(POST, { ...controls, turns: [{ role: "user", text: "sell 1000 USDT of rHIMS, fee 8 bps" }] })).json();
+    expect(j.result).toBeNull();
+    expect(j.analyst.output.clarification).toMatch(/shares/);
+  });
+});

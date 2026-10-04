@@ -1,7 +1,18 @@
-/** Offline replay: `pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 50 8` — no network. */
+/**
+ * Offline replay, no network.
+ *   pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 50 8
+ *   pnpm replay --receipt sounding-RHIMSUSDT-<ts>.json     (a receipt downloaded from the desk, recorded or live)
+ */
 import { readFileSync } from "node:fs";
 import { sound } from "./index";
+import { replayBundle } from "./replayfile";
 import type { BookCapture, Intent } from "./types";
+
+if (process.argv[2] === "--receipt") {
+  const out = replayBundle(JSON.parse(readFileSync(process.argv[3], "utf8")));
+  console.log(JSON.stringify({ matches: out.matches, expected: out.expected, recomputed: out.recomputed }, null, 1));
+  process.exit(out.matches ? 0 : 1);
+}
 
 const [file, side, amount, ceiling, fee] = process.argv.slice(2);
 if (!file || !side || !amount) { console.error("usage: replay <capture.json> <buy|sell> <quoteBudget|baseQty> [ceilingBps=50] [yourTakerFeeBps]"); process.exit(2); }

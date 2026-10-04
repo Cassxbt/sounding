@@ -40,7 +40,7 @@ const EXAMPLES: { label: string; text: string }[] = [
 
 export interface TurnResult {
   symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee: string;
-  priced?: { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; capture: Record<string, unknown>; fixtureFile?: string };
+  priced?: { result: SoundingResult; levels: { asks: [string, string][]; bids: [string, string][] }; capture: Record<string, unknown>; fixtureFile?: string; sessionInputs?: unknown };
 }
 
 export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fixture, prefix, onTurn }: Props) {
@@ -83,7 +83,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
       // The engine refused, or the named order has no book here: say so in the thread, and show the refusal on the card.
       setTurns([...next, { role: "assistant", text: j.note ?? "Nothing was priced." }]);
       if (j.constraints && state) setState({ ...state, constraints: j.constraints });
-      if (j.order) onTurn?.({ symbol: j.order.symbol, side: j.order.side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling, userFee, priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile } : undefined });
+      if (j.order) onTurn?.({ symbol: j.order.symbol, side: j.order.side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling, userFee, priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile, sessionInputs: j.sessionInputs } : undefined });
       return;
     }
     const resp = j.analyst as AnalystResp;
@@ -103,7 +103,7 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
     onTurn?.({
       symbol: j.order?.symbol ?? symbol, side: j.order?.side ?? side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling,
       userFee: j.userFeeBps === null || j.userFeeBps === undefined ? userFee : String(j.userFeeBps),
-      priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile } : undefined,
+      priced: j.result ? { result: j.result, levels: j.levels, capture: j.capture, fixtureFile: j.fixtureFile, sessionInputs: j.sessionInputs } : undefined,
     });
     const switched = j.order && (j.order.symbol !== symbol || j.order.side !== side);
     const lead = switched ? `Priced the order you named: ${j.order.side} r${String(j.order.symbol).replace(/^R|USDT$/g, "")}. ` : "";

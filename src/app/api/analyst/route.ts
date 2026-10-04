@@ -50,7 +50,8 @@ export async function POST(req: Request) {
     const positive = (v?: string) => { try { return v ? parseAmount(v) : undefined; } catch { return undefined; } };
     const sized = positive(order.side === "buy" ? read.sizeQuoteUsdt : read.sizeShares);
     const otherUnit = order.side === "buy" ? read.sizeShares : read.sizeQuoteUsdt;
-    if (!sized && switched) {
+    // A size in the other unit is never swapped for the controls' size: buys are USDT, sells are shares.
+    if (!sized && (switched || otherUnit)) {
       const q = order.side === "buy"
         ? `${otherUnit ? "A buy is priced by the USDT you spend, not shares. " : ""}How many USDT do you want to spend on r${codeOf(order.symbol)}?`
         : `${otherUnit ? "A sell is priced in shares, not USDT. " : ""}How many shares of r${codeOf(order.symbol)} do you want to sell?`;
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
       sound({ capture, intent, ceilingBps, now, historical: book.historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee });
     let result = price();
     let capture = book.capture;
-    const base = { order, amount, ceilingBps, userFeeBps: userFee ?? null, constraints, intake: read, fixtureFile: book.fixtureFile };
+    const base = { order, amount, ceilingBps, userFeeBps: userFee ?? null, constraints, intake: read, fixtureFile: book.fixtureFile, sessionInputs: { states: u.states, calendar: u.calendar } };
     if (!result.ok) return NextResponse.json({ ...base, result, levels: levelsOf(capture), capture, analyst: null, note: `engine refused: ${result.gate}${result.suggestion ? `; use ${result.suggestion.baseQty ?? `${result.suggestion.quoteBudget} USDT`} instead` : ""}` });
 
     const evidence = await evidenceFor(order.symbol, codeOf(order.symbol), mode);

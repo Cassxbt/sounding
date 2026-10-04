@@ -21,7 +21,9 @@ const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
 /** Two decimals, unless rounding would hide which side of the ceiling the exact cost is on. */
 function precise(res: SoundingResult, feeBps: number, shown: string): string {
   const exact = res.leg?.bpsPreFeeExact ? Number(res.leg.bpsPreFeeExact) + feeBps : NaN;
-  return Number.isFinite(exact) && Number(shown) === res.ceilingBps && exact !== res.ceilingBps ? exact.toFixed(4) : shown;
+  if (!Number.isFinite(exact) || Number(shown) !== res.ceilingBps || exact === res.ceilingBps) return shown;
+  for (let dp = 4; dp <= 10; dp++) if (Number(exact.toFixed(dp)) !== res.ceilingBps) return exact.toFixed(dp);
+  return exact.toString();
 }
 
 /** Counts to the engine's figure once; the figure itself is never rounded differently from the receipt. */
