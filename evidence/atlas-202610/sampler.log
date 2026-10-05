@@ -9,3 +9,20 @@
 2026-10-04T03:58:55.122Z round 8: 90 eligible, 0 failed books, 36 flip captures -> round-0008-2026-10-04T035855122Z.json.gz
 2026-10-04T04:28:55.080Z round 9: 90 eligible, 0 failed books, 36 flip captures -> round-0009-2026-10-04T042855080Z.json.gz
 2026-10-04T04:58:55.165Z round 10: 90 eligible, 0 failed books, 36 flip captures -> round-0010-2026-10-04T045855165Z.json.gz
+2026-10-04T05:28:55.207Z round 11: 90 eligible, 0 failed books, 36 flip captures -> round-0011-2026-10-04T052855207Z.json.gz
+2026-10-04T05:58:55.282Z round 12: 90 eligible, 0 failed books, 36 flip captures -> round-0012-2026-10-04T055855282Z.json.gz
+2026-10-04T06:28:55.268Z round 13: 90 eligible, 0 failed books, 36 flip captures -> round-0013-2026-10-04T062855268Z.json.gz
+2026-10-04T06:58:55.200Z round 14: 90 eligible, 0 failed books, 36 flip captures -> round-0014-2026-10-04T065855200Z.json.gz
+2026-10-04T07:28:55.203Z round 15: 90 eligible, 0 failed books, 36 flip captures -> round-0015-2026-10-04T072855203Z.json.gz
+2026-10-04T07:58:55.117Z round 16: 90 eligible, 0 failed books, 36 flip captures -> round-0016-2026-10-04T075855117Z.json.gz
+2026-10-04T08:28:55.100Z round 17: 90 eligible, 0 failed books, 36 flip captures -> round-0017-2026-10-04T082855100Z.json.gz
+2026-10-04T08:58:55.039Z round 18: 90 eligible, 0 failed books, 36 flip captures -> round-0018-2026-10-04T085855039Z.json.gz
+2026-10-04T09:28:54.799Z round 19: 90 eligible, 0 failed books, 36 flip captures -> round-0019-2026-10-04T092854799Z.json.gz
+2026-10-04T09:58:54.943Z round 20: 90 eligible, 0 failed books, 36 flip captures -> round-0020-2026-10-04T095854943Z.json.gz
+2026-10-04T10:28:54.902Z round 21: 90 eligible, 0 failed books, 36 flip captures -> round-0021-2026-10-04T102854902Z.json.gz
+2026-10-04T10:58:54.874Z round 22: 0 eligible, 0 failed books, 0 flip captures -> round-0022-2026-10-04T105854874Z.json.gz
+2026-10-04T11:28:54.799Z round 23: 90 eligible, 0 failed books, 36 flip captures -> round-0023-2026-10-04T112854799Z.json.gz
+2026-10-04T11:58:54.758Z round 24: 90 eligible, 0 failed books, 36 flip captures -> round-0024-2026-10-04T115854758Z.json.gz
+2026-10-04T12:28:54.653Z round 25: 90 eligible, 0 failed books, 36 flip captures -> round-0025-2026-10-04T122854653Z.json.gz
+2026-10-05T09:37:45.737Z round 26: 90 eligible, 0 failed books, 36 flip captures -> round-0026-2026-10-05T093745737Z.json.gz
+2026-10-05T09:47:02Z local sampler stopped after round 26; rounds 27 onward run on an always-on host (ec2-us-east-1, tagged in each record). No rounds between 2026-10-04T12:28Z and 2026-10-05T09:37Z: the local process ended with its session.

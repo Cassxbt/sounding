@@ -1,5 +1,6 @@
 // At-size market atlas sampler. Schedule: evidence/atlas-202610/SCHEDULE.md. Raw only; analysis is separate.
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readdirSync } from "node:fs";
+import { hostname } from "node:os";
 import { gzipSync } from "node:zlib";
 
 const BASE = "https://api.bitget.com";
@@ -41,14 +42,16 @@ async function round(i) {
     await sleep(Math.max(0, firstAt + off * 1000 - Date.now()));
     for (const s of flipNames) flips.push({ symbol: s, offset_s: off, ...(await book(s)) });
   }
-  const rec = { version: "atlas-raw/1.0", round: i, started_utc: started, finished_utc: new Date().toISOString(), eligible, stockInfo, states, calendar, instruments: { ...instruments, body: { data: rules } }, books, flip: { names: flipNames, offsets_s: FLIP_OFFSETS_S, books: flips } };
+  const rec = { version: "atlas-raw/1.0", host: process.env.ATLAS_HOST ?? hostname(), round: i, started_utc: started, finished_utc: new Date().toISOString(), eligible, stockInfo, states, calendar, instruments: { ...instruments, body: { data: rules } }, books, flip: { names: flipNames, offsets_s: FLIP_OFFSETS_S, books: flips } };
   const name = `round-${String(i).padStart(4, "0")}-${started.replace(/[:.]/g, "")}.json.gz`;
   writeFileSync(new URL(name, OUT), gzipSync(JSON.stringify(rec)));
   const failed = books.filter((b) => b.status !== 200).length;
   console.log(`${started} round ${i}: ${eligible.length} eligible, ${failed} failed books, ${flips.length} flip captures -> ${name}`);
 }
 
-for (let i = 0; Date.now() < END; i++) {
+// Continue after the highest round on disk, so a restart never reuses a round number.
+const done = readdirSync(OUT).map((f) => Number(f.match(/^round-(\d+)-/)?.[1])).filter(Number.isFinite);
+for (let i = Math.max(Number(process.argv[2] ?? 0), ...done.map((n) => n + 1)); Date.now() < END; i++) {
   const t = Date.now();
   await round(i);
   await sleep(Math.max(0, t + EVERY_MS - Date.now()));
