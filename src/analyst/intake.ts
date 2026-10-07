@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { around, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
+import { around, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, replyLanguage, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -272,22 +272,52 @@ export function applyFields(prior: Constraints, fields: IntakeField[]): Omit<Int
   return r;
 }
 
-function clarify(fields: IntakeField[]): string | null {
+function clarify(fields: IntakeField[], lang: "en" | "zh" = "en"): string | null {
   const order: FieldName[] = ["symbol", "side", "sizeShares", "sizeQuoteUsdt", "takerFeeBps", "ceilingBps", "hardDeadlineNy", "mustBeFlat", "releaseDeadline", "thesis"];
   const conflict = fields.filter((f) => f.status === "conflict").sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name))[0];
   if (!conflict) return null;
-  const label: Record<FieldName, string> = { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" };
-  if (conflict.note === "a negative figure") return `"${/^\s*[-−]/.test(conflict.span) ? conflict.span.trim() : `-${conflict.span}`}" is negative. What is ${label[conflict.name]}, exactly?`;
-  if (conflict.note === "not a positive size") return `"${conflict.span}" is not a size that can be traded. How many ${conflict.name === "sizeQuoteUsdt" ? "USDT do you want to spend" : "shares do you want to trade"}?`;
-  if (conflict.note === "someone else's fee") return `"${conflict.span}" sounds like someone else's fee. What is your own taker fee, exactly?`;
-  if (conflict.note?.startsWith("two values")) return `Your message gives two different values for ${label[conflict.name]} (${conflict.note.replace("two values: ", "")}). Which is it?`;
-  if (conflict.note?.startsWith("two figures")) return `Your message gives ${conflict.note.replace("two figures: ", "")} for ${label[conflict.name]}. Which is it?`;
-  if (conflict.note === "mentioned but not read") return `You mentioned ${label[conflict.name]} ("${conflict.span}") but I could not read it. What is ${label[conflict.name]}, exactly?`;
-  if (conflict.name === "symbol" && conflict.note === "more than one instrument is named") return `Your message names more than one instrument (${conflict.value}). Which one is this order for?`;
-  if (conflict.name === "side" && conflict.note === "these words say both buy and sell") return "Your message says both buy and sell. Is this order a buy or a sell?";
-  if (conflict.note?.startsWith("code reads ")) return `I read "${conflict.span}" two ways (${conflict.value} vs ${conflict.note.replace("code reads ", "")}). What is ${label[conflict.name]}, exactly?`;
-  return `I could not use "${conflict.span}" as ${label[conflict.name]}: ${conflict.note}. What is ${label[conflict.name]}, exactly?`;
+  const t = ASK[lang], label = t.label[conflict.name], { span, note } = conflict;
+  if (note === "a negative figure") return t.negative(/^\s*[-−]/.test(span) ? span.trim() : `-${span}`, label);
+  if (note === "not a positive size") return t.notSize(span, conflict.name === "sizeQuoteUsdt");
+  if (note === "someone else's fee") return t.othersFee(span);
+  if (note?.startsWith("two values")) return t.twoValues(label, note.replace("two values: ", ""));
+  if (note?.startsWith("two figures")) return t.twoFigures(label, note.replace("two figures: ", ""));
+  if (note === "mentioned but not read") return t.unread(label, span);
+  if (conflict.name === "symbol" && note === "more than one instrument is named") return t.instruments(String(conflict.value));
+  if (conflict.name === "side" && note === "these words say both buy and sell") return t.bothSides;
+  if (note?.startsWith("code reads ")) return t.twoReadings(span, String(conflict.value), note.replace("code reads ", ""), label);
+  return t.other(span, label, note ?? "");
 }
+
+/** Every question intake can ask, in the trader's language. */
+const ASK = {
+  en: {
+    label: { symbol: "the instrument", side: "whether you are buying or selling", takerFeeBps: "your taker fee", ceilingBps: "your cost ceiling", hardDeadlineNy: "your deadline", mustBeFlat: "whether you must be out", releaseDeadline: "the deadline", sizeShares: "the share quantity", sizeQuoteUsdt: "the USDT amount", thesis: "your thesis" } as Record<FieldName, string>,
+    negative: (shown: string, l: string) => `"${shown}" is negative. What is ${l}, exactly?`,
+    notSize: (span: string, usdt: boolean) => `"${span}" is not a size that can be traded. How many ${usdt ? "USDT do you want to spend" : "shares do you want to trade"}?`,
+    othersFee: (span: string) => `"${span}" sounds like someone else's fee. What is your own taker fee, exactly?`,
+    twoValues: (l: string, v: string) => `Your message gives two different values for ${l} (${v}). Which is it?`,
+    twoFigures: (l: string, v: string) => `Your message gives ${v} for ${l}. Which is it?`,
+    unread: (l: string, span: string) => `You mentioned ${l} ("${span}") but I could not read it. What is ${l}, exactly?`,
+    instruments: (v: string) => `Your message names more than one instrument (${v}). Which one is this order for?`,
+    bothSides: "Your message says both buy and sell. Is this order a buy or a sell?",
+    twoReadings: (span: string, a: string, b: string, l: string) => `I read "${span}" two ways (${a} vs ${b}). What is ${l}, exactly?`,
+    other: (span: string, l: string, note: string) => `I could not use "${span}" as ${l}: ${note}. What is ${l}, exactly?`,
+  },
+  zh: {
+    label: { symbol: "标的", side: "买入还是卖出", takerFeeBps: "你的 taker 费率", ceilingBps: "你的成本上限", hardDeadlineNy: "你的截止日期", mustBeFlat: "你是否必须退出", releaseDeadline: "截止日期", sizeShares: "股数", sizeQuoteUsdt: "USDT 金额", thesis: "你的交易理由" } as Record<FieldName, string>,
+    negative: (shown: string, l: string) => `"${shown}" 是负数。${l}具体是多少？`,
+    notSize: (span: string, usdt: boolean) => `"${span}" 不是可以交易的数量。你想${usdt ? "花多少 USDT" : "交易多少股"}？`,
+    othersFee: (span: string) => `"${span}" 听起来是别人的费率。你自己的 taker 费率具体是多少？`,
+    twoValues: (l: string, v: string) => `你的消息里${l}有两个不同的值（${v}）。是哪一个？`,
+    twoFigures: (l: string, v: string) => `你的消息里${l}给了 ${v}。是哪一个？`,
+    unread: (l: string, span: string) => `你提到了${l}（"${span}"），但我没能读出来。${l}具体是多少？`,
+    instruments: (v: string) => `你的消息提到了不止一个标的（${v}）。这笔订单是哪一个？`,
+    bothSides: "你的消息同时提到了买入和卖出。这笔订单是买入还是卖出？",
+    twoReadings: (span: string, a: string, b: string, l: string) => `我对 "${span}" 有两种读法（${a} 和 ${b}）。${l}具体是多少？`,
+    other: (span: string, l: string) => `我无法把 "${span}" 当作${l}。${l}具体是多少？`,
+  },
+};
 
 /**
  * Regex-only reading: the baseline arm, and the fallback when Qwen is unavailable. Its readings pass the same
@@ -299,7 +329,7 @@ export function regexIntake(text: string, prior: Constraints, today: string, lis
   const fields = checkFields(x.proposed, text, today, listed).map((f) => (f.source === "code" ? f : { ...f, source: "code" as const }));
   // Readings no check covers come straight from the regex.
   const rest = { ...prior, exclusiveExposure: x.constraints.exclusiveExposure, proxyConsent: x.constraints.proxyConsent, thesis: x.constraints.thesis };
-  return { ...applyFields(rest, fields), fields, clarification: clarify(fields), reader: "regex" };
+  return { ...applyFields(rest, fields), fields, clarification: clarify(fields, replyLanguage(text)), reader: "regex" };
 }
 
 export async function intake(text: string, prior: Constraints, todayNy: string, mode: "model" | "template" = "model", listed?: Listed[]): Promise<Intake> {
@@ -309,7 +339,7 @@ export async function intake(text: string, prior: Constraints, todayNy: string, 
     const proposed = (json as { fields?: { name: string; value: unknown; span: string }[] } | null)?.fields;
     if (!Array.isArray(proposed)) return regexIntake(text, prior, todayNy, listed);
     const fields = checkFields(proposed, text, todayNy, listed);
-    return { ...applyFields(prior, fields), fields, clarification: clarify(fields), reader: "qwen" };
+    return { ...applyFields(prior, fields), fields, clarification: clarify(fields, replyLanguage(text)), reader: "qwen" };
   } catch {
     return regexIntake(text, prior, todayNy, listed);
   }

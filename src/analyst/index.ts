@@ -38,11 +38,8 @@ Rules you must follow:
 - On follow-up turns, keep every earlier constraint unless the trader changes it, and say why the recommendation changed or stayed.`;
 
 /** The reply follows the trader's own language; decided in code, never left to the model. Mixed messages follow their majority. */
-export function replyLanguage(text: string): "en" | "zh" {
-  const cjk = (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
-  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
-  return cjk > 0 && cjk * 2 >= latin ? "zh" : "en";
-}
+export { replyLanguage } from "./normalize";
+import { replyLanguage } from "./normalize";
 
 const lastUser = (turns: AnalystTurn[]) => [...turns].reverse().find((t) => t.role === "user")?.text ?? "";
 

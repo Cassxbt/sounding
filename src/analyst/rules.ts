@@ -1,4 +1,5 @@
 import type { SoundingResult } from "@/engine/types";
+import { costFigures } from "./normalize";
 import { decidingRow } from "@/engine/decision";
 import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
 
@@ -122,6 +123,11 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
     const pct = /%|cent/i.test(m[3]), raw = m[2].replace(/,/g, "");
     const bps = Number(raw) * (pct ? 100 : 1), dp = Math.max(0, (raw.split(".")[1]?.length ?? 0) - (pct ? 2 : 0));
     if (m[1] || !engineBps.some((e) => round(e, dp) === round(bps, dp))) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not an engine figure` });
+  }
+  // Figures written in Chinese words (百分之零点三七, 千分之四, 万8) are read by the same reader intake uses.
+  for (const f of costFigures(shown).filter((g) => /[百千万]/.test(g.raw))) {
+    const dp = String(f.bps).split(".")[1]?.length ?? 0;
+    if (!engineBps.some((e) => round(e, dp) === round(f.bps, dp))) v.push({ rule: "invented_number", detail: `${f.raw} is not an engine figure` });
   }
   // every priced alternative must be classified; a judge needs each one addressed
   const classified = new Set([...out.admissible, ...out.excluded].map((a) => a.kind));

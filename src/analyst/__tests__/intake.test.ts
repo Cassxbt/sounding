@@ -324,3 +324,17 @@ describe("after the stress test of the third-review fixes", () => {
     expect(r.clarification).toMatch(/taker fee/);
   });
 });
+
+describe("the fallback reader in Chinese", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }];
+  it.each([["卖出100股rHIMS，手续费5个基点", "100", undefined, 5], ["用 1000 U 买 rHIMS，手续费 5 个基点", undefined, "1000", 5], ["卖出 1,000 股 rHIMS，手续费 5 bps", "1000", undefined, 5]])("reads %s", (t, sh, q, fee) => {
+    const r = regexIntake(t, EMPTY_CONSTRAINTS, "2026-09-20", UNI);
+    expect([r.sizeShares, r.sizeQuoteUsdt, r.constraints.takerFeeBps, r.clarification]).toEqual([sh, q, fee, null]);
+  });
+  it("asks in Chinese, quoting the whole phrase", () => {
+    const r = regexIntake("卖出 100 股 rHIMS，手续费 5 个基点，总成本不超过 0.3%", EMPTY_CONSTRAINTS, "2026-09-20", UNI);
+    expect(r.clarification).toMatch(/成本上限/);
+    expect(r.clarification).not.toMatch(/[A-Za-z]{4,}/);
+    expect(regexIntake("卖出 -100 股 rHIMS", EMPTY_CONSTRAINTS, "2026-09-20", UNI).clarification).toMatch(/-100 股/);
+  });
+});

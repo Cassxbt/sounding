@@ -26,6 +26,8 @@ export function readBps(span: string): number | null {
   if (m) return Number(m[1]);
   m = s.match(/(\d+(?:\.\d+)?)\s*(?:%|percent|per cent)/);
   if (m) return round(Number(m[1]) * 100);
+  m = s.match(/百分之\s*(\d+(?:\.\d+)?)/);
+  if (m) return round(Number(m[1]) * 100);
   m = s.match(/千分之\s*(\d+(?:\.\d+)?)/);
   if (m) return round(Number(m[1]) * 10);
   m = s.match(/万分之\s*(\d+(?:\.\d+)?)|万\s*(\d+(?:\.\d+)?)/);
@@ -192,7 +194,7 @@ export const CUES = {
 
 /** Every cost figure written in a piece of text, with where it sits: "6 bps", "0.1%", "千分之五", "万8", "half a percent". */
 export function costFigures(text: string): { at: number; raw: string; bps: number }[] {
-  const re = /\d+(?:\.\d+)?\s*(?:bps?\b|basis points?|个?基点|%|percent|per cent)|千分之\s*[\d零一二两三四五六七八九十点.]+|万分之\s*[\d零一二两三四五六七八九十点]+|万\s*[\d零一二两三四五六七八九十]+|(?:half|quarter|three quarters) (?:a |of a )?(?:percent|per cent|%)/gi;
+  const re = /\d+(?:\.\d+)?\s*(?:bps?\b|basis points?|个?基点|%|percent|per cent)|百分之\s*[\d零一二两三四五六七八九十点.]+|千分之\s*[\d零一二两三四五六七八九十点.]+|万分之\s*[\d零一二两三四五六七八九十点]+|万\s*[\d零一二两三四五六七八九十]+|(?:half|quarter|three quarters) (?:a |of a )?(?:percent|per cent|%)/gi;
   const out: { at: number; raw: string; bps: number }[] = [];
   for (const m of text.matchAll(re)) {
     const bps = readBps(m[0]);
@@ -216,4 +218,11 @@ export function around(text: string, at: number, clause = false): { start: numbe
 }
 
 /** A size was typed: "sell 0 shares", "buy -5 rSPY", "1,000 USDT". Used to ask when no positive size was read. */
-export const SIZE_CUE = /(?:\b(?:sell|buy)\b|卖出?|买入?)\s*[-−]?\s*\d|[-−]?\d[\d,.]*\s*(?:shares?\b|sh\b|股|usdt\b|u\b)/i;
+export const SIZE_CUE = /(?:\b(?:sell|buy)\b|卖出?|买入?)\s*[-−]?\s*\d[\d,.]*(?:\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元))?|[-−]?\d[\d,.]*\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元)/i;
+
+/** The language a reply goes out in: the trader's, by the script most of their words are in. */
+export function replyLanguage(text: string): "en" | "zh" {
+  const cjk = (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
+  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  return cjk > 0 && cjk * 2 >= latin ? "zh" : "en";
+}

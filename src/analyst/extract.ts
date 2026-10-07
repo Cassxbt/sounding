@@ -18,7 +18,8 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   };
 
   // Every fee stated is cited, so a corrected or second fee is asked about instead of the first one winning.
-  const fees = [...t.matchAll(/(?:taker\s*)?fee\s*(?:is|of|=|:)?\s*([-−]?\s*(\d+(?:\.\d+)?)\s*bps)/g), ...t.matchAll(/([-−]?\s*(\d+(?:\.\d+)?)\s*bps\s*(?:taker\s*)?fee)/g)];
+  const fees = [...t.matchAll(/(?:taker\s*)?fee\s*(?:is|of|=|:)?\s*([-−]?\s*(\d+(?:\.\d+)?)\s*bps)/g), ...t.matchAll(/([-−]?\s*(\d+(?:\.\d+)?)\s*bps\s*(?:taker\s*)?fee)/g),
+    ...t.matchAll(/(?:手续费|费率)\s*(?:是|为|:|：)?\s*([-−]?\s*(\d+(?:\.\d+)?)\s*(?:bps|个?基点))/g)];
   if (fees.length) c.takerFeeBps = Number(fees[0][2]);
   for (const fee of fees) cite("takerFeeBps", Number(fee[2]), fee, 1);
 
@@ -39,8 +40,8 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   // "sell 178.412132 rHIMS", "make it 35 shares", "35 sh". The sign is kept in the cited words, so
   // "sell - 100 shares" or "0 USDT" reaches the size check as written and is asked, never priced.
   const num = String.raw`(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`;
-  const sh = t.match(new RegExp(String.raw`(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*${num})\s*(?:shares|sh|r[a-z]{1,6})\b)`)) ?? t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:shares|sh)\b)`));
-  const q = t.match(/(([-−]?\s*(?<![\d.,])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*usdt)/);
+  const sh = t.match(new RegExp(String.raw`(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*${num})\s*(?:shares|sh|r[a-z]{1,6})\b)`)) ?? t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:(?:shares|sh)\b|股))`));
+  const q = t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:usdt|u\b|美元|刀))`));
   if (sh) { const v = sh[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeShares = v; cite("sizeShares", v, sh, 1); }
   // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
   else if (q) { const v = q[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeQuote = v; cite("sizeQuoteUsdt", v, q, 1); }

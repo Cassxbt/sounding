@@ -287,3 +287,14 @@ describe("figures are checked at the precision they are written in", () => {
   });
   it("a figure with thousands separators is read whole", () => expect(rules("Costs 1,000 bps.")).toContain("invented_number"));
 });
+
+describe("Chinese cost words are checked like digits", () => {
+  const out = () => templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }), undefined, "zh");
+  const rules = (e: string) => validate({ ...out(), explanation: e }, turn1(8), evidence(), undefined, "zh").map((v) => v.rule);
+  it("an engine figure in words passes", () => {
+    for (const e of ["全部成本约百分之零点三七。", "上限是千分之四。"]) expect(rules(e)).not.toContain("invented_number");
+  });
+  it("an invented figure in words is caught", () => {
+    for (const e of ["成本是百分之九十九。", "成本是千分之九。", "成本万二十"]) expect(rules(e)).toContain("invented_number");
+  });
+});

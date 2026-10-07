@@ -55,9 +55,10 @@ export async function POST(req: Request) {
     const otherUnit = order.side === "buy" ? read.sizeShares : read.sizeQuoteUsdt;
     // A size in the other unit is never swapped for the controls' size: buys are USDT, sells are shares.
     if (!sized && (switched || otherUnit)) {
+      const r = `r${codeOf(order.symbol)}`, zh = replyLanguage(lastUser) === "zh";
       const q = order.side === "buy"
-        ? `${otherUnit ? "A buy is priced by the USDT you spend, not shares. " : ""}How many USDT do you want to spend on r${codeOf(order.symbol)}?`
-        : `${otherUnit ? "A sell is priced in shares, not USDT. " : ""}How many shares of r${codeOf(order.symbol)} do you want to sell?`;
+        ? zh ? `${otherUnit ? "买入按你花费的 USDT 计价，而不是股数。" : ""}你想花多少 USDT 买入 ${r}？` : `${otherUnit ? "A buy is priced by the USDT you spend, not shares. " : ""}How many USDT do you want to spend on ${r}?`
+        : zh ? `${otherUnit ? "卖出按股数计价，而不是 USDT。" : ""}你想卖出多少股 ${r}？` : `${otherUnit ? "A sell is priced in shares, not USDT. " : ""}How many shares of ${r} do you want to sell?`;
       return NextResponse.json({ result: null, order, analyst: { output: ask(constraints, q), producedBy: "template", violations: [] }, constraints, intake: read });
     }
     const amount = sized ?? controlsAmount;
@@ -74,7 +75,10 @@ export async function POST(req: Request) {
     // Values read from the chat are held to the same bounds as values typed in the form.
     for (const [field, v, bound] of [["fee", userFee, "0 to 1,000"], ["ceiling", ceilingBps, "0 to 10,000"]] as const) {
       try { parseTerms(field === "fee" ? { userFeeBps: v } : { ceilingBps: v }); }
-      catch { return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, `A ${field} of ${v} bps is outside ${bound} bps. What is your ${field === "fee" ? "taker fee" : "cost ceiling"}, exactly?`), producedBy: "template", violations: [] }, constraints, intake: read }); }
+      catch {
+        const q = replyLanguage(lastUser) === "zh" ? `${v} bps 的${field === "fee" ? "费率" : "上限"}超出了 ${bound} bps 的范围。你的${field === "fee" ? " taker 费率" : "成本上限"}具体是多少？` : `A ${field} of ${v} bps is outside ${bound} bps. What is your ${field === "fee" ? "taker fee" : "cost ceiling"}, exactly?`;
+        return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, q), producedBy: "template", violations: [] }, constraints, intake: read });
+      }
     }
     const price = (capture = book.capture, now = book.historical ? new Date(Number(capture.exchange_ts)) : new Date()): SoundingResult =>
       sound({ capture, intent, ceilingBps, now, historical: book.historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee });
