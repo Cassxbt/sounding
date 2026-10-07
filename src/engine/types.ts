@@ -69,6 +69,7 @@ export type CostVerdict =
 
 export interface LegCost {
   status: "OK" | "INSUFFICIENT_VISIBLE_DEPTH";
+  side: "buy" | "sell";
   /** base shares */
   qty: string;
   /** quote cash: spend for buy, proceeds for sell (pre-fee), rounded for display */

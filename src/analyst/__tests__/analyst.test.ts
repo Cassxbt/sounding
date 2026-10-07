@@ -124,10 +124,10 @@ describe("clip row: priced now, remainder unpriced", () => {
   it("at a 20 bps fee the clip is the largest size within the ceiling and states its remainder", () => {
     const res = turn1(20);
     const clip = res.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
-    expect(clip.qty).toBe("147.8609");
-    expect(clip.remainder).toBe("30.5512");
+    expect(clip.qty).toBe("148.6709");
+    expect(clip.remainder).toBe("29.7412");
     expect(Number(clip.allInBpsByFee![20])).toBeLessThanOrEqual(50);
-    expect(clip.tradeoffs.join(" ")).toMatch(/remainder 30.5512 sh unpriced/);
+    expect(clip.tradeoffs.join(" ")).toMatch(/remainder 29.7412 sh unpriced/);
   });
   it("hard exit: the clip is excluded whatever the deadline, and a model admitting it is flagged", () => {
     for (const d of ["2026-09-21", "2026-10-08"]) {
@@ -144,7 +144,7 @@ describe("clip row: priced now, remainder unpriced", () => {
     expect(out.admissible.map((a) => a.kind)).toContain("largest_within_ceiling");
   });
   it("a remainder too small to trade on its own is named", () => {
-    const res = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "148" }, ceilingBps: 50, userFeeBps: 20 });
+    const res = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "148.81" }, ceilingBps: 50, userFeeBps: 20 });
     const clip = res.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
     expect(clip.remainder).toBe("0.1391");
     expect(clip.tradeoffs.join(" ")).toMatch(/below the 10 USDT minimum order/);
@@ -162,7 +162,7 @@ describe("reply voice", () => {
   it("the template speaks to the trader: no field names, no snake_case, leads with the answer", () => {
     const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8, hardDeadlineNy: "2026-10-07", mustBeFlat: true }));
     expect(out.explanation).not.toMatch(/_|mustBeFlat|hardDeadline/);
-    expect(out.explanation).toMatch(/^Cross now at full size: 39\.89 bps all-in/);
+    expect(out.explanation).toMatch(/^Cross now at full size: 39\.86 bps all-in/);
     expect(validate(out, turn1(8), evidence())).toEqual([]);
   });
 });
@@ -175,7 +175,7 @@ describe("reply language is decided by code", () => {
   });
   it("a reply in the wrong language is a violation", () => {
     const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
-    expect(validate({ ...out, explanation: "立即吃单卖出，总成本为39.89 bps，在50 bps上限内。" }, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).toContain("reply_language");
+    expect(validate({ ...out, explanation: "立即吃单卖出，总成本为39.86 bps，在50 bps上限内。" }, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).toContain("reply_language");
     expect(validate(out, turn1(8), evidence(), undefined, "zh").map((v) => v.rule)).toContain("reply_language");
     expect(validate(out, turn1(8), evidence(), undefined, "en").map((v) => v.rule)).not.toContain("reply_language");
   });
@@ -183,7 +183,7 @@ describe("reply language is decided by code", () => {
 
 describe("route admissibility is owned by the engine", () => {
   const over = () => turn1(20);
-  it("recommending a cross the engine prices over the ceiling is a violation (partner repro: 51.89 > 50)", () => {
+  it("recommending a cross the engine prices over the ceiling is a violation (partner repro: 51.83 > 50)", () => {
     const t = templateAnalysis(over(), evidence(), C({ takerFeeBps: 20 }));
     const bad = { ...t, recommendation: "immediate_cross" as const, admissible: [...t.admissible.filter((a) => a.kind !== "immediate_cross"), { kind: "immediate_cross" as const, reason: "cross now" }], excluded: t.excluded.filter((e) => e.kind !== "immediate_cross") };
     const rules = validate(bad, over(), evidence(), C({ takerFeeBps: 20 })).map((v) => v.rule);
@@ -232,7 +232,7 @@ describe("invented numbers are caught in Chinese units too", () => {
   it("'12个基点' and '12 基点' are checked like '12 bps'", () => {
     const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
     for (const e of ["总成本为12个基点。", "总成本 12 基点"]) expect(validate({ ...out, explanation: e }, turn1(8), evidence()).map((v) => v.rule)).toContain("invented_number");
-    expect(validate({ ...out, explanation: "总成本为39.89个基点。" }, turn1(8), evidence()).map((v) => v.rule)).not.toContain("invented_number");
+    expect(validate({ ...out, explanation: "总成本为39.86个基点。" }, turn1(8), evidence()).map((v) => v.rule)).not.toContain("invented_number");
   });
 });
 
@@ -244,5 +244,36 @@ describe("a cross is an opportunity, not an achieved exit", () => {
       const bad = { ...out, admissible: out.admissible.map((a) => (a.kind === "immediate_cross" ? { ...a, reason } : a)) };
       expect(validate(bad, turn1(8), evidence(), c).map((v) => v.rule)).toContain("overclaim_plan_step");
     }
+  });
+});
+
+describe("every figure in every field is the engine's (third review)", () => {
+  const out = () => templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+  const rules = (o: ReturnType<typeof out>) => validate(o, turn1(8), evidence()).map((v) => v.rule);
+  it.each(["Cost is 999 bp.", "Cost is 9.99%.", "Cost is 999 BPS.", "Cost is 999 basis points.", "Cost is -39.86 bps."])("explanation %s is caught", (e) => {
+    expect(rules({ ...out(), explanation: e })).toContain("invented_number");
+  });
+  it("a figure in the binding constraint or a route reason is checked like the explanation", () => {
+    expect(rules({ ...out(), bindingConstraint: "Your 999 bps ceiling." })).toContain("invented_number");
+    const o = out();
+    expect(rules({ ...o, admissible: o.admissible.map((a) => ({ ...a, reason: "Costs 999 bps." })), excluded: o.excluded.map((a) => ({ ...a, reason: "Costs 999 bps." })) })).toContain("invented_number");
+  });
+  it("engine figures in any unit still pass", () => {
+    expect(rules({ ...out(), explanation: "39.86 bps all-in, 0.5% ceiling, 8 basis points fee." })).not.toContain("invented_number");
+  });
+});
+
+describe("the fallback answers in the trader's language (third review)", () => {
+  it("a Chinese message gets a Chinese template that passes every rule, Chinese ones included", () => {
+    for (const fee of [8, 20]) {
+      const c = C({ takerFeeBps: fee });
+      const out = templateAnalysis(turn1(fee), evidence(), c, undefined, "zh");
+      expect(out.explanation).toMatch(/[一-鿿]/);
+      expect(out.bindingConstraint).toMatch(/[一-鿿]/);
+      expect(validate(out, turn1(fee), evidence(), c, "zh")).toEqual([]);
+    }
+  });
+  it("English stays the default", () => {
+    expect(templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 })).explanation).toMatch(/^Cross now/);
   });
 });

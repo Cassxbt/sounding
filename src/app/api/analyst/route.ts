@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     const evidence = await evidenceFor(order.symbol, codeOf(order.symbol), mode);
     // A conflict between what Qwen read and what code reads is asked back, never resolved by guessing.
     const analyst = read.clarification
-      ? { output: { ...templateAnalysis(result, evidence, constraints, b.previous), clarification: read.clarification, recommendation: null }, producedBy: "template" as const, violations: [] }
+      ? { output: { ...templateAnalysis(result, evidence, constraints, b.previous, replyLanguage(lastUser)), clarification: read.clarification, recommendation: null }, producedBy: "template" as const, violations: [] }
       : await runAnalyst({ result, evidence, turns: b.turns ?? [], constraints, previous: b.previous, mode: b.analyst });
 
     // The model took seconds; a live book did not wait. Price the order again and withdraw the route if it moved.
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       } else {
         // It stands, but every number shown must be the fresh book's: an answer that no longer checks out is rebuilt on it.
         const again2 = validate(analyst.output, result, evidence, constraints, replyLanguage(lastUser));
-        if (again2.length) analyst.output = templateAnalysis(result, evidence, constraints, b.previous);
+        if (again2.length) analyst.output = templateAnalysis(result, evidence, constraints, b.previous, replyLanguage(lastUser));
       }
     }
     // A decision is actionable only with no question open and no withdrawn answer.

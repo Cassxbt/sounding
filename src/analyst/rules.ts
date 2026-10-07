@@ -107,15 +107,18 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   // fee sensitivity: if the verdict flips across fee scenarios and the fee is unknown, the analyst must ask for it
   if (res.feeSensitive && c.takerFeeBps === null && !out.clarification) v.push({ rule: "fee_sensitive_needs_fee", detail: "verdict depends on the fee scenario; ask for the taker rate" });
 
-  // never invent numbers: every bps figure in the explanation must appear in the engine output
-  const engineNums = new Set<string>();
-  for (const f of res.fees ?? []) { if (f.allInBps) engineNums.add(f.allInBps); engineNums.add(String(f.feeBps)); }
-  if (out.constraints.takerFeeBps !== null) engineNums.add(String(out.constraints.takerFeeBps));
-  if (res.leg?.bpsPreFee) engineNums.add(res.leg.bpsPreFee);
-  engineNums.add(String(res.ceilingBps));
-  for (const m of out.explanation.matchAll(/(\d+(?:\.\d+)?)\s*(?:bps|个?基点)/g)) {
-    const n = m[1];
-    if (![...engineNums].some((e) => Number(e) === Number(n))) v.push({ rule: "invented_number", detail: `${n} bps is not an engine figure` });
+  // Never invent numbers: every cost figure in every field shown, in any unit, must be one the engine produced.
+  // A negative cost is never an engine figure, so the sign is read with the number.
+  const engineBps: number[] = [res.ceilingBps];
+  for (const f of res.fees ?? []) { if (f.allInBps) engineBps.push(Number(f.allInBps)); engineBps.push(f.feeBps); }
+  for (const a of res.alternatives ?? []) for (const [fee, b] of Object.entries(a.allInBpsByFee ?? {})) engineBps.push(Number(fee), Number(b));
+  if (res.worstCase) engineBps.push(res.worstCase.feeBps, Number(res.worstCase.allInBps));
+  if (out.constraints.takerFeeBps !== null) engineBps.push(out.constraints.takerFeeBps);
+  if (res.leg?.bpsPreFee) engineBps.push(Number(res.leg.bpsPreFee));
+  const shown = [out.explanation, out.bindingConstraint, out.clarification ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
+  for (const m of shown.matchAll(/([-−]\s*)?(\d+(?:\.\d+)?)\s*(bps?\b|basis\s+points?|个?基点|%|percent\b|per\s+cent\b)/gi)) {
+    const bps = Number(m[2]) * (/%|cent/i.test(m[3]) ? 100 : 1);
+    if (m[1] || !engineBps.some((e) => Math.abs(e - bps) < 1e-6)) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not an engine figure` });
   }
   // every priced alternative must be classified; a judge needs each one addressed
   const classified = new Set([...out.admissible, ...out.excluded].map((a) => a.kind));

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { allInBps } from "../cost";
 import { sound, rawHash, validateBook, buyWithBudget, sellShares } from "..";
 import { D } from "../types";
 import { calendar, instruments, rhims, rspmo, rspy, states, stockInfo, T_RHIMS } from "./helpers";
@@ -37,8 +38,8 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     expect(r.weekendTradable).toBe(true);
     expect(r.fees!.map((f) => [f.feeBps, f.allInBps, f.verdict])).toEqual([
       [0, "31.89", "WITHIN_CEILING_ON_THIS_SNAPSHOT"],
-      [10, "41.89", "WITHIN_CEILING_ON_THIS_SNAPSHOT"],
-      [20, "51.89", "OVER_CEILING_ON_THIS_SNAPSHOT"],
+      [10, "41.86", "WITHIN_CEILING_ON_THIS_SNAPSHOT"],
+      [20, "51.83", "OVER_CEILING_ON_THIS_SNAPSHOT"],
     ]);
     expect(r.feeSensitive).toBe(true);
     const kinds = r.alternatives!.map((a) => a.kind);
@@ -46,9 +47,9 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     const largest = r.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
     // largest within 50 bps at the 20 bps fee scenario must itself be within, and smaller than the request
     const chk = sellShares(rhims().raw, largest.qty!, D("28.025"));
-    expect(D(chk.bpsPreFee!).plus(20).lte(50)).toBe(true);
-    expect(largest.qty).toBe("147.8609"); // true max at RHIMS quantityPrecision=4 (independent replay: 147.860953 at 6 dp)
-    expect(D(chk.bpsPreFeeExact!).plus(20).lte(50)).toBe(true);
+    expect(largest.qty).toBe("148.6709"); // the largest at RHIMS quantityPrecision=4, with the fee taken from proceeds
+    expect(allInBps(chk, 20).lte(50)).toBe(true);
+    expect(allInBps(sellShares(rhims().raw, D(largest.qty!).plus("0.0001").toString(), D("28.025")), 20).gt(50)).toBe(true);
     expect(r.alternatives!.find((a) => a.kind === "resting_limit")!.tradeoffs).toContain("cancel_at_session_switch (Bitget Stock 2.0 FAQ)");
     expect(r.receipt.receipt_sha256).toHaveLength(64);
     expect(r.receipt.raw_sha256).toBe(rhims().raw_sha256);
@@ -69,13 +70,13 @@ describe("lead demo: fee-sensitive verdict then size flip", () => {
     const largest = r.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
     expect(largest.tradeoffs[0]).toMatch(/your 17 bps fee/);
     const chk = sellShares(rhims().raw, largest.qty!, D("28.025"));
-    expect(D(chk.bpsPreFeeExact!).plus(17).lte(48)).toBe(true);
-    expect(D(largest.qty!).gt("147.8609")).toBe(true); // larger than the 20 bps worst-case clip
+    expect(allInBps(chk, 17).lte(48)).toBe(true);
+    expect(D(largest.qty!).gt("148.6709")).toBe(true); // larger than the 20 bps worst-case clip
   });
   it("user-entered fee is added as a fourth labeled scenario", () => {
     const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
     const u = r.fees!.find((f) => f.source === "user")!;
-    expect(u.feeBps).toBe(8); expect(u.allInBps).toBe("39.89"); expect(u.verdict).toBe("WITHIN_CEILING_ON_THIS_SNAPSHOT");
+    expect(u.feeBps).toBe(8); expect(u.allInBps).toBe("39.86"); expect(u.verdict).toBe("WITHIN_CEILING_ON_THIS_SNAPSHOT");
   });
 });
 
@@ -161,11 +162,11 @@ describe("exchange constraints and exact ceiling comparisons (2026-09-23 cross-c
   it("missing instrument metadata refuses rather than guessing precision", () => {
     expect(sound({ ...ctx(), instruments: [], capture: rhims(), intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 }).gate).toBe("INVALID_INSTRUMENT");
   });
-  it("the verdict compares exact cost, not the 2-dp display (147.9279 shows 50.00 but costs 50.0048)", () => {
-    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "147.9279" }, ceilingBps: 50 });
+  it("the verdict compares exact cost, not the 2-dp display (148.671 shows 50.00 but costs 50.0000037)", () => {
+    const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "148.671" }, ceilingBps: 50 });
     const at20 = r.fees!.find((f) => f.feeBps === 20)!;
     expect(at20.allInBps).toBe("50.00");
-    expect(D(r.leg!.bpsPreFeeExact!).plus(20).gt(50)).toBe(true);
+    expect(allInBps(r.leg!, 20).gt(50)).toBe(true);
     expect(at20.verdict).toBe("OVER_CEILING_ON_THIS_SNAPSHOT");
   });
   it("re-quote is labelled as reassess-only", () => {
@@ -178,7 +179,7 @@ describe("worst-fee contrast on the same book", () => {
   const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
   it("within at your fee, over at the worst scenario: names the largest size that fits at the worst fee", () => {
     const r = sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: 8 });
-    expect(r.worstCase).toMatchObject({ feeBps: 20, allInBps: "51.89", verdict: "OVER_CEILING_ON_THIS_SNAPSHOT", clipQty: "147.8609", remainder: "30.5512" });
+    expect(r.worstCase).toMatchObject({ feeBps: 20, allInBps: "51.83", verdict: "OVER_CEILING_ON_THIS_SNAPSHOT", clipQty: "148.6709", remainder: "29.7412" });
     expect((r.receipt.outputs as { worstCase?: unknown }).worstCase).toEqual(r.worstCase);
   });
   it("no contrast when the worst scenario is also within, or when no fee is stated", () => {

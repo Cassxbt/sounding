@@ -1,4 +1,5 @@
 import Decimal from "decimal.js";
+import { allInBps } from "./cost";
 import { buyWithBudget, canonicalJson, signReceiptHash, decimals, largestBuyWithin, largestSellWithin, rawHash, sellShares, sha256, validateBook, withinCeiling } from "./book";
 import { eligibilityFor, type StockInfo } from "./eligibility";
 import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type MarketStates } from "./session";
@@ -107,7 +108,7 @@ export function sound(i: SoundingInput): SoundingResult {
   const scenarios = i.userFeeBps !== undefined ? [...DEFAULT_FEE_SCENARIOS_BPS.map((f) => ({ feeBps: f, source: "scenario" as const })), { feeBps: i.userFeeBps, source: "user" as const }] : DEFAULT_FEE_SCENARIOS_BPS.map((f) => ({ feeBps: f, source: "scenario" as const }));
   const fees: FeeScenario[] = scenarios.map((s) => {
     if (leg.status !== "OK") return { ...s, verdict: "INSUFFICIENT_VISIBLE_DEPTH" as CostVerdict };
-    const allIn = D(leg.bpsPreFeeExact!).plus(s.feeBps);
+    const allIn = allInBps(leg, s.feeBps);
     return { ...s, allInBps: allIn.toFixed(2), verdict: withinCeiling(leg, s.feeBps, i.ceilingBps) ? "WITHIN_CEILING_ON_THIS_SNAPSHOT" : "OVER_CEILING_ON_THIS_SNAPSHOT" };
   });
   // Once the trader states their fee, that fee decides; the scenarios stay visible as context only.
@@ -133,7 +134,7 @@ export function sound(i: SoundingInput): SoundingResult {
       const orphan = remainder.gt(0) && remainderValue.lt(spec.minOrderAmount);
       alternatives.push({
         kind: "largest_within_ceiling", qty: q.toString(), remainder: remainder.toString(),
-        allInBpsByFee: { [worstFee]: D(clip.bpsPreFeeExact!).plus(worstFee).toFixed(2) },
+        allInBpsByFee: { [worstFee]: allInBps(clip, worstFee).toFixed(2) },
         tradeoffs: [`priced now: largest ${i.intent.side === "sell" ? "share quantity" : "USDT budget"} within ceiling at ${i.userFeeBps !== undefined ? `your ${worstFee} bps fee` : `the ${worstFee} bps fee scenario`}`, `remainder ${remainder.toString()} ${unit} unpriced: no forecast of later depth`, ...(orphan ? [`remainder is below the ${spec.minOrderAmount} USDT minimum order: it cannot be traded on its own`] : []), i.intent.side === "sell" ? "does not make you flat" : "does not spend your full budget"],
       });
     }

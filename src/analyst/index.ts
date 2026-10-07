@@ -57,16 +57,17 @@ export function buildUserPrompt(result: SoundingResult, evidence: EvidencePack, 
 
 export async function runAnalyst(args: { result: SoundingResult; evidence: EvidencePack; turns: AnalystTurn[]; constraints: Constraints; previous?: AnalystOutput; mode?: "model" | "template" }): Promise<AnalystResponse> {
   const { result, evidence, turns, constraints, previous } = args;
-  const template = templateAnalysis(result, evidence, constraints, previous);
+  const lang = replyLanguage(lastUser(turns));
+  const template = templateAnalysis(result, evidence, constraints, previous, lang);
   if (args.mode === "template" || !qwenAvailable()) return { output: template, producedBy: "template", violations: [] };
   const model = QWEN.model;
   try {
     const { parsed } = await qwenAnalyze(SYSTEM, buildUserPrompt(result, evidence, constraints, turns, previous));
     if (!parsed) return { output: template, producedBy: "template", provider: "qwen", model, violations: [{ rule: "parse_failed", detail: "model output did not parse" }] };
-    const violations = validate(parsed, result, evidence, constraints, replyLanguage(lastUser(turns)));
+    const violations = validate(parsed, result, evidence, constraints, lang);
     if (violations.length) {
       // The fallback answers from the checked intake, never from the rejected model's constraints.
-      const fallback = templateAnalysis(result, evidence, constraints, previous);
+      const fallback = templateAnalysis(result, evidence, constraints, previous, lang);
       return { output: fallback, producedBy: "template", provider: "qwen", model, violations, modelOutputRejected: parsed };
     }
     return { output: parsed, producedBy: "model", provider: "qwen", model, violations: [] };

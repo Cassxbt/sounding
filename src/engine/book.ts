@@ -2,6 +2,7 @@ import Decimal from "decimal.js";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { BookCapture, Level, LegCost, RawOrderbook } from "./types";
 import { D } from "./types";
+import { allInBps } from "./cost";
 
 Decimal.set({ precision: 40 });
 
@@ -98,7 +99,7 @@ function thinTop(levels: Level[], reqQty: Decimal, best: Decimal, mid: Decimal, 
 export function buyWithBudget(raw: RawOrderbook, quoteBudget: string, mid: Decimal): LegCost {
   const asks = raw.data.asks; const budget = D(quoteBudget);
   const { shares, spent, exhausted, used } = walkForBudget(asks, budget);
-  const base = { levelsConsumed: used, visibleNotional: notional(asks).toFixed(2) };
+  const base = { side: "buy" as const, levelsConsumed: used, visibleNotional: notional(asks).toFixed(2) };
   if (exhausted || shares.eq(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), thinTop: false, ...base };
   const vwap = spent.div(shares);
   const bps = vwap.minus(mid).div(mid).mul(10000);
@@ -109,7 +110,7 @@ export function buyWithBudget(raw: RawOrderbook, quoteBudget: string, mid: Decim
 export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): LegCost {
   const bids = raw.data.bids; const qty = D(baseQty);
   const { cash, unfilled, used } = walkForQty(bids, qty);
-  const base = { levelsConsumed: used, visibleNotional: notional(bids).toFixed(2) };
+  const base = { side: "sell" as const, levelsConsumed: used, visibleNotional: notional(bids).toFixed(2) };
   if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), thinTop: false, ...base };
   const vwap = cash.div(qty);
   const bps = mid.minus(vwap).div(mid).mul(10000);
@@ -118,7 +119,7 @@ export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): Le
 
 /** true when the exact all-in cost of this leg is at or under the ceiling */
 export const withinCeiling = (leg: LegCost, feeBps: number, ceilingBps: number) =>
-  leg.status === "OK" && D(leg.bpsPreFeeExact!).plus(feeBps).lte(ceilingBps);
+  leg.status === "OK" && allInBps(leg, feeBps).lte(ceilingBps);
 
 /**
  * Largest sell quantity at the symbol's quantity precision whose exact all-in cost stays within the ceiling

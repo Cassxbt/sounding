@@ -5,6 +5,8 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import { ArrowRight, CheckCircle, Prohibit, Scissors, WarningCircle, XCircle } from "@phosphor-icons/react";
 import type { FeeScenario, SoundingResult } from "@/engine/types";
 import { decidingRow } from "@/engine/decision";
+import { allInBps } from "@/engine/cost";
+
 
 interface Props {
   res: SoundingResult;
@@ -20,7 +22,7 @@ const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
 
 /** Two decimals, unless rounding would hide which side of the ceiling the exact cost is on. */
 function precise(res: SoundingResult, feeBps: number, shown: string): string {
-  const exact = res.leg?.bpsPreFeeExact ? Number(res.leg.bpsPreFeeExact) + feeBps : NaN;
+  const exact = res.leg?.bpsPreFeeExact ? allInBps(res.leg, feeBps).toNumber() : NaN;
   if (!Number.isFinite(exact) || Number(shown) !== res.ceilingBps || exact === res.ceilingBps) return shown;
   for (let dp = 4; dp <= 10; dp++) if (Number(exact.toFixed(dp)) !== res.ceilingBps) return exact.toFixed(dp);
   return exact.toString();

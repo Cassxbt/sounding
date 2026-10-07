@@ -14,7 +14,7 @@ import type { DeletionRow } from "@/lib/deletion";
 import { Proof } from "@/components/Proof";
 import { Reveal } from "@/components/ui/Reveal";
 import { decidingRow } from "@/engine/decision";
-import type { Alternative, SoundingResult } from "@/engine/types";
+import { D, type Alternative, type SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
 interface Universe { source: string; fetched_utc: string; total: number; eligibleCount: number; eligible: { symbol: string; code: string; name: string }[]; session: { state: string; detail: string; ny: { tzName: string; weekday: string; date: string } }; now_utc: string }
@@ -241,8 +241,16 @@ export default function Page() {
                   <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-rule-soft pt-6">
                     <Fact k="levels taken" v={String(res.leg.levelsConsumed)} />
                     <Fact k="average price" v={res.leg.vwap ?? "—"} />
-                    <Fact k={side === "sell" ? "proceeds" : "spend"} v={`${res.leg.cash} USDT`} />
+                    <Fact k={side === "sell" ? "proceeds before fee" : "order amount"} v={`${res.leg.cash} USDT`} />
                     <Fact k="walking cost" v={`${res.leg.bpsPreFee} bps`} />
+                    {d && (() => {
+                      // The fee is cash on top of a buy and out of a sell's proceeds; the trader sees both numbers.
+                      const cash = D(res.leg.cashExact ?? res.leg.cash), fee = cash.mul(d.feeBps).div(10000);
+                      return (<>
+                        <Fact k={`fee at ${d.feeBps} bps${d.source === "user" ? "" : " (scenario)"}`} v={`${fee.toFixed(2)} USDT`} />
+                        <Fact k={side === "sell" ? "you receive" : "total debit"} v={`${(side === "sell" ? cash.minus(fee) : cash.plus(fee)).toFixed(2)} USDT`} />
+                      </>);
+                    })()}
                   </dl>
                   {res.leg.thinTop && <p className="mt-5 text-[14px] text-warn">Thin top: the best level holds under a quarter of this order, so the quoted spread says little about your price.</p>}
                 </Reveal>
