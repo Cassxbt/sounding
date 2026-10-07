@@ -143,6 +143,7 @@ export default async function Proof() {
         </Block>
 
         <Block title="Whole tasks, end to end" state="published">
+          <p className="mb-4 max-w-3xl text-[13px] text-ink-3">These runs, and the reading runs above, were made before 2026-10-07 on engine 0.4.0, which priced an unknown fee at 20 bps and added the fee on top. They are shown as they ran; a task&rsquo;s right answer was the engine&rsquo;s verdict at that time.</p>
           <p className="max-w-3xl text-[15px] leading-relaxed text-ink-2">Thirty complete tasks written blind: starting controls, one to three chat turns in English, 中文 or both, and the right outcome. Some must be answered, some must be asked back, some name a stock with no book. Every turn runs through the real route. Critical means the wrong order was priced, a route broke the trader&rsquo;s ceiling or deadline, or it acted where it had to ask.</p>
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-[560px] text-[14px]">

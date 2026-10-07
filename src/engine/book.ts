@@ -28,6 +28,8 @@ export const sha256 = (s: string) => createHash("sha256").update(s).digest("hex"
  * signature (only this server can produce it). The hash proves integrity; the signature proves we issued it.
  */
 const receiptKey = () => process.env.SOUNDING_RECEIPT_KEY || "";
+/** Whether this server can sign: without a key, a receipt proves integrity but not who issued it. */
+export const canSign = () => receiptKey().length > 0;
 export const signReceiptHash = (hash: string) => (receiptKey() ? createHmac("sha256", receiptKey()).update(hash).digest("hex") : undefined);
 export function receiptSignatureValid(hash: string, sig?: string): boolean {
   if (!receiptKey()) return true; // unsigned deployment (local dev): integrity only, stated in the UI

@@ -1,4 +1,4 @@
-import { canonicalJson, receiptSignatureValid, sha256, signReceiptHash } from "@/engine/book";
+import { canonicalJson, canSign, receiptSignatureValid, sha256, signReceiptHash } from "@/engine/book";
 import { decidingRow, MAX_DECISION_AGE_MS } from "@/engine/decision";
 import type { Intent, SoundingResult } from "@/engine/types";
 import { bgcCommand, orderFor, type AgentHubOrder } from "./agenthub";
@@ -20,7 +20,7 @@ export interface Binding {
 }
 
 export type Preparation =
-  | { status: "prepared"; order: AgentHubOrder; command: string; binding: Binding; binding_sha256: string; signature?: string }
+  | { status: "prepared"; order: AgentHubOrder; command: string; binding: Binding; binding_sha256: string; signature?: string; signed: boolean; book: "live" | "recorded" }
   | { status: "refused"; reason: string; proposal?: { size: string; unit: "sh" | "USDT"; remainder: string; note: string } };
 
 const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
@@ -50,12 +50,15 @@ export function prepare(res: SoundingResult, feeSource: FeeSource, now: Date): P
     order_sha256: sha256(canonicalJson(order)), prepared_at: now.toISOString(),
   };
   const binding_sha256 = sha256(canonicalJson(binding));
-  return { status: "prepared", order, command: bgcCommand(order), binding, binding_sha256, signature: signReceiptHash(binding_sha256) };
+  // A recorded book is for showing the mechanism: verify rejects it as stale, and it says so here too.
+  return { status: "prepared", order, command: bgcCommand(order), binding, binding_sha256, signature: signReceiptHash(binding_sha256), signed: canSign(), book: res.freshness.historical ? "recorded" : "live" };
 }
 
 /** Before sending: the order must be the one checked, issued by this server, and recent enough to stand. */
 export function verifyPrepared(order: AgentHubOrder, binding: Binding, signature: string | undefined, now: Date): { ok: true } | { ok: false; reason: string } {
   if (sha256(canonicalJson(order)) !== binding.order_sha256) return { ok: false, reason: "the order differs from the one Sounding checked" };
+  // Without a key anyone could write a matching binding, so an unsigned server confirms nothing.
+  if (!canSign()) return { ok: false, reason: "this server holds no signing key, so it cannot confirm it issued this order" };
   if (!receiptSignatureValid(sha256(canonicalJson(binding)), signature)) return { ok: false, reason: "this preparation was not issued by Sounding" };
   if (now.getTime() - Date.parse(binding.prepared_at) > MAX_DECISION_AGE_MS) return { ok: false, reason: "older than two minutes: sound the order again before sending" };
   return { ok: true };

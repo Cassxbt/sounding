@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sound } from "@/engine";
+import { canonicalJson, sha256 } from "@/engine/book";
 import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
 import { prepare, verifyPrepared } from "../prepare";
 
@@ -8,6 +9,22 @@ const sell = (baseQty: string, ceilingBps: number, userFeeBps?: number) => sound
 const NOW = new Date(Number(rhims().exchange_ts));
 
 describe("an Agent Hub order is prepared only from a checked decision", () => {
+  beforeEach(() => { process.env.SOUNDING_RECEIPT_KEY = "test-key"; });
+  afterEach(() => { delete process.env.SOUNDING_RECEIPT_KEY; });
+  it("a server without a signing key confirms nothing, even an order it prepared", () => {
+    delete process.env.SOUNDING_RECEIPT_KEY;
+    const p = prepare(sell("178.4121", 40, 5), "stated", NOW);
+    if (p.status !== "prepared") throw new Error("expected prepared");
+    expect(p.signed).toBe(false);
+    expect(verifyPrepared(p.order, p.binding, p.signature, NOW)).toMatchObject({ ok: false, reason: expect.stringMatching(/no signing key/) });
+  });
+  it("a forged binding for an order never prepared is rejected", () => {
+    const p = prepare(sell("178.4121", 40, 5), "stated", NOW);
+    if (p.status !== "prepared") throw new Error("expected prepared");
+    const order = { ...p.order, qty: "5000" };
+    const binding = { ...p.binding, order_sha256: sha256(canonicalJson(order)) };
+    expect(verifyPrepared(order, binding, p.signature, NOW)).toMatchObject({ ok: false, reason: expect.stringMatching(/not issued/) });
+  });
   it("within the ceiling: the exact Agent Hub order, bound to the receipt, the book and the fee's source", () => {
     const p = prepare(sell("178.4121", 40, 5), "bitget_account", NOW);
     expect(p.status).toBe("prepared");

@@ -17,8 +17,10 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
     proposed.push({ name, value, span: text.slice(at, at + m[group].length) });
   };
 
-  const fee = t.match(/(?:taker\s*)?fee\s*(?:is|of|=|:)?\s*([-−]?\s*(\d+(?:\.\d+)?)\s*bps)/) ?? t.match(/([-−]?\s*(\d+(?:\.\d+)?)\s*bps\s*(?:taker\s*)?fee)/);
-  if (fee) { c.takerFeeBps = Number(fee[2]); cite("takerFeeBps", Number(fee[2]), fee, 1); }
+  // Every fee stated is cited, so a corrected or second fee is asked about instead of the first one winning.
+  const fees = [...t.matchAll(/(?:taker\s*)?fee\s*(?:is|of|=|:)?\s*([-−]?\s*(\d+(?:\.\d+)?)\s*bps)/g), ...t.matchAll(/([-−]?\s*(\d+(?:\.\d+)?)\s*bps\s*(?:taker\s*)?fee)/g)];
+  if (fees.length) c.takerFeeBps = Number(fees[0][2]);
+  for (const fee of fees) cite("takerFeeBps", Number(fee[2]), fee, 1);
 
   const iso = t.match(/(deadline|by|before)\s*(?:is\s*)?(\d{4}-\d{2}-\d{2})/);
   const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/);
@@ -36,9 +38,10 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
 
   // "sell 178.412132 rHIMS", "make it 35 shares", "35 sh". The sign is kept in the cited words, so
   // "sell - 100 shares" or "0 USDT" reaches the size check as written and is asked, never priced.
-  const sh = t.match(/(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*\d+(?:\.\d+)?)\s*(?:shares|sh|r[a-z]{1,6})\b)/) ?? t.match(/(([-−]?\s*(?<![\d.])\d+(?:\.\d+)?)\s*(?:shares|sh)\b)/);
+  const num = String.raw`(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`;
+  const sh = t.match(new RegExp(String.raw`(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*${num})\s*(?:shares|sh|r[a-z]{1,6})\b)`)) ?? t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:shares|sh)\b)`));
   const q = t.match(/(([-−]?\s*(?<![\d.,])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*usdt)/);
-  if (sh) { if (Number(sh[2].replace(/\s/g, "")) > 0) sizeShares = sh[2]; cite("sizeShares", sh[2].replace(/\s/g, ""), sh, 1); }
+  if (sh) { const v = sh[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeShares = v; cite("sizeShares", v, sh, 1); }
   // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
   else if (q) { const v = q[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeQuote = v; cite("sizeQuoteUsdt", v, q, 1); }
   if (c.mustBeFlat && !prev.mustBeFlat) { const m = t.match(/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/); if (m) cite("mustBeFlat", true, m); }

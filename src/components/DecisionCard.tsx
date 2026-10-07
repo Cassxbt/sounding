@@ -5,12 +5,14 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import { ArrowRight, CheckCircle, Prohibit, Scissors, WarningCircle, XCircle } from "@phosphor-icons/react";
 import type { FeeScenario, SoundingResult } from "@/engine/types";
 import { decidingRow } from "@/engine/decision";
-import { allInBps } from "@/engine/cost";
+import { allInBps, allInFrom } from "@/engine/cost";
 import { FEE_SCENARIO_SOURCES } from "@/engine/fees";
 
 
 interface Props {
   res: SoundingResult;
+  /** best bid for a sell, best ask for a buy: what the quote alone says */
+  best?: string;
   side: "buy" | "sell";
   code: string;
   busy: boolean;
@@ -88,7 +90,7 @@ function Meter({ fees, ceiling, deciding }: { fees: FeeScenario[]; ceiling: numb
   );
 }
 
-export function DecisionCard({ res, side, code, busy, freshness, stale, onSuggestion }: Props) {
+export function DecisionCard({ res, side, code, busy, freshness, stale, onSuggestion, best }: Props) {
   const d = decidingRow(res);
   const within = d?.verdict === WITHIN;
   const unknownFee = !res.fees?.some((f) => f.source === "user");
@@ -140,6 +142,11 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
             {within ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
             {within ? `Within your ${res.ceilingBps} bps ceiling` : `Over your ${res.ceilingBps} bps ceiling`}
           </div>
+          {best && res.referenceMid && (() => {
+            // The quote against the size, in one line: why the best price alone is not the answer.
+            const mid = Number(res.referenceMid), top = allInFrom((Math.abs(Number(best) - mid) / mid) * 10000, d!.feeBps, side).toFixed(2);
+            return <p className="mt-4 mono text-[13px] text-ink-2">best {side === "sell" ? "bid" : "ask"} alone {top} bps · your {res.intent.side === "sell" ? `${res.intent.baseQty} sh` : `${res.intent.quoteBudget} USDT`} {d!.allInBps} bps{!within && clip ? ` · ${clip.qty} ${side === "sell" ? "sh" : "USDT"} fit` : ""}</p>;
+          })()}
           {res.worstCase && (
             <div className="mt-5 rounded-2xl bg-over-bg/60 px-4 py-3">
               <div className="flex items-center gap-2 text-[13px] text-over"><XCircle size={15} weight="fill" className="shrink-0" /> At {res.worstCase.feeBps} bps, {FEE_SCENARIO_SOURCES[res.worstCase.feeBps] ?? "a fee scenario"}: {res.worstCase.allInBps} bps, over.</div>
@@ -158,7 +165,8 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
           </p>
           <div className="mt-6 border-t border-rule-soft pt-5">
             <div className="eyebrow mb-3">the same order at every fee</div>
-            <Meter fees={res.fees ?? []} ceiling={res.ceilingBps} deciding={d} />
+            {/* A stated fee equal to a scenario is one row: the trader's. */}
+            <Meter fees={(res.fees ?? []).filter((f) => f.source === "user" || !res.fees!.some((u) => u.source === "user" && u.feeBps === f.feeBps))} ceiling={res.ceilingBps} deciding={d} />
           </div>
         </div>
       )}

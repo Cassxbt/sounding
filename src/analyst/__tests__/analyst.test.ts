@@ -278,3 +278,12 @@ describe("the fallback answers in the trader's language (third review)", () => {
     expect(templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 })).explanation).toMatch(/^Cross now/);
   });
 });
+
+describe("figures are checked at the precision they are written in", () => {
+  const out = () => templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+  const rules = (e: string) => validate({ ...out(), explanation: e }, turn1(8), evidence()).map((v) => v.rule);
+  it("a rounded engine figure passes", () => {
+    for (const e of ["about 0.37% all-in at 5 bps", "roughly 36.9 bps", "about 40 bps all-in"]) expect(rules(e)).not.toContain("invented_number");
+  });
+  it("a figure with thousands separators is read whole", () => expect(rules("Costs 1,000 bps.")).toContain("invented_number"));
+});

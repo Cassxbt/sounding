@@ -65,7 +65,7 @@ export default function Research() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Cost against each book&rsquo;s displayed mid, with the taker fee charged on the traded amount. Books too thin to fill the order are counted in their own column and left out of the other denominators. An independent reviewer recomputed every cell at {fee} bps with its own script and found the same counts.</p>
+          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Cost against each book&rsquo;s displayed mid, with the taker fee charged on the traded amount. Books too thin to fill the order are counted in their own column and left out of the other denominators. An independent reviewer recomputed every cell at {fee} bps with its own script, adding the fee on top, and found the same counts; charging the fee on the traded amount changes none of them on these books.</p>
         </section>
 
         <section className="border-t border-rule-soft py-20">

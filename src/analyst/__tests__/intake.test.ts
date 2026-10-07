@@ -313,3 +313,14 @@ describe("one validator for every reader (third review)", () => {
     expect(sharesAsUsdt[0]).toMatchObject({ name: "sizeQuoteUsdt", status: "accepted", value: "100" });
   });
 });
+
+describe("after the stress test of the third-review fixes", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }];
+  it("a share size with thousands separators is read whole", () => {
+    expect(regexIntake("Sell 1,000.5 shares of rHIMS, fee 5 bps", EMPTY_CONSTRAINTS, "2026-09-20", UNI)).toMatchObject({ sizeShares: "1000.5", clarification: null });
+  });
+  it("two fees in one message are a question, never the first one", () => {
+    const r = regexIntake("Sell 100 shares of rHIMS, fee 5 bps. Actually fee is 8 bps", EMPTY_CONSTRAINTS, "2026-09-20", UNI);
+    expect(r.clarification).toMatch(/taker fee/);
+  });
+});

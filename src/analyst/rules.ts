@@ -116,9 +116,12 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   if (out.constraints.takerFeeBps !== null) engineBps.push(out.constraints.takerFeeBps);
   if (res.leg?.bpsPreFee) engineBps.push(Number(res.leg.bpsPreFee));
   const shown = [out.explanation, out.bindingConstraint, out.clarification ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
-  for (const m of shown.matchAll(/([-−]\s*)?(\d+(?:\.\d+)?)\s*(bps?\b|basis\s+points?|个?基点|%|percent\b|per\s+cent\b)/gi)) {
-    const bps = Number(m[2]) * (/%|cent/i.test(m[3]) ? 100 : 1);
-    if (m[1] || !engineBps.some((e) => Math.abs(e - bps) < 1e-6)) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not an engine figure` });
+  // A figure may be an engine figure rounded to the precision it is written in ("0.37%", "36.9 bps"), never another one.
+  const round = (x: number, dp: number) => Math.round(x * 10 ** dp) / 10 ** dp;
+  for (const m of shown.matchAll(/([-−]\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(bps?\b|basis\s+points?|个?基点|%|percent\b|per\s+cent\b)/gi)) {
+    const pct = /%|cent/i.test(m[3]), raw = m[2].replace(/,/g, "");
+    const bps = Number(raw) * (pct ? 100 : 1), dp = Math.max(0, (raw.split(".")[1]?.length ?? 0) - (pct ? 2 : 0));
+    if (m[1] || !engineBps.some((e) => round(e, dp) === round(bps, dp))) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not an engine figure` });
   }
   // every priced alternative must be classified; a judge needs each one addressed
   const classified = new Set([...out.admissible, ...out.excluded].map((a) => a.kind));

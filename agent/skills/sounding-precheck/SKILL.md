@@ -1,6 +1,24 @@
 ---
 name: sounding-precheck
-description: Use before placing any Bitget rToken (tokenized US stock, symbol R…USDT) order through Bitget Agent Hub. Checks what the order costs at its full size on the live book, against the trader's own ceiling and fee, and supplies the only order arguments to send. 下单前按真实数量检查 rToken 订单的全部成本。
+description: >
+  Use before placing any Bitget rToken order (tokenized US stock, symbol R…USDT,
+  isReality = yes) through @bitget-ai/bitget-agent-mcp or bgc, after the dry run and
+  before the confirmation card. Checks what the order costs at its full size on the
+  live book against the trader's own ceiling and fee, and supplies the only order
+  arguments to send. Triggers: sell/buy an rToken "under 0.3%", "keep costs below",
+  "at my fee", 下单前检查成本、按我的数量算成本、不超过千分之三、卖出 rHIMS、买入 rSPY.
+  Do NOT use for crypto pairs, futures, or orders the trader sizes by price only.
+metadata:
+  version: 0.5.0
+  author: cassxbt
+  updated: 2026-10-07
+  requires:
+    bins: ["node"]
+    node: ">=20"
+  packages:
+    mcp: "agent/sounding-mcp.mjs"
+    pairs-with: "@bitget-ai/bitget-agent-mcp"
+license: MIT
 ---
 
 # Sounding pre-check for rToken orders

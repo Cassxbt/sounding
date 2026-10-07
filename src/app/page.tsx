@@ -208,7 +208,7 @@ export default function Page() {
             ) : res ? (
               <>
                 {withdrawn && <div className="rounded-2xl bg-over-bg px-4 py-3 text-[14px] text-over">The live book moved while the answer was written. The route was withdrawn; the card shows the fresh book. Re-sound before acting.</div>}
-                <DecisionCard res={res} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} />
+                <DecisionCard res={res} best={side === "sell" ? resp.levels.bids[0]?.[0] : resp.levels.asks[0]?.[0]} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} />
               </>
             ) : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/50" />}
             <div className="rounded-[22px] border border-rule-soft p-2">
