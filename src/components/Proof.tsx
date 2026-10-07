@@ -10,7 +10,7 @@ export function Proof() {
   const tiles = [
     { icon: ListChecks, n: "28", d: "30", line: "whole tasks done right on a blind set run once, every turn checked as shown. Without the model: 12, with 3 critical errors to its 1.", href: "/proof", go: "Proof" },
     { icon: ChatsCircle, n: "142", d: "151", line: "limits read correctly from 40 blind messages in English, 中文 and mixed. A regex reader got 19.", href: "/proof", go: "Proof" },
-    { icon: ChartBar, n: "57", d: "89", line: "names where Bitget's best ask is inside a 50 bps ceiling but a 25,000 USDT buy is not, on one recorded Sunday.", href: "/research", go: "Research" },
+    { icon: ChartBar, n: "28", d: "89", line: "names where Bitget's best ask is inside a 50 bps ceiling but a 25,000 USDT buy is not, at the published 5 bps fee, on one recorded Sunday.", href: "/research", go: "Research" },
   ];
   return (
     <div className="grid gap-px overflow-hidden rounded-[22px] border border-rule-soft bg-rule-soft md:grid-cols-3">

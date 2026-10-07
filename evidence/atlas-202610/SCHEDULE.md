@@ -9,3 +9,10 @@ Purpose: measure how often a trader's order fits a cost ceiling by the best quot
 - Failures are recorded as failures, with the error; nothing is dropped or retried silently. Missed rounds (machine asleep, network) stay missing.
 - Analysis (fixed now): for buy budgets of 1,000 / 5,000 / 25,000 USDT and sells of the same notional, at fees of 8, 10 and 20 bps and ceilings of 30 and 50 bps, count snapshots where the best quote is inside the ceiling but the full order is not, and where a verdict changes between a capture and its +5/+15/+30 s re-capture. Denominators are reported per session state. Everything is recomputed from the stored raw books with Sounding's engine.
 - What this cannot show: fills, hidden liquidity, behaviour outside the sampled hours, or that one week is typical.
+
+## Amendment, 2026-10-07 (after an independent review; the schedule and raw captures are unchanged)
+
+- Fees: the analysis prices at Bitget's published rToken taker rate, 5 bps (VIP 0-4, promotion extended 2026-09-01), and at the 10 bps list rate before it, instead of 8, 10 and 20 bps. The fee is charged on traded notional: buy p + f + p·f/10⁴, sell p + f − p·f/10⁴.
+- Outcomes are counted separately instead of dropped: transport failure, API error, invalid book, book too thin to fill the order, priced.
+- Flips: priced-to-priced changes are reported alongside re-captures that became unpriceable.
+- Sampling moved to an always-on host from round 27 (each record names its host). No rounds exist between 2026-10-04 12:28Z and 2026-10-05 09:37Z.
