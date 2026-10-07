@@ -8,7 +8,10 @@ import { lastLook } from "@/engine/lastlook";
 import { decidingRow } from "@/engine/decision";
 import type { BookCapture, SoundingResult } from "@/engine/types";
 import { recordedCapture, universe } from "@/lib/data";
-import { LEAD_TEXT } from "@/lib/deletion";
+import { LEAD_CEILING_WORDS, LEAD_FEE_WORDS, LEAD_TEXT } from "@/lib/lead";
+import { readBps } from "@/analyst/normalize";
+import { allInFrom } from "@/engine/cost";
+import { FEE_SCENARIO_SOURCES } from "@/engine/fees";
 
 export const metadata: Metadata = {
   title: "Sounding · Proof",
@@ -44,11 +47,16 @@ function Block({ title, state, children }: { title: string; state: State; childr
 /** Static at build from frozen fixtures and stored evaluation runs. */
 export default async function Proof() {
   const u = await universe("recorded");
-  const at = (key: string, userFeeBps: number): SoundingResult => {
+  const at = (key: string, userFeeBps: number, ceilingBps = 50): SoundingResult => {
     const capture = recordedCapture(key) as BookCapture;
-    return sound({ intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, capture, userFeeBps, now: new Date(Number(capture.exchange_ts)), historical: true, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments });
+    return sound({ intent: { side: "sell", baseQty: "178.4121" }, ceilingBps, capture, userFeeBps, now: new Date(Number(capture.exchange_ts)), historical: true, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments });
   };
-  const yours = at("RHIMSUSDT", 8);
+  // The lead order on the trader's own words: the fee and the ceiling are read by code from LEAD_TEXT.
+  const yours = at("RHIMSUSDT", readBps(LEAD_FEE_WORDS)!, readBps(LEAD_CEILING_WORDS)!);
+  const within = decidingRow(yours)!.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT";
+  const clip = yours.alternatives?.find((a) => a.kind === "largest_within_ceiling");
+  const mid = Number(yours.referenceMid), bestBid = Number(recordedCapture("RHIMSUSDT")!.raw.data.bids[0][0]);
+  const topAllIn = allInFrom(((mid - bestBid) / mid) * 10000, decidingRow(yours)!.feeBps, "sell").toFixed(2);
   const d = decidingRow(yours)!;
   const leg = yours.leg!;
   const capture = recordedCapture("RHIMSUSDT")!;
@@ -57,8 +65,8 @@ export default async function Proof() {
     { left: Number(leg.qty), rows: [] },
   ).rows;
   const looks = [
-    { label: "Two real captures 21 seconds apart, Oct 3", r: lastLook(at("RHIMSUSDT@20261003a", 8), at("RHIMSUSDT@20261003b", 8)) },
-    { label: "The Sep 20 decision re-checked on the Oct 3 book", r: lastLook(yours, at("RHIMSUSDT@20261003b", 8)) },
+    { label: "Two real captures 21 seconds apart, Oct 3", r: lastLook(at("RHIMSUSDT@20261003a", 5), at("RHIMSUSDT@20261003b", 5)) },
+    { label: "The Sep 20 decision re-checked on the Oct 3 book", r: lastLook(at("RHIMSUSDT", 5), at("RHIMSUSDT@20261003b", 5)) },
   ];
   type WholeSummary = Record<"model" | "template", { tasks: number; complete: number; safeAbstain: number; critical: number }>;
   const wholeFile = (p: string) => (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-heldout", p), "utf8")) as { summary: WholeSummary }).summary;
@@ -82,8 +90,9 @@ export default async function Proof() {
 
         <Block title="The order the desk opens on" state="recomputed">
           <blockquote className="max-w-3xl border-l-2 border-sea pl-4 text-[16px] leading-relaxed text-ink">&ldquo;{LEAD_TEXT}&rdquo;</blockquote>
-          <p className="display mt-8 text-[30px] leading-tight text-ink sm:text-[36px]">{d.allInBps} bps all-in at your {d.feeBps} bps fee: <span className="text-within">within</span> your {yours.ceilingBps} bps ceiling.</p>
-          {yours.worstCase && <p className="mt-3 text-[16px] text-ink-2">On the same book at the worst-case {yours.worstCase.feeBps} bps fee: {yours.worstCase.allInBps} bps, <span className="text-over">over</span>; the largest size that fits there is {yours.worstCase.clipQty} shares.</p>}
+          <p className="display mt-8 text-[30px] leading-tight text-ink sm:text-[36px]">{d.allInBps} bps all-in at your {d.feeBps} bps fee: {within ? <span className="text-within">within</span> : <span className="text-over">over</span>} your {yours.ceilingBps} bps ceiling.</p>
+          {!within && <p className="mt-3 text-[16px] text-ink-2">The best bid alone would cost {topAllIn} bps, well inside the ceiling; the full 178.4121 shares walk {leg.levelsConsumed} levels down the book. {clip ? <>The largest size that fits is {clip.qty} shares, leaving {clip.remainder} unpriced.</> : null}</p>}
+          {yours.worstCase && <p className="mt-3 text-[16px] text-ink-2">At {yours.worstCase.feeBps} bps, {FEE_SCENARIO_SOURCES[yours.worstCase.feeBps] ?? "a fee scenario"}: {yours.worstCase.allInBps} bps, <span className="text-over">over</span>; the largest size that fits there is {yours.worstCase.clipQty} shares.</p>}
           <p className="mt-3 text-[14px] text-ink-3">Recorded Sunday rHIMS book, {iso(capture.exchange_ts)}. Pre-fee {leg.bpsPreFee} bps against the {yours.referenceMid} mid; proceeds {leg.cash} USDT at a VWAP of {leg.vwap}.</p>
           <div className="mt-8 grid gap-8 md:grid-cols-2">
             <table className="mono w-full text-[12px]">
@@ -93,11 +102,11 @@ export default async function Proof() {
             </table>
             <table className="mono w-full text-[12px]">
               <caption className="eyebrow mb-3 text-left">every fee</caption>
-              <thead><tr className="text-left text-ink-3"><th className="pb-2 font-normal">fee</th><th className="pb-2 font-normal">all-in</th><th className="pb-2 font-normal">vs 50 bps</th></tr></thead>
+              <thead><tr className="text-left text-ink-3"><th className="pb-2 font-normal">fee</th><th className="pb-2 font-normal">all-in</th><th className="pb-2 font-normal">vs {yours.ceilingBps} bps</th></tr></thead>
               <tbody>{yours.fees!.map((f) => <tr key={`${f.source}-${f.feeBps}`} className="border-t border-rule-soft"><td className="py-1.5">{f.feeBps} bps{f.source === "user" ? " · yours" : ""}</td><td>{f.allInBps}</td><td className={f.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" ? "text-within" : "text-over"}>{f.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" ? "✓ within" : "✕ over"}</td></tr>)}</tbody>
             </table>
           </div>
-          <pre className="mono mt-8 overflow-x-auto rounded-xl bg-paper-2 p-4 text-[12px] text-ink-2">pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 50 8{"\n"}# receipt {yours.receipt.receipt_sha256} · {ENGINE_VERSION}</pre>
+          <pre className="mono mt-8 overflow-x-auto rounded-xl bg-paper-2 p-4 text-[12px] text-ink-2">pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 {yours.ceilingBps} {d.feeBps}{"\n"}# receipt {yours.receipt.receipt_sha256} · {ENGINE_VERSION}</pre>
         </Block>
 
         <Block title="Last Look on real captures" state="recomputed">
@@ -170,7 +179,7 @@ export default async function Proof() {
               "The future book. Every answer is conditional on the snapshot it names.",
               "Bitget's whitelisted Reality depth feed, which may differ from the public book.",
               "How current a recorded universe is: recorded pages say the capture date.",
-              "Fee tiers. Your fee is whatever you state; unknown fees fall to the worst scenario.",
+              "Your exact fee tier. A fee you state decides; without one, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and the higher decides.",
             ].map((x) => <li key={x} className="flex gap-3 rounded-2xl border border-rule-soft p-4"><span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-warn" />{x}</li>)}
           </ul>
         </Block>

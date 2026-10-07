@@ -2,7 +2,7 @@ import { sound } from "./index";
 import type { Calendar, MarketStates } from "./session";
 import type { BookCapture, InstrumentSpec, Receipt } from "./types";
 import type { StockInfo } from "./eligibility";
-import { DEFAULT_FEE_SCENARIOS_BPS } from "./index";
+import { DEFAULT_FEE_SCENARIOS_BPS, ENGINE_VERSION } from "./index";
 
 /** What the desk's "Download receipt" saves: enough to recompute the decision, and its hash, with no network. */
 export interface ReplayBundle {
@@ -15,6 +15,8 @@ export interface ReplayBundle {
 /** Re-run the engine on exactly what the receipt says it used, and compare hashes. */
 export function replayBundle(b: ReplayBundle) {
   const r = b.receipt;
+  // A receipt is recomputed by the engine that made it; another version prices differently by design.
+  if (r.engineVersion !== ENGINE_VERSION) return { matches: false, expected: r.receipt_sha256, recomputed: undefined, result: undefined, reason: `made by ${r.engineVersion}; this is ${ENGINE_VERSION}` };
   const meta = r.metadata as { stockInfo: StockInfo | null; instrument: InstrumentSpec | null };
   const userFeeBps = r.feeScenariosBps.length > DEFAULT_FEE_SCENARIOS_BPS.length ? r.feeScenariosBps.at(-1) : undefined;
   const result = sound({

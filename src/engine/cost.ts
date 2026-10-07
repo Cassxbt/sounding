@@ -11,3 +11,8 @@ export function allInFrom(preBps: string | number | Decimal, feeBps: number, sid
 }
 
 export const allInBps = (leg: LegCost, feeBps: number): Decimal => allInFrom(leg.bpsPreFeeExact!, feeBps, leg.side);
+
+/** The walking cost that lands exactly on the ceiling at this fee: the inverse of allInFrom. */
+export function preFeeBudget(ceilingBps: number, feeBps: number, side: "buy" | "sell"): number {
+  return (ceilingBps - feeBps) / (side === "buy" ? 1 + feeBps / 10000 : 1 - feeBps / 10000);
+}

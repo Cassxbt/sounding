@@ -6,6 +6,7 @@ import { ArrowRight, CheckCircle, Prohibit, Scissors, WarningCircle, XCircle } f
 import type { FeeScenario, SoundingResult } from "@/engine/types";
 import { decidingRow } from "@/engine/decision";
 import { allInBps } from "@/engine/cost";
+import { FEE_SCENARIO_SOURCES } from "@/engine/fees";
 
 
 interface Props {
@@ -141,7 +142,7 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
           </div>
           {res.worstCase && (
             <div className="mt-5 rounded-2xl bg-over-bg/60 px-4 py-3">
-              <div className="flex items-center gap-2 text-[13px] text-over"><XCircle size={15} weight="fill" className="shrink-0" /> At the worst-case {res.worstCase.feeBps} bps fee: {res.worstCase.allInBps} bps, over.</div>
+              <div className="flex items-center gap-2 text-[13px] text-over"><XCircle size={15} weight="fill" className="shrink-0" /> At {res.worstCase.feeBps} bps, {FEE_SCENARIO_SOURCES[res.worstCase.feeBps] ?? "a fee scenario"}: {res.worstCase.allInBps} bps, over.</div>
               {res.worstCase.clipQty && <div className="mt-1 flex items-start gap-2 text-[13px] text-ink-2"><Scissors size={14} className="mt-0.5 shrink-0 text-ink-3" /><span>Same book, the largest size that fits there: <span className="mono text-ink">{res.worstCase.clipQty}</span> {side === "sell" ? "sh" : "USDT"}, leaving {res.worstCase.remainder} unpriced.</span></div>}
             </div>
           )}
@@ -152,7 +153,7 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
           )}
           <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
             {unknownFee
-              ? <>Your fee is not known yet, so the worst case decides ({d!.feeBps} bps). {res.feeSensitive && <span className="text-warn">The answer flips with your fee: say it, and it decides.</span>}</>
+              ? <>Your fee is not known yet, so the higher scenario decides ({d!.feeBps} bps, {FEE_SCENARIO_SOURCES[d!.feeBps] ?? "a fee scenario"}). {res.feeSensitive && <span className="text-warn">The answer flips with your fee: say it, and it decides.</span>}</>
               : <>At your {d!.feeBps} bps fee, on this {res.freshness.historical ? "recorded" : "live"} book: {res.leg.bpsPreFee} bps walking the book, plus your fee.</>}
           </p>
           <div className="mt-6 border-t border-rule-soft pt-5">

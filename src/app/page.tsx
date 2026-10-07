@@ -14,6 +14,7 @@ import type { DeletionRow } from "@/lib/deletion";
 import { Proof } from "@/components/Proof";
 import { Reveal } from "@/components/ui/Reveal";
 import { decidingRow } from "@/engine/decision";
+import { preFeeBudget } from "@/engine/cost";
 import { D, type Alternative, type SoundingResult } from "@/engine/types";
 
 type Mode = "recorded" | "live";
@@ -22,10 +23,10 @@ interface Resp { result: SoundingResult; levels: { asks: [string, string][]; bid
 interface Preset { id: string; label: string; outcome: string; tone: "within" | "over" | "warn"; symbol: string; side: "buy" | "sell"; amount: string; ceiling: number; userFee?: number; fixture?: string; confirmFixture?: string; confirmNote?: string }
 
 const PRESETS: Preset[] = [
-  { id: "lead", label: "Sell 178.4121 rHIMS, fee not yet said", outcome: "over at worst case", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50 },
-  { id: "fee-8", label: "The same order, 8 bps fee set by hand", outcome: "within", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8 },
-  { id: "ll-stands", label: "Re-check on a book 21 s later", outcome: "stands", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the re-check walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you press it." },
-  { id: "ll-void", label: "Re-check a decision 12.7 days old", outcome: "void", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 8, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the Sep 20 decision re-checked against a real capture taken 12.7 days later." },
+  { id: "lead", label: "Sell 178.4121 rHIMS under 0.3%, at 5 bps", outcome: "over at this size", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 30, userFee: 5 },
+  { id: "fee-open", label: "The same order under 0.4%, fee not yet said", outcome: "your fee decides", tone: "warn", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 40 },
+  { id: "ll-stands", label: "Re-check on a book 21 s later", outcome: "stands", tone: "within", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 5, fixture: "RHIMSUSDT@20261003a", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the re-check walks a real capture taken 21 s after the one you read. In live mode it walks the book at the moment you press it." },
+  { id: "ll-void", label: "Re-check a decision 12.7 days old", outcome: "void", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.4121", ceiling: 50, userFee: 5, fixture: "RHIMSUSDT", confirmFixture: "RHIMSUSDT@20261003b", confirmNote: "Recorded demo: the Sep 20 decision re-checked against a real capture taken 12.7 days later." },
   { id: "hims-precision", label: "Sell 178.412132 rHIMS (6 decimals)", outcome: "refused", tone: "over", symbol: "RHIMSUSDT", side: "sell", amount: "178.412132", ceiling: 50 },
   { id: "spy-1k", label: "Buy rSPY with 1,000 USDT", outcome: "thin top", tone: "warn", symbol: "RSPYUSDT", side: "buy", amount: "1000", ceiling: 20 },
   { id: "spmo-25k", label: "Buy rSPMO with 25,000 USDT", outcome: "book too thin", tone: "over", symbol: "RSPMOUSDT", side: "buy", amount: "25000", ceiling: 50 },
@@ -264,8 +265,8 @@ export default function Page() {
               qty={res.leg.qty}
               levelsConsumed={res.leg.levelsConsumed}
               avgBps={res.leg.status === "OK" ? res.leg.bpsPreFee : undefined}
-              budgetBps={d && res.leg.status === "OK" ? res.ceilingBps - d.feeBps : undefined}
-              feeLabel={d ? `${d.source === "user" ? "your" : "the worst-case"} ${d.feeBps} bps fee` : undefined}
+              budgetBps={d && res.leg.status === "OK" ? preFeeBudget(res.ceilingBps, d.feeBps, side) : undefined}
+              feeLabel={d ? `${d.source === "user" ? "your" : "the"} ${d.feeBps} bps ${d.source === "user" ? "fee" : "scenario fee"}` : undefined}
             />
           </section>
         )}

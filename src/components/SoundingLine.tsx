@@ -16,7 +16,7 @@ interface Props {
   avgBps?: string;
   /** what the ceiling leaves for the walk at the deciding fee, bps from mid */
   budgetBps?: number;
-  /** "your 8 bps fee" or "the worst-case 20 bps fee" */
+  /** "your 5 bps fee" or "the 10 bps scenario fee" */
   feeLabel?: string;
 }
 

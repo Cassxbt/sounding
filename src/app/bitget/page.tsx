@@ -20,7 +20,6 @@ const NOT_USED = [
 /** Static at build: the engine runs the lead order with each input withheld. Readable without JavaScript. */
 export default async function Bitget() {
   const t = await deletionTest();
-  const qwen = t.rows.find((r) => r.id === "qwen")!;
   return (
     <>
       <Nav />
@@ -44,7 +43,7 @@ export default async function Bitget() {
           </div>
           <div className="space-y-5 text-[16px] leading-relaxed text-ink-2">
             <p>Qwen never does the arithmetic. It reads the trader&rsquo;s words, in English or 中文, and must quote them for every limit. Code finds each quote in the message and reads the number or date itself. Bitget&rsquo;s data then decides, and Qwen explains the ruling under rules code enforces.</p>
-            <p>Without Qwen, the fallback reader takes the same sentence and finds {t.regexRead.fee === null ? "no fee" : `a ${t.regexRead.fee} bps fee`} and {t.regexRead.deadline === null ? "no deadline" : `a deadline of ${t.regexRead.deadline}`}. The engine then has to assume the worst fee, and answers <span className="text-over">{qwen.without.headline}</span>.</p>
+            <p>Without Qwen, the fallback reader takes the same sentence and finds {t.regexRead.fee === null ? "no fee" : `a ${t.regexRead.fee} bps fee`}, {t.regexRead.ceiling === null ? "no ceiling" : `a ${t.regexRead.ceiling} bps ceiling`} and {t.regexRead.deadline === null ? "no deadline" : `a deadline of ${t.regexRead.deadline}`}. It cannot answer on this trader&rsquo;s own limits, so it asks for them again: <span className="text-over">&ldquo;{t.regexRead.asked}&rdquo;</span></p>
             <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-rule-soft bg-rule-soft">
               <div className="bg-paper p-5"><div className="display text-[48px] leading-none text-ink">142<span className="mono text-[13px] text-ink-3"> / 151</span></div><p className="mt-2 text-[13px] text-ink-3">limits read correctly with Qwen, on 40 blind messages</p></div>
               <div className="bg-paper p-5"><div className="display text-[48px] leading-none text-ink-3">19<span className="mono text-[13px]"> / 151</span></div><p className="mt-2 text-[13px] text-ink-3">without it, by the regex reader</p></div>

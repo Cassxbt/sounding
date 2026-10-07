@@ -10,8 +10,9 @@ import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engi
 const evidence = (): EvidencePack => JSON.parse(readFileSync("fixtures/evidence/RHIMSUSDT.json", "utf8"));
 const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
 const C = (o: Partial<typeof EMPTY_CONSTRAINTS>) => ({ ...EMPTY_CONSTRAINTS, ...o });
-const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 50, userFeeBps: fee });
-const turn2 = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 50 });
+// A 40 bps ceiling: within at Bitget's published 5 bps rToken fee (36.87), over at the 10 bps list rate (41.86).
+const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 40, userFeeBps: fee });
+const turn2 = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 40 });
 
 describe("template analyst on the lead demo", () => {
   it("turn 1: fee-sensitive -> asks for the fee, no recommendation, hard deadline excludes limit and partial", () => {
@@ -40,7 +41,7 @@ describe("template analyst on the lead demo", () => {
     expect(validate(out, turn2(), evidence())).toEqual([]);
   });
   it("hard exit with nothing within ceiling -> no recommendation, says no priced route exits", () => {
-    // 50 bps ceiling, 20 bps stated fee: full size is over; re-quote must not become the recommendation
+    // 40 bps ceiling, 20 bps stated fee: full size is over; re-quote must not become the recommendation
     const res = turn1(20);
     const out = templateAnalysis(res, evidence(), C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true, takerFeeBps: 20 }));
     expect(out.recommendation).toBeNull();
@@ -124,10 +125,10 @@ describe("clip row: priced now, remainder unpriced", () => {
   it("at a 20 bps fee the clip is the largest size within the ceiling and states its remainder", () => {
     const res = turn1(20);
     const clip = res.alternatives!.find((a) => a.kind === "largest_within_ceiling")!;
-    expect(clip.qty).toBe("148.6709");
-    expect(clip.remainder).toBe("29.7412");
-    expect(Number(clip.allInBpsByFee![20])).toBeLessThanOrEqual(50);
-    expect(clip.tradeoffs.join(" ")).toMatch(/remainder 29.7412 sh unpriced/);
+    expect(clip.qty).toBe("77.7155");
+    expect(clip.remainder).toBe("100.6966");
+    expect(Number(clip.allInBpsByFee![20])).toBeLessThanOrEqual(40);
+    expect(clip.tradeoffs.join(" ")).toMatch(/remainder 100.6966 sh unpriced/);
   });
   it("hard exit: the clip is excluded whatever the deadline, and a model admitting it is flagged", () => {
     for (const d of ["2026-09-21", "2026-10-08"]) {
@@ -259,7 +260,7 @@ describe("every figure in every field is the engine's (third review)", () => {
     expect(rules({ ...o, admissible: o.admissible.map((a) => ({ ...a, reason: "Costs 999 bps." })), excluded: o.excluded.map((a) => ({ ...a, reason: "Costs 999 bps." })) })).toContain("invented_number");
   });
   it("engine figures in any unit still pass", () => {
-    expect(rules({ ...out(), explanation: "39.86 bps all-in, 0.5% ceiling, 8 basis points fee." })).not.toContain("invented_number");
+    expect(rules({ ...out(), explanation: "39.86 bps all-in, 0.4% ceiling, 8 basis points fee." })).not.toContain("invented_number");
   });
 });
 

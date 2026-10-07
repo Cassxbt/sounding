@@ -6,8 +6,9 @@ import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type Mar
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.4.0";
-export const DEFAULT_FEE_SCENARIOS_BPS = [0, 10, 20];
+export const ENGINE_VERSION = "sounding-engine/0.5.0";
+import { DEFAULT_FEE_SCENARIOS_BPS } from "./fees";
+export { DEFAULT_FEE_SCENARIOS_BPS, FEE_SCENARIO_SOURCES } from "./fees";
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
 import { STABILITY_BPS } from "./decision";
 export { STABILITY_BPS };

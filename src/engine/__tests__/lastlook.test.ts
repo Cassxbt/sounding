@@ -86,8 +86,8 @@ describe("Last Look", () => {
     expect(r.driftBps).toBe("0.00");
   });
   it("refuses to confirm a decision that was not within the ceiling under the deciding fee", () => {
-    const noFee = read(rhims(), { ...order, userFeeBps: undefined as unknown as number });
-    expect(decidingRow(noFee)!.feeBps).toBe(20); // unknown fee: the worst scenario decides
+    const noFee = read(rhims(), { ...order, ceilingBps: 40, userFeeBps: undefined as unknown as number });
+    expect(decidingRow(noFee)!.feeBps).toBe(10); // unknown fee: the higher scenario decides
     expect(() => lastLook(noFee, noFee)).toThrow(/only a decision that was within/);
   });
   it("refuses a fresh sounding for a different order", () => {

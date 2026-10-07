@@ -7,7 +7,8 @@ import { Mark } from "./ui/Mark";
 import type { SoundingResult } from "@/engine/types";
 import type { AnswerCheck } from "@/lib/answercheck";
 import type { AnalystOutput, Constraints, EvidencePack } from "@/analyst/schema";
-import type { FieldName, Intake, IntakeField } from "@/analyst/intake";
+import type { FieldName, Intake, IntakeField } from "@/analyst/intake";import { LEAD_TEXT } from "@/lib/lead";
+
 
 interface Turn { role: "user" | "assistant"; text: string }
 /** Where each carried value came from: the trader's own words and whether code confirmed the reading. */
@@ -26,7 +27,7 @@ interface Props {
 }
 
 const DEMO_TURNS = [
-  "Sell 178.4121 rHIMS. I pay 0.08% taker, keep it under half a percent all-in, and I must be out before the 8th.",
+  LEAD_TEXT,
   "Make it 35 shares.",
   "Actually I can hold through the transition.",
 ];
