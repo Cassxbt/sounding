@@ -1,18 +1,21 @@
 {
  "schedule": "evidence/atlas-202610/SCHEDULE.md",
- "rounds": 26,
- "attemptedRounds": 28,
+ "rounds": 136,
+ "attemptedRounds": 138,
  "metadataOutageRounds": 2,
  "first": "2026-10-03T23:58:55.230Z",
- "last": "2026-10-05T09:45:54.192Z",
+ "last": "2026-10-07T16:46:00.853Z",
  "bySession": {
   "weekend_mm": 24,
-  "pre_market": 2
+  "pre_market": 31,
+  "regular": 33,
+  "after_hours": 16,
+  "overnight": 32
  },
  "failedBooks": 0,
  "transportFailed": 0,
  "apiError": 0,
- "totalBooks": 2340,
+ "totalBooks": 12240,
  "fees": {
   "decides": 5,
   "list": 10,
@@ -120,100 +123,388 @@
    "feeFlip": 193
   },
   "pre_market|buy|1000|30": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 37,
-   "topYesSizeNo": 5,
-   "feeFlip": 13
+   "overAtSize": 398,
+   "topYesSizeNo": 50,
+   "feeFlip": 242
   },
   "pre_market|buy|1000|50": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 6,
-   "topYesSizeNo": 0,
-   "feeFlip": 1
+   "overAtSize": 88,
+   "topYesSizeNo": 6,
+   "feeFlip": 31
   },
   "pre_market|buy|5000|30": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 69,
-   "topYesSizeNo": 37,
-   "feeFlip": 22
+   "overAtSize": 904,
+   "topYesSizeNo": 556,
+   "feeFlip": 438
   },
   "pre_market|buy|5000|50": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 9,
-   "topYesSizeNo": 3,
-   "feeFlip": 6
+   "overAtSize": 159,
+   "topYesSizeNo": 77,
+   "feeFlip": 70
   },
   "pre_market|buy|25000|30": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
-   "insufficient": 2,
-   "overAtSize": 128,
-   "topYesSizeNo": 96,
-   "feeFlip": 5
+   "insufficient": 31,
+   "overAtSize": 1835,
+   "topYesSizeNo": 1498,
+   "feeFlip": 107
   },
   "pre_market|buy|25000|50": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
-   "insufficient": 2,
-   "overAtSize": 58,
-   "topYesSizeNo": 52,
-   "feeFlip": 20
+   "insufficient": 31,
+   "overAtSize": 869,
+   "topYesSizeNo": 789,
+   "feeFlip": 339
   },
   "pre_market|sell|1000|30": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 38,
-   "topYesSizeNo": 6,
-   "feeFlip": 12
+   "overAtSize": 405,
+   "topYesSizeNo": 59,
+   "feeFlip": 236
   },
   "pre_market|sell|1000|50": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 6,
-   "topYesSizeNo": 0,
-   "feeFlip": 1
+   "overAtSize": 94,
+   "topYesSizeNo": 12,
+   "feeFlip": 31
   },
   "pre_market|sell|5000|30": {
-   "snapshots": 180,
+   "snapshots": 2790,
    "invalid": 0,
    "insufficient": 0,
-   "overAtSize": 64,
-   "topYesSizeNo": 32,
-   "feeFlip": 21
+   "overAtSize": 893,
+   "topYesSizeNo": 547,
+   "feeFlip": 421
   },
   "pre_market|sell|5000|50": {
-   "snapshots": 180,
+   "snapshots": 2790,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 170,
+   "topYesSizeNo": 88,
+   "feeFlip": 73
+  },
+  "pre_market|sell|25000|30": {
+   "snapshots": 2790,
+   "invalid": 0,
+   "insufficient": 31,
+   "overAtSize": 1826,
+   "topYesSizeNo": 1491,
+   "feeFlip": 122
+  },
+  "pre_market|sell|25000|50": {
+   "snapshots": 2790,
+   "invalid": 0,
+   "insufficient": 31,
+   "overAtSize": 876,
+   "topYesSizeNo": 796,
+   "feeFlip": 334
+  },
+  "regular|buy|1000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 43,
+   "topYesSizeNo": 28,
+   "feeFlip": 79
+  },
+  "regular|buy|1000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 0,
+   "topYesSizeNo": 0,
+   "feeFlip": 0
+  },
+  "regular|buy|5000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 374,
+   "topYesSizeNo": 359,
+   "feeFlip": 394
+  },
+  "regular|buy|5000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 36,
+   "topYesSizeNo": 36,
+   "feeFlip": 28
+  },
+  "regular|buy|25000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 33,
+   "overAtSize": 1749,
+   "topYesSizeNo": 1734,
+   "feeFlip": 52
+  },
+  "regular|buy|25000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 33,
+   "overAtSize": 597,
+   "topYesSizeNo": 597,
+   "feeFlip": 330
+  },
+  "regular|sell|1000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 32,
+   "topYesSizeNo": 17,
+   "feeFlip": 68
+  },
+  "regular|sell|1000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 0,
+   "topYesSizeNo": 0,
+   "feeFlip": 0
+  },
+  "regular|sell|5000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 348,
+   "topYesSizeNo": 333,
+   "feeFlip": 380
+  },
+  "regular|sell|5000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 35,
+   "topYesSizeNo": 35,
+   "feeFlip": 16
+  },
+  "regular|sell|25000|30": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 34,
+   "overAtSize": 1751,
+   "topYesSizeNo": 1736,
+   "feeFlip": 55
+  },
+  "regular|sell|25000|50": {
+   "snapshots": 2970,
+   "invalid": 0,
+   "insufficient": 34,
+   "overAtSize": 519,
+   "topYesSizeNo": 519,
+   "feeFlip": 355
+  },
+  "after_hours|buy|1000|30": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 104,
+   "topYesSizeNo": 23,
+   "feeFlip": 81
+  },
+  "after_hours|buy|1000|50": {
+   "snapshots": 1440,
    "invalid": 0,
    "insufficient": 0,
    "overAtSize": 10,
-   "topYesSizeNo": 4,
-   "feeFlip": 4
+   "topYesSizeNo": 0,
+   "feeFlip": 8
   },
-  "pre_market|sell|25000|30": {
-   "snapshots": 180,
+  "after_hours|buy|5000|30": {
+   "snapshots": 1440,
    "invalid": 0,
-   "insufficient": 2,
-   "overAtSize": 125,
-   "topYesSizeNo": 93,
+   "insufficient": 0,
+   "overAtSize": 303,
+   "topYesSizeNo": 222,
+   "feeFlip": 218
+  },
+  "after_hours|buy|5000|50": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 42,
+   "topYesSizeNo": 32,
+   "feeFlip": 15
+  },
+  "after_hours|buy|25000|30": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 16,
+   "overAtSize": 887,
+   "topYesSizeNo": 806,
+   "feeFlip": 51
+  },
+  "after_hours|buy|25000|50": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 16,
+   "overAtSize": 330,
+   "topYesSizeNo": 320,
+   "feeFlip": 155
+  },
+  "after_hours|sell|1000|30": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 101,
+   "topYesSizeNo": 20,
+   "feeFlip": 78
+  },
+  "after_hours|sell|1000|50": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 10,
+   "topYesSizeNo": 0,
    "feeFlip": 7
   },
-  "pre_market|sell|25000|50": {
-   "snapshots": 180,
+  "after_hours|sell|5000|30": {
+   "snapshots": 1440,
    "invalid": 0,
-   "insufficient": 2,
-   "overAtSize": 51,
-   "topYesSizeNo": 45,
-   "feeFlip": 20
+   "insufficient": 0,
+   "overAtSize": 294,
+   "topYesSizeNo": 213,
+   "feeFlip": 255
+  },
+  "after_hours|sell|5000|50": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 42,
+   "topYesSizeNo": 32,
+   "feeFlip": 16
+  },
+  "after_hours|sell|25000|30": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 16,
+   "overAtSize": 903,
+   "topYesSizeNo": 822,
+   "feeFlip": 32
+  },
+  "after_hours|sell|25000|50": {
+   "snapshots": 1440,
+   "invalid": 0,
+   "insufficient": 16,
+   "overAtSize": 349,
+   "topYesSizeNo": 339,
+   "feeFlip": 178
+  },
+  "overnight|buy|1000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 277,
+   "topYesSizeNo": 48,
+   "feeFlip": 200
+  },
+  "overnight|buy|1000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 36,
+   "topYesSizeNo": 9,
+   "feeFlip": 18
+  },
+  "overnight|buy|5000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 745,
+   "topYesSizeNo": 516,
+   "feeFlip": 432
+  },
+  "overnight|buy|5000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 107,
+   "topYesSizeNo": 80,
+   "feeFlip": 52
+  },
+  "overnight|buy|25000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 32,
+   "overAtSize": 1805,
+   "topYesSizeNo": 1580,
+   "feeFlip": 111
+  },
+  "overnight|buy|25000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 32,
+   "overAtSize": 793,
+   "topYesSizeNo": 766,
+   "feeFlip": 357
+  },
+  "overnight|sell|1000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 282,
+   "topYesSizeNo": 53,
+   "feeFlip": 189
+  },
+  "overnight|sell|1000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 34,
+   "topYesSizeNo": 7,
+   "feeFlip": 16
+  },
+  "overnight|sell|5000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 751,
+   "topYesSizeNo": 522,
+   "feeFlip": 454
+  },
+  "overnight|sell|5000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 0,
+   "overAtSize": 110,
+   "topYesSizeNo": 83,
+   "feeFlip": 58
+  },
+  "overnight|sell|25000|30": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 32,
+   "overAtSize": 1833,
+   "topYesSizeNo": 1608,
+   "feeFlip": 91
+  },
+  "overnight|sell|25000|50": {
+   "snapshots": 2880,
+   "invalid": 0,
+   "insufficient": 32,
+   "overAtSize": 790,
+   "topYesSizeNo": 763,
+   "feeFlip": 396
   }
  },
  "flips": {
@@ -278,63 +569,243 @@
    "toUnpriced": 0
   },
   "pre_market|buy|+5s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 3,
    "toUnpriced": 0
   },
   "pre_market|buy|+5s|fee10": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 3,
    "toUnpriced": 0
   },
   "pre_market|sell|+5s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 5,
    "toUnpriced": 0
   },
   "pre_market|sell|+5s|fee10": {
-   "pairs": 24,
-   "changed": 2,
+   "pairs": 372,
+   "changed": 7,
    "toUnpriced": 0
   },
   "pre_market|buy|+15s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 2,
    "toUnpriced": 0
   },
   "pre_market|buy|+15s|fee10": {
-   "pairs": 24,
-   "changed": 1,
+   "pairs": 372,
+   "changed": 5,
    "toUnpriced": 0
   },
   "pre_market|sell|+15s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 6,
    "toUnpriced": 0
   },
   "pre_market|sell|+15s|fee10": {
-   "pairs": 24,
-   "changed": 2,
+   "pairs": 372,
+   "changed": 7,
    "toUnpriced": 0
   },
   "pre_market|buy|+30s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 4,
    "toUnpriced": 0
   },
   "pre_market|buy|+30s|fee10": {
-   "pairs": 24,
-   "changed": 2,
+   "pairs": 372,
+   "changed": 8,
    "toUnpriced": 0
   },
   "pre_market|sell|+30s|fee5": {
-   "pairs": 24,
-   "changed": 0,
+   "pairs": 372,
+   "changed": 6,
    "toUnpriced": 0
   },
   "pre_market|sell|+30s|fee10": {
-   "pairs": 24,
+   "pairs": 372,
+   "changed": 6,
+   "toUnpriced": 0
+  },
+  "regular|buy|+5s|fee5": {
+   "pairs": 396,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "regular|buy|+5s|fee10": {
+   "pairs": 396,
+   "changed": 5,
+   "toUnpriced": 0
+  },
+  "regular|sell|+5s|fee5": {
+   "pairs": 396,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "regular|sell|+5s|fee10": {
+   "pairs": 396,
+   "changed": 3,
+   "toUnpriced": 0
+  },
+  "regular|buy|+15s|fee5": {
+   "pairs": 396,
    "changed": 2,
+   "toUnpriced": 0
+  },
+  "regular|buy|+15s|fee10": {
+   "pairs": 396,
+   "changed": 5,
+   "toUnpriced": 0
+  },
+  "regular|sell|+15s|fee5": {
+   "pairs": 396,
+   "changed": 4,
+   "toUnpriced": 0
+  },
+  "regular|sell|+15s|fee10": {
+   "pairs": 396,
+   "changed": 3,
+   "toUnpriced": 0
+  },
+  "regular|buy|+30s|fee5": {
+   "pairs": 396,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "regular|buy|+30s|fee10": {
+   "pairs": 396,
+   "changed": 5,
+   "toUnpriced": 0
+  },
+  "regular|sell|+30s|fee5": {
+   "pairs": 396,
+   "changed": 3,
+   "toUnpriced": 0
+  },
+  "regular|sell|+30s|fee10": {
+   "pairs": 396,
+   "changed": 8,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+5s|fee5": {
+   "pairs": 192,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+5s|fee10": {
+   "pairs": 192,
+   "changed": 2,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+5s|fee5": {
+   "pairs": 192,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+5s|fee10": {
+   "pairs": 192,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+15s|fee5": {
+   "pairs": 192,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+15s|fee10": {
+   "pairs": 192,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+15s|fee5": {
+   "pairs": 192,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+15s|fee10": {
+   "pairs": 192,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+30s|fee5": {
+   "pairs": 192,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "after_hours|buy|+30s|fee10": {
+   "pairs": 192,
+   "changed": 0,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+30s|fee5": {
+   "pairs": 192,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "after_hours|sell|+30s|fee10": {
+   "pairs": 192,
+   "changed": 4,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+5s|fee5": {
+   "pairs": 384,
+   "changed": 4,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+5s|fee10": {
+   "pairs": 384,
+   "changed": 1,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+5s|fee5": {
+   "pairs": 384,
+   "changed": 6,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+5s|fee10": {
+   "pairs": 384,
+   "changed": 6,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+15s|fee5": {
+   "pairs": 384,
+   "changed": 5,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+15s|fee10": {
+   "pairs": 384,
+   "changed": 3,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+15s|fee5": {
+   "pairs": 384,
+   "changed": 7,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+15s|fee10": {
+   "pairs": 384,
+   "changed": 7,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+30s|fee5": {
+   "pairs": 384,
+   "changed": 6,
+   "toUnpriced": 0
+  },
+  "overnight|buy|+30s|fee10": {
+   "pairs": 384,
+   "changed": 10,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+30s|fee5": {
+   "pairs": 384,
+   "changed": 11,
+   "toUnpriced": 0
+  },
+  "overnight|sell|+30s|fee10": {
+   "pairs": 384,
+   "changed": 11,
    "toUnpriced": 0
   }
  },
@@ -614,6 +1085,1216 @@
    "started_utc": "2026-10-05T09:45:54.192Z",
    "host": "ec2-us-east-1",
    "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 28,
+   "started_utc": "2026-10-05T10:15:54.273Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 29,
+   "started_utc": "2026-10-05T10:45:54.330Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 30,
+   "started_utc": "2026-10-05T11:15:54.337Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 31,
+   "started_utc": "2026-10-05T11:45:54.439Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 32,
+   "started_utc": "2026-10-05T12:15:54.441Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 33,
+   "started_utc": "2026-10-05T12:45:54.536Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 34,
+   "started_utc": "2026-10-05T13:15:54.545Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 35,
+   "started_utc": "2026-10-05T13:45:54.607Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 36,
+   "started_utc": "2026-10-05T14:15:54.707Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 37,
+   "started_utc": "2026-10-05T14:45:54.713Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 38,
+   "started_utc": "2026-10-05T15:15:54.721Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 39,
+   "started_utc": "2026-10-05T15:45:54.799Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 40,
+   "started_utc": "2026-10-05T16:15:54.865Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 41,
+   "started_utc": "2026-10-05T16:45:54.953Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 42,
+   "started_utc": "2026-10-05T17:15:55.053Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 43,
+   "started_utc": "2026-10-05T17:45:55.153Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 44,
+   "started_utc": "2026-10-05T18:15:55.217Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 45,
+   "started_utc": "2026-10-05T18:45:55.279Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 46,
+   "started_utc": "2026-10-05T19:15:55.289Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 47,
+   "started_utc": "2026-10-05T19:45:55.297Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 48,
+   "started_utc": "2026-10-05T20:15:55.361Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 49,
+   "started_utc": "2026-10-05T20:45:55.425Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 50,
+   "started_utc": "2026-10-05T21:15:55.433Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 51,
+   "started_utc": "2026-10-05T21:45:55.533Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 52,
+   "started_utc": "2026-10-05T22:15:55.633Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 53,
+   "started_utc": "2026-10-05T22:45:55.733Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 54,
+   "started_utc": "2026-10-05T23:15:55.824Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 55,
+   "started_utc": "2026-10-05T23:45:55.849Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 56,
+   "started_utc": "2026-10-06T00:15:55.913Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 57,
+   "started_utc": "2026-10-06T00:45:56.000Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 58,
+   "started_utc": "2026-10-06T01:15:56.065Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 59,
+   "started_utc": "2026-10-06T01:45:56.163Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 60,
+   "started_utc": "2026-10-06T02:15:56.233Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 61,
+   "started_utc": "2026-10-06T02:45:56.244Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 62,
+   "started_utc": "2026-10-06T03:15:56.257Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 63,
+   "started_utc": "2026-10-06T03:45:56.358Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 64,
+   "started_utc": "2026-10-06T04:15:56.441Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 65,
+   "started_utc": "2026-10-06T04:45:56.541Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 66,
+   "started_utc": "2026-10-06T05:15:56.641Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 67,
+   "started_utc": "2026-10-06T05:45:56.695Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 68,
+   "started_utc": "2026-10-06T06:15:56.721Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 69,
+   "started_utc": "2026-10-06T06:45:56.740Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 70,
+   "started_utc": "2026-10-06T07:15:56.809Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 71,
+   "started_utc": "2026-10-06T07:45:56.809Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 72,
+   "started_utc": "2026-10-06T08:15:56.909Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 73,
+   "started_utc": "2026-10-06T08:45:57.009Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 74,
+   "started_utc": "2026-10-06T09:15:57.092Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 75,
+   "started_utc": "2026-10-06T09:45:57.192Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 76,
+   "started_utc": "2026-10-06T10:15:57.257Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 77,
+   "started_utc": "2026-10-06T10:45:57.297Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 78,
+   "started_utc": "2026-10-06T11:15:57.329Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 79,
+   "started_utc": "2026-10-06T11:45:57.410Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 80,
+   "started_utc": "2026-10-06T12:15:57.425Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 81,
+   "started_utc": "2026-10-06T12:45:57.525Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 82,
+   "started_utc": "2026-10-06T13:15:57.577Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 83,
+   "started_utc": "2026-10-06T13:45:57.665Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 84,
+   "started_utc": "2026-10-06T14:15:57.705Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 85,
+   "started_utc": "2026-10-06T14:45:57.777Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 86,
+   "started_utc": "2026-10-06T15:15:57.793Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 87,
+   "started_utc": "2026-10-06T15:45:57.893Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 88,
+   "started_utc": "2026-10-06T16:15:57.961Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 89,
+   "started_utc": "2026-10-06T16:45:58.061Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 90,
+   "started_utc": "2026-10-06T17:15:58.129Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 91,
+   "started_utc": "2026-10-06T17:45:58.161Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 92,
+   "started_utc": "2026-10-06T18:15:58.223Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 93,
+   "started_utc": "2026-10-06T18:45:58.279Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 94,
+   "started_utc": "2026-10-06T19:15:58.343Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 95,
+   "started_utc": "2026-10-06T19:45:58.443Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 96,
+   "started_utc": "2026-10-06T20:15:58.473Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 97,
+   "started_utc": "2026-10-06T20:45:58.490Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 98,
+   "started_utc": "2026-10-06T21:15:58.590Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 99,
+   "started_utc": "2026-10-06T21:45:58.609Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 100,
+   "started_utc": "2026-10-06T22:15:58.692Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 101,
+   "started_utc": "2026-10-06T22:45:58.738Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 102,
+   "started_utc": "2026-10-06T23:15:58.817Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 103,
+   "started_utc": "2026-10-06T23:45:58.917Z",
+   "host": "ec2-us-east-1",
+   "session": "after_hours",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 104,
+   "started_utc": "2026-10-07T00:15:59.016Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 105,
+   "started_utc": "2026-10-07T00:45:59.116Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 106,
+   "started_utc": "2026-10-07T01:15:59.213Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 107,
+   "started_utc": "2026-10-07T01:45:59.249Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 108,
+   "started_utc": "2026-10-07T02:15:59.305Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 109,
+   "started_utc": "2026-10-07T02:45:59.305Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 110,
+   "started_utc": "2026-10-07T03:15:59.393Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 111,
+   "started_utc": "2026-10-07T03:45:59.493Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 112,
+   "started_utc": "2026-10-07T04:15:59.516Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 113,
+   "started_utc": "2026-10-07T04:45:59.617Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 114,
+   "started_utc": "2026-10-07T05:15:59.625Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 115,
+   "started_utc": "2026-10-07T05:45:59.647Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 116,
+   "started_utc": "2026-10-07T06:15:59.730Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 117,
+   "started_utc": "2026-10-07T06:45:59.825Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 118,
+   "started_utc": "2026-10-07T07:15:59.857Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 119,
+   "started_utc": "2026-10-07T07:45:59.889Z",
+   "host": "ec2-us-east-1",
+   "session": "overnight",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 120,
+   "started_utc": "2026-10-07T08:15:59.897Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 121,
+   "started_utc": "2026-10-07T08:45:59.915Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 122,
+   "started_utc": "2026-10-07T09:16:00.001Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 123,
+   "started_utc": "2026-10-07T09:46:00.017Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 124,
+   "started_utc": "2026-10-07T10:16:00.049Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 125,
+   "started_utc": "2026-10-07T10:46:00.131Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 126,
+   "started_utc": "2026-10-07T11:16:00.169Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 127,
+   "started_utc": "2026-10-07T11:46:00.177Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 128,
+   "started_utc": "2026-10-07T12:16:00.275Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 129,
+   "started_utc": "2026-10-07T12:46:00.375Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 130,
+   "started_utc": "2026-10-07T13:16:00.449Z",
+   "host": "ec2-us-east-1",
+   "session": "pre_market",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 131,
+   "started_utc": "2026-10-07T13:46:00.481Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 132,
+   "started_utc": "2026-10-07T14:16:00.560Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 133,
+   "started_utc": "2026-10-07T14:46:00.594Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 134,
+   "started_utc": "2026-10-07T15:16:00.681Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 135,
+   "started_utc": "2026-10-07T15:46:00.751Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 136,
+   "started_utc": "2026-10-07T16:16:00.753Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
+   "books": 90,
+   "failed": 0,
+   "transportFailed": 0,
+   "apiError": 0,
+   "metadataFailed": false
+  },
+  {
+   "round": 137,
+   "started_utc": "2026-10-07T16:46:00.853Z",
+   "host": "ec2-us-east-1",
+   "session": "regular",
    "books": 90,
    "failed": 0,
    "transportFailed": 0,
