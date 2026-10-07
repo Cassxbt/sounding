@@ -40,8 +40,8 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   // "sell 178.412132 rHIMS", "make it 35 shares", "35 sh". The sign is kept in the cited words, so
   // "sell - 100 shares" or "0 USDT" reaches the size check as written and is asked, never priced.
   const num = String.raw`(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`;
-  const sh = t.match(new RegExp(String.raw`(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*${num})\s*(?:shares|sh|r[a-z]{1,6})\b)`)) ?? t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:(?:shares|sh)\b|股))`));
-  const q = t.match(new RegExp(String.raw`(([-−]?\s*(?<![\d.,])${num})\s*(?:usdt|u\b|美元|刀))`));
+  const sh = t.match(new RegExp(String.raw`(?:make\s+it|change\s+(?:it\s+)?to|sell|buy)\s+(([-−]?\s*${num})(?![\w.])\s*(?:shares|sh|r[a-z]{1,6})\b)`)) ?? t.match(new RegExp(String.raw`(([-−]?\s*(?<![\w.,])${num})\s*(?:(?:shares|sh)\b|股))`));
+  const q = t.match(new RegExp(String.raw`(([-−]?\s*(?<![\w.,])${num})\s*(?:usdt|u\b|美元|刀))`));
   if (sh) { const v = sh[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeShares = v; cite("sizeShares", v, sh, 1); }
   // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
   else if (q) { const v = q[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeQuote = v; cite("sizeQuoteUsdt", v, q, 1); }

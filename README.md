@@ -11,8 +11,10 @@ Sounding walks Bitget's rToken order book at your full size, holds the cost to y
 | Take Bitget away | https://sounding-zeta.vercel.app/bitget |
 | Research | https://sounding-zeta.vercel.app/research |
 | Hackathon | Bitget AI Base Camp S2 · AI Trading Desk · Execution Assistance |
-| Engine | 0.5.0 · `pnpm test` 283 passing · `pnpm verify` 16/16 claims |
+| Engine | 0.5.0 · `pnpm test` · `pnpm verify` recomputes every claim below |
 | Demo video | (link added at submission) |
+
+![The desk on the lead order](docs/screenshots/desk.png)
 
 **The fastest way to judge this needs no account and no key.**
 
@@ -54,21 +56,22 @@ flowchart LR
   classDef code fill:#052e2b,stroke:#2dd4bf,color:#ccfbf1
 ```
 
-The model reads and explains. It never does the arithmetic, and it cannot pass an order. An Agent Hub order is prepared only when it clears every gate:
+The model reads and explains. It never does the arithmetic, and it cannot pass an order. Where each gate runs:
 
-| | Gate | Refuses |
-|---|---|---|
-| 1 | Instrument | a symbol not on Bitget's Reality list |
-| 2 | Session | a session Bitget's states and calendar cannot place |
-| 3 | Weekend eligibility | a weekend order on a name Bitget does not flag weekend-tradable |
-| 4 | Exchange constraints | a size off Bitget's quantity precision or under its minimum, with one it would accept |
-| 5 | Book validity | an empty, crossed or malformed book |
-| 6 | Freshness | a live book older than 5 s or slower than 2 s to arrive |
-| 7 | Stability | two soundings more than 10 bps apart |
-| 8 | Checked reading | a limit the model cannot quote from your words, or that code reads differently |
-| 9 | Rule checks | an answer with an unpriced route, an invented figure, a promised fill, or a loosened limit |
-| 10 | Ceiling at a known fee | full size over your ceiling at your fee; an unknown fee that changes the answer is asked |
-| 11 | Last Look and binding | a book that moved more than 10 bps, a decision older than two minutes, an order changed after checking |
+| | Gate | Refuses | Runs on |
+|---|---|---|---|
+| 1 | Instrument | a symbol not on Bitget's Reality list | every answer and every prepared order |
+| 2 | Session | a session Bitget's states and calendar cannot place | every answer and every prepared order |
+| 3 | Weekend eligibility | a weekend order on a name Bitget does not flag weekend-tradable | every answer and every prepared order |
+| 4 | Exchange constraints | a size off Bitget's quantity precision or under its minimum, naming a size it would accept where one exists | every answer and every prepared order |
+| 5 | Book validity | an empty, crossed or malformed book | every answer and every prepared order |
+| 6 | Freshness | a live book older than 5 s or slower than 2 s to arrive | every live answer and prepared order |
+| 7 | Stability | two soundings of the same order more than 10 bps apart | the desk, between soundings |
+| 8 | Checked reading | a limit the model cannot quote from your words, or that code reads differently | orders said in words |
+| 9 | Rule checks | an answer with an unpriced route, an invented figure, a promised fill, or a loosened limit | the analyst's answer |
+| 10 | Ceiling at a known fee | full size over your ceiling at your fee; an unknown fee that changes the answer is asked | every answer and every prepared order |
+| 11 | Last Look | a fresh book more than 10 bps worse, a flipped verdict, or a decision older than two minutes | the desk, before acting |
+| 12 | Binding | a prepared order changed after checking, not signed by this server, or older than two minutes | Agent Hub orders, before sending |
 
 The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee you state decides. Your account's own fee is read through Agent Hub when a read-only key is configured. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
@@ -81,7 +84,7 @@ The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f �
 | Market states, calendar | `GET /api/v3/reality/market/states` · `/calendar` | refused: `SESSION_UNKNOWN` |
 | Instrument rules | `GET /api/v3/market/instruments?category=SPOT` | refused: `INVALID_INSTRUMENT` |
 | Agent Hub, read-only | `@bitget-ai/bitget-agent-sdk` 3.3.1 `getAccountFeeRate` | the fee falls to the published scenarios, and an answer that depends on it is asked instead of prepared |
-| Agent Hub, order path | `order` tool / `bgc order --action place` | an agent sends what it is told: the dry run would send all three test orders below |
+| Agent Hub, order path | `order` tool / `bgc order --action place` | nothing receives the checked order: the answer stays advice, and an agent left to Agent Hub alone sends what it is told (all three test orders below) |
 | Qwen on Bitget's S2 endpoint | `hackathon.bitgetops.com/v1` | the fallback reader cannot read "0.05%", "0.3%" or "before the 8th", and asks for limits already given |
 
 The first four rows are computed by the engine on every build (`src/lib/deletion.ts`); the build fails if a removal stops changing the answer. Agent Hub, recorded on 2026-10-07 on the live rHIMS book with a 40 bps ceiling (`evidence/agenthub-20261007`):
@@ -94,7 +97,7 @@ The first four rows are computed by the engine on every build (`src/lib/deletion
 
 ## Why the model is needed
 
-The same thirty blind tasks, with and without Qwen: 28 done right with 1 critical error, against 12 with 3. On 40 blind messages in English, 中文 and mixed, Qwen read 142 of 151 stated limits correctly; a regex reader read 19. Every turn is scored as rendered, and runs are published as they came out, misses included (`evidence/`).
+The same thirty blind tasks, with and without Qwen, run on engine 0.4.0 before the fee correction: 28 done right with 1 critical error, against 12 with 3. On 40 blind messages in English, 中文 and mixed, Qwen read 142 of 151 stated limits correctly; a regex reader read 19. Every turn is scored as rendered, and runs are published as they came out, misses included (`evidence/`).
 
 ## Claims, recomputed
 
@@ -126,7 +129,7 @@ The same thirty blind tasks, with and without Qwen: 28 done right with 1 critica
 | | |
 |---|---|
 | Books | Live Bitget books in live mode; frozen captures in recorded mode, each hashed and named by date. A recorded answer says so. |
-| Orders | Nothing is ever sent. Agent Hub is shown as a dry run: Bitget's demo environment lists 6 of the 90 weekend-tradable rTokens, all with empty books, so a paper fill would prove nothing. |
+| Orders | Nothing is ever sent. Agent Hub is shown as a dry run: Bitget's demo environment listed 6 of the 90 weekend-tradable rTokens, all with empty books, when checked on 2026-10-05, so a paper fill would prove nothing. |
 | Account fee | Read through Agent Hub with a read-only key on the developer's machine and recorded. The public site holds no key and never shows one account's fee as anyone else's. |
 | Enforcement | The Agent Hub skill tells an agent to send only what Sounding prepared. It cannot stop a client that skips it. |
 | Fills | Not promised. Every answer is conditional on the snapshot it names; hidden liquidity and the future book are out of reach. |

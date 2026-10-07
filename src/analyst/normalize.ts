@@ -218,11 +218,13 @@ export function around(text: string, at: number, clause = false): { start: numbe
 }
 
 /** A size was typed: "sell 0 shares", "buy -5 rSPY", "1,000 USDT". Used to ask when no positive size was read. */
-export const SIZE_CUE = /(?:\b(?:sell|buy)\b|卖出?|买入?)\s*[-−]?\s*\d[\d,.]*(?:\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元))?|[-−]?\d[\d,.]*\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元)/i;
+// A size in digits, in Chinese numerals or in English words: any of them is read, or asked, never replaced by the controls.
+export const SIZE_CUE = /(?:\b(?:sell|buy)\b|卖出?|买入?)\s*[-−]?\s*\d[\w,.]*(?:\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元))?|[-−]?\d[\w,.]*\s*(?:shares?\b|sh\b|股|usdt\b|u\b|美元)|[零一二两三四五六七八九十百千万]+\s*(?:股|美元)|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|hundred|thousand)\b[a-z\s-]*?\b(?:shares?|usdt)\b/i;
 
 /** The language a reply goes out in: the trader's, by the script most of their words are in. */
 export function replyLanguage(text: string): "en" | "zh" {
   const cjk = (text.match(/[\u4e00-\u9fff]/g) ?? []).length;
-  const latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  // Tickers and units are written in Latin letters whatever the language ("卖出 100 股 rHIMS").
+  const latin = (text.replace(/\b(?:r[A-Za-z]{1,6}|[A-Z]{2,}(?:USDT)?|bps?|usdt|u|sh)\b/g, "").match(/[A-Za-z]/g) ?? []).length;
   return cjk > 0 && cjk * 2 >= latin ? "zh" : "en";
 }

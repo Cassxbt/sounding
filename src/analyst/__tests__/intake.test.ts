@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { costFigures, readBps, readDate, readQty, spanInText } from "../normalize";
+import { costFigures, readBps, readDate, readQty, replyLanguage, spanInText } from "../normalize";
 import { applyFields, checkFields, regexIntake } from "../intake";
 import { EMPTY_CONSTRAINTS } from "..";
 
@@ -336,5 +336,19 @@ describe("the fallback reader in Chinese", () => {
     expect(r.clarification).toMatch(/成本上限/);
     expect(r.clarification).not.toMatch(/[A-Za-z]{4,}/);
     expect(regexIntake("卖出 -100 股 rHIMS", EMPTY_CONSTRAINTS, "2026-09-20", UNI).clarification).toMatch(/-100 股/);
+  });
+});
+
+describe("after the README stress test", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }];
+  const D = "2026-09-20";
+  it.each(["卖出 一百 股 rHIMS，手续费 5 bps", "Sell one hundred shares of rHIMS, fee 5 bps", "Sell 1e3 shares of rHIMS, fee 5 bps"])("a size the reader cannot read is asked, never replaced: %s", (t) => {
+    expect(regexIntake(t, EMPTY_CONSTRAINTS, D, UNI).clarification).toBeTruthy();
+  });
+  it.each(["Sell 100 shares of rHIMS. My fee is 5 bps, sorry, 8 bps", "卖出 100 股 rHIMS，手续费 5 bps，实际上是 8 bps", "卖出 100 股 rHIMS，手续费 5 bps，不对，是 8 bps"])("a corrected fee is asked, never the first one: %s", (t) => {
+    expect(regexIntake(t, EMPTY_CONSTRAINTS, D, UNI).clarification).toMatch(/fee|费率/);
+  });
+  it.each(["卖 100 股 rHIMS", "卖出 rHIMS", "买入 0 U rSPY", "卖出 100股 rHIMS 和 rSPY"])("a short Chinese order is answered in Chinese: %s", (t) => {
+    expect(replyLanguage(t)).toBe("zh");
   });
 });

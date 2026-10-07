@@ -162,7 +162,7 @@ function unclaimed(out: IntakeField[], text: string, own: FieldName) {
 }
 
 const MAKER = /\bmaker\b|挂单/i;
-const CORRECTION = /不对|更正|改成|改为|\bactually\b|\bsorry\b|no wait|\bcorrection\b|\binstead\b|\bi mean\b|现在/i;
+const CORRECTION = /不对|更正|改成|改为|实际上|其实|应该是|\bactually\b|\bsorry\b|no wait|\bcorrection\b|\binstead\b|\bi mean\b|现在/i;
 const THIRD = /\b(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss|his|her|their)\b|老婆|老公|朋友|同事|哥们|别人|他的|她的|他们/i;
 const FIRST = /\bI\b|\bI'm\b|\bme\b|\bmy\b(?!\s+(?:buddy|friend|wife|husband|colleague|partner|brother|sister|boss))|我(?!老婆|老公|朋友|同事|哥们)/i;
 
@@ -200,6 +200,10 @@ function contradictions(out: IntakeField[], text: string) {
     const rival = unclaimed(out, text, name)(costFigures(s.text).map((g) => ({ ...g, at: g.at + s.start })))
       .filter((g) => !(g.at >= i && g.at < i + f.span.length) && Number(g.bps) !== Number(f.value) && owner(text, g.at) !== other && owner(text, g.at) !== "maker" && (tied(g) || restated(g)));
     if (rival.length) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${rival.map((g) => g.bps).join(", ")} bps` }); continue; }
+    // A figure after a correction ("5 bps, sorry, 8 bps", "5 bps，不对，是 8 bps") replaces this one: asked, never the first kept.
+    const end = i + f.span.length;
+    const corrected = unclaimed(out, text, name)(costFigures(text)).filter((g) => g.at >= end && g.at - end <= 40 && Number(g.bps) !== Number(f.value) && owner(text, g.at) !== other && owner(text, g.at) !== "maker" && CORRECTION.test(text.slice(end, g.at)));
+    if (corrected.length) { Object.assign(f, { status: "conflict", note: `two figures: ${f.value} and ${corrected.map((g) => g.bps).join(", ")} bps` }); continue; }
     // An undecided choice ("20 还是 25", "20 or 25 bps") is a question, whichever number the reader took.
     const after = text.slice(i + f.span.length, i + f.span.length + 18).match(/^\s*(?:bps?|%|个?基点)?\s*(?:还是|或者|或|\bor\b|\/)\s*(\d+(?:\.\d+)?\s*(?:bps?\b|basis points?|个?基点|%)?)/i);
     const before = text.slice(Math.max(0, i - 18), i).match(/(\d+(?:\.\d+)?\s*(?:bps?\b|个?基点|%)?)\s*(?:还是|或者|或|\bor\b|\/)\s*$/i);
@@ -237,7 +241,7 @@ function missingLimits(out: IntakeField[], text: string) {
   // A size typed but not read as a positive number is asked; the controls' size is only for messages that state none.
   const size = text.match(SIZE_CUE);
   if (size && !out.some((f) => (f.name === "sizeShares" || f.name === "sizeQuoteUsdt") && (f.status === "accepted" || f.status === "conflict")))
-    out.push({ name: /usdt|\bu\b/i.test(size[0]) ? "sizeQuoteUsdt" : "sizeShares", value: "", span: size[0], source: "code", status: "conflict", note: /[-−]\s*\d|(?<![\d.])0(?![\d.])/.test(size[0]) ? "not a positive size" : "mentioned but not read" });
+    out.push({ name: /usdt|\bu\b/i.test(size[0]) ? "sizeQuoteUsdt" : "sizeShares", value: "", span: size[0].trim(), source: "code", status: "conflict", note: /[-−]\s*\d|(?<![\d.])0(?![\d.])/.test(size[0]) ? "not a positive size" : "mentioned but not read" });
 }
 
 /** A deadline is never taken on the model's word: code must read the same date, and it must not have passed. */
