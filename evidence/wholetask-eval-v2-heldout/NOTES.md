@@ -1,4 +1,4 @@
-# Whole-task eval v2 · held-out · run once at 4a8b6d2, published unchanged
+# Whole-task eval v2 · held-out · run once at 8c64202, published unchanged
 
 30 new tasks (14 EN, 10 ZH, 6 mixed; 17 answer, 11 ask, 2 no-book; 22 adversarial) written by a second blind agent after the partner re-audit, scored with the stricter scorer that checks every rendered turn: a question shown beside a priced card or an admissible route, or a figure in the reply that the shown book did not produce, is critical.
 

@@ -1,4 +1,4 @@
-# Paraphrase eval v2 · held-out · run at bcf771a, published unchanged
+# Paraphrase eval v2 · held-out · run at e15d877, published unchanged
 
 40 prompts (18 EN, 16 ZH, 6 mixed; 28 adversarial; today = Wednesday 2026-10-07 NY), written by a second blind agent that read neither the code nor eval v1. Run once, before anyone on the build side read the prompts.
 
@@ -13,6 +13,6 @@ The one wrong value: "成本上限千分之六" reached the engine as a 6 bps ce
 
 Fixes informed by this run come after it; any later run of this set is a development run.
 
-## Development re-run at b29fc63 (after fixes informed by this set; not held-out)
+## Development re-run at b7d0671 (after fixes informed by this set; not held-out)
 
 Qwen arm 146/151 stated limits, 0 wrong values, 0 asked back. Eval v1 at the same commit: 135/138, 0 wrong values.

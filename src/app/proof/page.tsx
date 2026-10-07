@@ -74,8 +74,8 @@ export default async function Proof() {
   const wholeV2 = (JSON.parse(readFileSync(join(process.cwd(), "evidence/wholetask-eval-v2-heldout/results.json"), "utf8")) as { summary: WholeSummary }).summary;
   const runs = [
     { name: "Blind set 1, before fixes", note: "40 messages, today = 2026-10-03; published with its five wrong deadlines", s: evalFile("paraphrase-eval-20261003/results.json") },
-    { name: "Blind set 2, held out", note: "40 new messages by a second writer, today = 2026-10-07; run once at commit bcf771a", s: evalFile("paraphrase-eval-v2-heldout/results.json"), lead: true },
-    { name: "Set 2 again, after fixes", note: "development run at b29fc63: not a held-out number", s: evalFile("paraphrase-eval-v2-heldout/dev-rerun-b29fc63/results.json") },
+    { name: "Blind set 2, held out", note: "40 new messages by a second writer, today = 2026-10-07; run once at commit e15d877", s: evalFile("paraphrase-eval-v2-heldout/results.json"), lead: true },
+    { name: "Set 2 again, after fixes", note: "development run at b7d0671: not a held-out number", s: evalFile("paraphrase-eval-v2-heldout/dev-rerun-b29fc63/results.json") },
   ];
 
   return (
@@ -165,7 +165,7 @@ export default async function Proof() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-[13px] text-ink-3">Each set was written by a separate blind agent and run once. The first (at 78e5291) scored only final answers; its three critical errors were fixed afterwards. The second (at 4a8b6d2) scores every turn as rendered, so asking while showing a card counts as critical; its one critical, a negative size quoted without its minus sign, has since been fixed. Every failure is published with its run in evidence/; re-runs after fixes are kept there as development numbers.</p>
+          <p className="mt-4 text-[13px] text-ink-3">Each set was written by a separate blind agent and run once. The first (at 62fe672) scored only final answers; its three critical errors were fixed afterwards. The second (at 8c64202) scores every turn as rendered, so asking while showing a card counts as critical; its one critical, a negative size quoted without its minus sign, has since been fixed. Every failure is published with its run in evidence/; re-runs after fixes are kept there as development numbers.</p>
         </Block>
 
         <Block title="The book is Bitget's book" state="published">
