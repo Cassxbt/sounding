@@ -4,6 +4,7 @@ import type { BookCapture, SoundingResult } from "@/engine/types";
 import { regexIntake } from "@/analyst/intake";
 import { readBps } from "@/analyst/normalize";
 import { EMPTY_CONSTRAINTS } from "@/analyst";
+import { nyClock } from "@/engine/session";
 import { recordedCapture, universe, type Universe } from "./data";
 
 /**
@@ -50,7 +51,7 @@ export async function deletionTest(): Promise<{ baseline: Outcome; rows: Deletio
   // With Qwen: the fee comes from the quoted words, and only after code reads the same number from them.
   const quoted = "I pay 0.08% taker";
   const withQwen = run({ userFeeBps: readBps(quoted) ?? undefined });
-  const rx = regexIntake(LEAD_TEXT, EMPTY_CONSTRAINTS);
+  const rx = regexIntake(LEAD_TEXT, EMPTY_CONSTRAINTS, nyClock(new Date(Number(capture().exchange_ts))).date);
   const withoutQwen = run({ userFeeBps: rx.constraints.takerFeeBps ?? undefined });
   const all = outcome(run());
 

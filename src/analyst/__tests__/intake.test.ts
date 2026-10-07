@@ -162,7 +162,7 @@ describe("ticker reading after ST7", () => {
     expect(checkFields([], "sell 100 rZZZZ, fee 8 bps", D8, UNI).find((f) => f.name === "symbol")).toMatchObject({ status: "conflict" });
   });
   it("the fallback reader also asks about a limit it saw but could not read", () => {
-    const r = regexIntake("Sell 178.4121 rHIMS, I pay 千分之0.8 taker", EMPTY_CONSTRAINTS, UNI);
+    const r = regexIntake("Sell 178.4121 rHIMS, I pay 千分之0.8 taker", EMPTY_CONSTRAINTS, D8, UNI);
     expect(r.clarification).toMatch(/taker fee/);
   });
 });
@@ -282,5 +282,34 @@ describe("a sign outside the quoted words still belongs to the number (developme
   });
   it("a hyphen between words is not a sign: 'all-in 50 bps'", () => {
     expect(checkFields([{ name: "ceilingBps", value: 50, span: "50 bps" }], "sell 10 rHIMS, all-in 50 bps", "2026-09-20", UNI).find((x) => x.name === "ceilingBps")?.status).toBe("accepted");
+  });
+});
+
+describe("one validator for every reader (third review)", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }];
+  const D = "2026-09-20";
+  it.each([
+    ["Sell - 100 shares of rHIMS, fee 8 bps", /not a size/],
+    ["Buy 0 USDT of rHIMS, fee 8 bps", /not a size/],
+    ["Sell 100 shares of rHIMS. My fee is -8 bps fee", /negative/],
+    ["Sell 100 shares of rHIMS, fee 8 bps. Must be flat by Feb 31", /deadline/],
+  ])("the fallback reader asks instead of pricing: %s", (text, q) => {
+    const r = regexIntake(text, EMPTY_CONSTRAINTS, D, UNI);
+    expect(r.clarification).toMatch(q);
+  });
+  it("the fallback reader still reads a clean order", () => {
+    const r = regexIntake("Sell 100 shares of rHIMS, fee 8 bps", EMPTY_CONSTRAINTS, D, UNI);
+    expect(r).toMatchObject({ clarification: null, sizeShares: "100", symbol: "RHIMSUSDT", side: "sell" });
+    expect(r.constraints.takerFeeBps).toBe(8);
+  });
+  it("a negative sign inside the cited fee words is never read as its unsigned number", () => {
+    const f = checkFields([{ name: "takerFeeBps", value: 8, span: "-8 bps" }], "my fee is -8 bps", D);
+    expect(f[0]).toMatchObject({ status: "conflict", note: "a negative figure" });
+  });
+  it("a size is filed under the unit its words state, whatever field the model used", () => {
+    const usdtAsShares = checkFields([{ name: "sizeQuoteUsdt", value: "100", span: "100 shares" }], "buy 100 shares of rHIMS", D);
+    expect(usdtAsShares[0]).toMatchObject({ name: "sizeShares", status: "accepted", value: "100" });
+    const sharesAsUsdt = checkFields([{ name: "sizeShares", value: "100", span: "100" }], "buy 100 USDT of rHIMS", D);
+    expect(sharesAsUsdt[0]).toMatchObject({ name: "sizeQuoteUsdt", status: "accepted", value: "100" });
   });
 });

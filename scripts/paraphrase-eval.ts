@@ -41,7 +41,7 @@ async function main() {
   for (const c of set.cases) {
     for (const arm of ["regex", "qwen"] as const) {
       const t0 = Date.now();
-      const r = arm === "regex" ? regexIntake(c.text, EMPTY_CONSTRAINTS) : await intake(c.text, EMPTY_CONSTRAINTS, set.today_ny, "model");
+      const r = arm === "regex" ? regexIntake(c.text, EMPTY_CONSTRAINTS, set.today_ny) : await intake(c.text, EMPTY_CONSTRAINTS, set.today_ny, "model");
       if (arm === "qwen" && r.reader !== "qwen") throw new Error(`${c.id}: Qwen arm fell back to ${r.reader}; refusing to score a fallback as Qwen`);
       const got: Record<Field, Value> = { takerFeeBps: r.constraints.takerFeeBps, ceilingBps: r.ceilingBps ?? null, hardDeadlineNy: r.constraints.hardDeadlineNy, mustBeFlat: r.constraints.mustBeFlat, sizeShares: r.sizeShares ?? null, sizeQuoteUsdt: r.sizeQuoteUsdt ?? null };
       const heldNames = new Set(r.fields.filter((f) => f.status === "conflict").map((f) => f.name as string));
