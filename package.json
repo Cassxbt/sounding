@@ -10,7 +10,8 @@
     "test": "vitest run",
     "replay": "tsx src/engine/replay.ts",
     "qwen:preflight": "node scripts/qwen-preflight.mjs",
-    "qwen:usage": "node scripts/qwen-usage.mjs"
+    "qwen:usage": "node scripts/qwen-usage.mjs",
+    "verify": "tsx scripts/verify-claims.ts"
   },
   "dependencies": {
     "@bitget-ai/bitget-agent-sdk": "3.3.1",
