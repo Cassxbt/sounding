@@ -4,6 +4,8 @@ import { ArrowRight, Prohibit } from "@phosphor-icons/react/ssr";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { DeletionRows } from "@/components/DeletionRows";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { deletionTest, LEAD_TEXT } from "@/lib/deletion";
 
 export const metadata: Metadata = {
@@ -12,14 +14,27 @@ export const metadata: Metadata = {
 };
 
 const NOT_USED = [
-  { name: "Agent Hub CLI, dry run", why: "In our keyless test its dry run accepted side=hold, a negative quantity and a missing quantity, so it cannot stand in for a safety check. Sounding never sends an order, so nothing here depends on it." },
   { name: "bitget-signal", why: "Every upstream feed we queried returned empty when checked on 2026-10-02. A signal with nothing in it would be decoration, so it is not on the page." },
+  { name: "Paper trading", why: "Bitget's demo environment lists 6 of the 90 weekend-tradable rTokens, all with empty books (checked 2026-10-05), so a paper fill would prove nothing about a real one. The order path is shown as a dry run instead." },
   { name: "GetAgent", why: "A research assistant across assets. Its published material shows no walk of a Bitget book at a given size, which is the one thing a decision here rests on." },
 ];
+
+/** The same three orders through Agent Hub's dry run and through Sounding, as recorded in evidence/agenthub-20261007. */
+function orderPath() {
+  const dir = join(process.cwd(), "evidence/agenthub-20261007");
+  const hub = readFileSync(join(dir, "bgc-dry-run.jsonl"), "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { data: { wouldSend: Record<string, string> } }).data.wouldSend);
+  const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; proposal?: { size: string; unit: string }; binding?: { allInBps: string; ceilingBps: number; fee: { bps: number; source: string } } } });
+  return hub.map((h, i) => {
+    const o = ours[i], p = o.preparation;
+    const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
+    return { order: `${h.side} ${h.qty} ${h.symbol}`, hub: "would send", said, ok: p?.status === "prepared" };
+  });
+}
 
 /** Static at build: the engine runs the lead order with each input withheld. Readable without JavaScript. */
 export default async function Bitget() {
   const t = await deletionTest();
+  const path = orderPath();
   return (
     <>
       <Nav />
@@ -27,7 +42,7 @@ export default async function Bitget() {
         <section className="pt-16 pb-14 sm:pt-24">
           <h1 className="display max-w-4xl text-[48px] leading-[0.98] text-ink sm:text-[72px] lg:text-[84px]">Take Bitget away and it stops.</h1>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink-2">
-            One real order, run by the engine. With every Bitget input, the answer is <span className="text-within">{t.baseline.headline}</span>. Withhold any one of them and this is what the same engine does, on the same recorded book.
+            One real order, run by the engine. With every Bitget input, the answer is <span className={t.baseline.within ? "text-within" : "text-over"}>{t.baseline.headline}</span> your ceiling, with the largest size that fits named. Withhold any one of them and this is what the same engine does, on the same recorded book.
           </p>
           <blockquote className="mt-8 max-w-2xl border-l-2 border-sea pl-4 text-[16px] leading-relaxed text-ink">&ldquo;{LEAD_TEXT}&rdquo;</blockquote>
         </section>
@@ -49,6 +64,26 @@ export default async function Bitget() {
               <div className="bg-paper p-5"><div className="display text-[48px] leading-none text-ink-3">19<span className="mono text-[13px]"> / 151</span></div><p className="mt-2 text-[13px] text-ink-3">without it, by the regex reader</p></div>
             </div>
           </div>
+        </section>
+
+        <section className="border-t border-rule-soft py-20">
+          <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Agent Hub sends what it is told. Sounding decides what it is told.</h2>
+          <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-2">Bitget Agent Hub lets an AI agent trade a Bitget account: its flow is a dry run, a confirmation card naming pair, side and quantity, then the send. Nothing in it asks what the size costs. Sounding sits at that step: it reads the trader&rsquo;s own fee through Agent Hub&rsquo;s read-only client, walks the book at the full size, and hands back the exact Agent Hub order only when it fits, bound to its receipt. Anything else comes back as a reason.</p>
+          <div className="mt-10 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-[14px]">
+              <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">order, live rHIMS book, 40 bps ceiling</th><th className="pb-3 font-normal">Agent Hub dry run (bgc 3.0.0)</th><th className="pb-3 font-normal">Sounding</th></tr></thead>
+              <tbody>
+                {path.map((r) => (
+                  <tr key={r.order} className="border-t border-rule-soft align-top">
+                    <td className="mono py-3 pr-4 text-ink">{r.order}</td>
+                    <td className="py-3 pr-4 text-ink-3">{r.hub}</td>
+                    <td className={`py-3 ${r.ok ? "text-within" : "text-over"}`}>{r.said}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Recorded 2026-10-07 (evidence/agenthub-20261007). For agents: an MCP tool, <span className="mono">sounding_prepare_order</span>, and a skill in Agent Hub&rsquo;s own format that adds the at-size cost to its confirmation card and sends only the order Sounding prepared (<span className="mono">agent/</span> in the repository). The account fee was read with a read-only key on the developer&rsquo;s machine; this site holds no key.</p>
         </section>
 
         <section className="border-t border-rule-soft py-20">
