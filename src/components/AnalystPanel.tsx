@@ -103,7 +103,8 @@ export function AnalystPanel({ symbol, side, amount, ceiling, mode, userFee, fix
     });
     // Carry what the trader stated (checked intake), never the model's output, into the next turn.
     const carried: Constraints = j.constraints ?? j.intake?.constraints ?? resp.output.constraints;
-    setState({ resp, evidence: j.evidence, constraints: carried });
+    // A clarification prices nothing, so it comes back without an evidence pack.
+    setState({ resp, evidence: j.evidence ?? { symbol: "", code: "", issuer: "", source_kind: "unavailable", records: [] }, constraints: carried });
     setOrder(j.order ?? null); setCheck(j.answerCheck ?? null);
     onTurn?.({
       symbol: j.order?.symbol ?? symbol, side: j.order?.side ?? side, amount: j.amount ?? amount, ceiling: j.ceilingBps ?? ceiling,

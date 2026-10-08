@@ -90,9 +90,12 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   if (out.recommendation === "requote_at_switch" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "re-quoting later is a chance to exit, not an exit; it cannot be the recommendation under a hard deadline" });
   // only reasons for ADMITTING a plan step can overclaim; exclusion reasons explain why it falls short
   // Under a hard exit no route is an achieved exit, crossing included: a fill is never promised.
-  const claims = [...out.admissible.map((a) => a.reason), out.explanation].join(" ");
+  const claims = [...out.admissible.map((a) => a.reason), out.explanation].join(". ");
   const achieved = /\bsatisf(?:y|ies|ying)\b|makes? you flat|gets? you (?:flat|out)|meets? (?:the|your) (?:hard )?(?:deadline|exit)|preserv\w* (?:the )?must.?be.?flat|满足.{0,8}(?:清仓|硬性|退出|截止|要求|约束)|完成清仓|确保清仓|保证清仓/i;
-  if (c.mustBeFlat && c.hardDeadlineNy && achieved.test(claims))
+  // "No priced route satisfies the hard exit" is the honest answer, not a claim: a negation just before the phrase clears it.
+  const negated = /\b(?:no|not|never|nothing|none|cannot|can't|doesn't|does not|won't|isn't)\b[^.;。！？]{0,40}$|(?:不|无法|没有|未|不能)[^。；]{0,12}$/i;
+  const claimed = [...claims.matchAll(new RegExp(achieved.source, "gi"))].some((m) => !negated.test(claims.slice(0, m.index)));
+  if (c.mustBeFlat && c.hardDeadlineNy && claimed)
     v.push({ rule: "overclaim_plan_step", detail: "a route was described as achieving the hard exit; crossing is a chance to exit, not a fill" });
 
   // evidence typing: only issuer-matched, dated records may be marked relevant

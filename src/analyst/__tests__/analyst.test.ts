@@ -298,3 +298,11 @@ describe("Chinese cost words are checked like digits", () => {
     for (const e of ["成本是百分之九十九。", "成本是千分之九。", "成本万二十"]) expect(rules(e)).toContain("invented_number");
   });
 });
+
+describe("a negated exit claim is not an overclaim", () => {
+  const c = C({ hardDeadlineNy: "2026-10-08", mustBeFlat: true, takerFeeBps: 20 });
+  const out = () => templateAnalysis(turn1(20), evidence(), c);
+  const rules = (e: string) => validate({ ...out(), explanation: e }, turn1(20), evidence()).map((v) => v.rule);
+  it.each(["No priced route satisfies the hard exit on this snapshot.", "Nothing here gets you flat by the deadline.", "Crossing does not satisfy your hard exit.", "当前没有任何路线能满足清仓要求。"])("passes: %s", (e) => expect(rules(e)).not.toContain("overclaim_plan_step"));
+  it.each(["Crossing now satisfies your hard exit.", "This gets you flat by Oct 8.", "此路线满足清仓要求。"])("still caught: %s", (e) => expect(rules(e)).toContain("overclaim_plan_step"));
+});
