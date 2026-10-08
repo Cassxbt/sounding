@@ -27,7 +27,7 @@ const T = {
     evidence: (kind: string, date: string, timed: boolean) => `${kind} dated ${date}${timed ? "" : ", time not published"}`,
     evidenceOut: "not dated or not within horizon",
     unchanged: "recommendation unchanged; inputs changed the numbers only",
-    changed: (a: string, b: string) => `recommendation changed from ${a} to ${b} because the constraint set or the cost class changed`,
+    changed: (a: string, b: string) => `the recommendation changed from ${a} to ${b}, because your limits or the cost changed`,
     none: "none",
     say: { immediate_cross: "crossing now", largest_within_ceiling: "a partial at the largest size that fits", resting_limit: "resting a limit", requote_at_switch: "waiting for the next session" } as Record<string, string>,
     first: (q: string) => `One thing first: ${q}`,
@@ -127,7 +127,7 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
     : hardExit ? t.bindExit(c.hardDeadlineNy!) : t.bindCeil(res.ceilingBps);
   const evidence = pack.records.map((r) => ({ recordId: r.id, relevant: relevant.includes(r.id), reason: relevant.includes(r.id) ? t.evidence(r.kind, String(r.effective_date_ny), r.time_known) : t.evidenceOut }));
   const explanation = plainExplanation(t, res, c, clarification ? null : rec, excluded, clarification, hardExit, userFee);
-  const changedBecause = previous ? (previous.recommendation === rec ? t.unchanged : t.changed(previous.recommendation ?? t.none, rec ?? t.none)) : null;
+  const changedBecause = previous ? (previous.recommendation === rec ? t.unchanged : t.changed(previous.recommendation ? t.say[previous.recommendation] ?? previous.recommendation : t.none, rec ? t.say[rec] ?? rec : t.none)) : null;
   return { constraints: c, clarification, admissible, excluded, recommendation: clarification ? null : rec, bindingConstraint: binding, evidence, changedBecause, explanation };
 }
 

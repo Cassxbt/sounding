@@ -51,7 +51,7 @@ describe("template analyst on the lead demo", () => {
     const prev = templateAnalysis(turn1(), evidence(), c);
     const out = templateAnalysis(turn2(), evidence(), c, prev);
     expect(out.recommendation).toBe("immediate_cross");
-    expect(out.changedBecause).toMatch(/changed from none to immediate_cross/);
+    expect(out.changedBecause).toMatch(/changed from none to crossing now/);
     expect(validate(out, turn2(), evidence())).toEqual([]);
   });
   it("hard exit with nothing within ceiling -> no recommendation, says no priced route exits", () => {
