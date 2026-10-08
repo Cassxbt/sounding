@@ -71,22 +71,15 @@ export function classifySession(at: Date, states: MarketStates | null, cal: Cale
   return { state: "unknown", detail: "no session window matched", clock };
 }
 
-/** Next expected session-switch instant is a recheck window, not a promise. */
-export function nextSwitchHint(sess: SessionResult): string {
-  if (sess.state === "weekend_mm" || sess.state === "holiday_mm") return "From 20:00 New York on the evening before the next US trading day, when its overnight session opens, Bitget routes the order to the US market, which Sounding does not price; Bitget cancels unfilled weekend limit orders at the switch.";
-  return "Recheck at the next session boundary; costs and routing may change.";
-}
+/** What changes at the end of a weekend or holiday session, the only sessions the engine prices. */
+export const NEXT_SWITCH_HINT = "From 20:00 New York on the evening before the next US trading day, when its overnight session opens, Bitget routes the order to the US market, which Sounding does not price; Bitget cancels unfilled weekend limit orders at the switch.";
 
 /**
- * NY date of the next session a re-quote could use. Inside a weekend or holiday market-maker session, or in the
- * evening part of the overnight session (from 20:00 NY), it is the next trading day (04:00 NY pre-market, weekends
- * and calendar closures skipped); otherwise a boundary falls today.
+ * NY date of the next US trading day after a weekend or holiday session (weekends and calendar closures skipped).
  * null when the calendar is unavailable: callers treat that as "no session before any deadline".
  */
 export function nextSessionNy(sess: SessionResult, cal: Calendar | null): string | null {
   if (!cal) return null;
-  const evening = sess.clock.minutes >= 20 * 60;
-  if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm" && !evening) return sess.clock.date;
   const closedDays = new Set(cal.regularConfig.map((d) => d.toUpperCase()));
   const names = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
   const d = new Date(`${sess.clock.date}T00:00:00Z`);

@@ -2,7 +2,7 @@ import Decimal from "decimal.js";
 import { allInBps } from "./cost";
 import { buyWithBudget, canonicalJson, signReceiptHash, decimals, largestBuyWithin, largestSellWithin, rawHash, sellShares, sha256, validateBook, withinCeiling } from "./book";
 import { eligibilityFor, type StockInfo } from "./eligibility";
-import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type MarketStates } from "./session";
+import { classifySession, nextSessionNy, NEXT_SWITCH_HINT, type Calendar, type MarketStates } from "./session";
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
@@ -68,7 +68,7 @@ export function sound(i: SoundingInput): SoundingResult {
   if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm")
     return fail("ROUTED_TO_US_MARKET", `${sess.state.replace("_", "-")} session: Bitget routes rToken orders to the US market (NASDAQ/NYSE, per Bitget) in US sessions; Sounding prices orders where Bitget's own book is the market (weekends and US holidays)`, { weekendTradable: elig.weekendTradable });
   // Gate 3: weekend eligibility
-  if ((sess.state === "weekend_mm" || sess.state === "holiday_mm") && !elig.weekendTradable)
+  if (!elig.weekendTradable)
     return fail("UNAVAILABLE_THIS_SESSION", "weekendTradable=no for this instrument; a visible quote does not make it available in this session", { weekendTradable: false });
   // Gate 3b: exchange order constraints (after eligibility, so an ineligible name is refused for that reason). A size the exchange would not accept is refused with a valid suggestion, never silently floored.
   const spec = i.instruments?.find((x) => x.symbol === cap.symbol);
@@ -155,8 +155,8 @@ export function sound(i: SoundingInput): SoundingResult {
     worstCase = { feeBps: worstRow.feeBps, allInBps: worstRow.allInBps!, verdict: worstRow.verdict, ...(q && q.gt(0) ? { clipQty: q.toString(), remainder: full.minus(q).toString() } : {}) };
   }
   const limitPx = i.intent.side === "sell" ? v.bestAsk : v.bestBid;
-  alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", ...(sess.state === "weekend_mm" || sess.state === "holiday_mm" ? ["cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] : [])] });
-  alternatives.push({ kind: "requote_at_switch", tradeoffs: [nextSwitchHint(sess), "reassess only: does not by itself satisfy a hard exit", "nothing promised about future cost or availability"] });
+  alternatives.push({ kind: "resting_limit", price: limitPx.toString(), tradeoffs: ["hypothetical: cost only if filled", "no_fill_possible", "cancel_at_session_switch (Bitget Stock 2.0 FAQ)", "band eligibility unverified"] });
+  alternatives.push({ kind: "requote_at_switch", tradeoffs: [NEXT_SWITCH_HINT, "reassess only: does not by itself satisfy a hard exit", "nothing promised about future cost or availability"] });
 
   const nextSession = nextSessionNy(sess, i.calendar);
   const outputs = { referenceMid: v.mid.toString(), leg, fees, feeSensitive, alternatives, nextSessionNy: nextSession, ...(worstCase ? { worstCase } : {}) };

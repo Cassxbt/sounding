@@ -43,7 +43,6 @@ describe("nextSessionNy", () => {
     expect(sat.state).toBe("weekend_mm");
     expect(nextSessionNy(sat, calendar())).toBe("2026-09-08");
   });
-  it("weekday session: a boundary falls today", () => expect(nextSessionNy(at("2026-09-22T15:00:00Z"), calendar())).toBe("2026-09-22"));
   it("no calendar -> null", () => expect(nextSessionNy(at("2026-09-20T15:00:00Z"), null)).toBeNull());
 });
 
