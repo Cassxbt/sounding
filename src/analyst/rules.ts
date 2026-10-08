@@ -88,6 +88,7 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   }
   if (out.recommendation === "largest_within_ceiling" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "a partial size does not make the trader flat" });
   if (out.recommendation === "requote_at_switch" && c.mustBeFlat && c.hardDeadlineNy) v.push({ rule: "hard_constraint", detail: "re-quoting later is a chance to exit, not an exit; it cannot be the recommendation under a hard deadline" });
+  else if (out.recommendation === "requote_at_switch") v.push({ rule: "unpriced_alternative", detail: "the next session routes the order to the US market, which the engine does not price; waiting can be listed, never recommended" });
   // only reasons for ADMITTING a plan step can overclaim; exclusion reasons explain why it falls short
   // Under a hard exit no route is an achieved exit, crossing included: a fill is never promised.
   const claims = [...out.admissible.map((a) => a.reason), out.explanation].join(". ");

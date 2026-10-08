@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sound } from "@/engine";
-import type { Intent } from "@/engine/types";
+import type { Intent, SessionState } from "@/engine/types";
+import { classifySession } from "@/engine/session";
 import { LiveMetadataUnavailable, universe } from "@/lib/data";
 import { bookFor, errorJson, parseAmount, parseTerms } from "@/lib/terms";
 import { accountFee, type AgentHubOrder } from "@/lib/agenthub";
@@ -25,7 +26,10 @@ export async function POST(req: Request) {
   if (b.verify) {
     const v = b.verify;
     if (!v.order || !v.binding || typeof v.binding.prepared_at !== "string") return NextResponse.json({ error: "verify needs order, binding and signature from a preparation" }, { status: 400 });
-    return NextResponse.json(verifyPrepared(v.order, v.binding, v.signature, new Date()));
+    // The session is read live: an order prepared just before the switch would otherwise verify into a routed session.
+    let session: SessionState = "unknown";
+    try { const u = await universe("live"); session = classifySession(new Date(), u.states, u.calendar).state; } catch { /* fails closed below */ }
+    return NextResponse.json(verifyPrepared(v.order, v.binding, v.signature, new Date(), session));
   }
   if (!b.symbol || (b.side !== "buy" && b.side !== "sell")) return NextResponse.json({ error: "symbol and side (buy or sell) required" }, { status: 400 });
   // An order is prepared only against the trader's own ceiling; there is no default to fall back on.

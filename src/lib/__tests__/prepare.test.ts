@@ -33,6 +33,8 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
     expect(p.order).toEqual({ action: "place", category: "SPOT", symbol: "RHIMSUSDT", side: "sell", orderType: "limit", price: "27.91", timeInForce: "ioc", qty: "178.4121" });
     expect(p.command).toBe("bgc order --action place --category SPOT --symbol RHIMSUSDT --side sell --orderType limit --price 27.91 --timeInForce ioc --qty 178.4121 --dry-run");
     expect(p.binding).toMatchObject({ fee: { bps: 5, source: "bitget_account" }, ceilingBps: 40, allInBps: "36.87" });
+    // If the better bids vanish before the send, every share could fill at the limit: that bound is stated, not hidden.
+    expect(p.binding.worstCaseBps).toBe("46.01");
     expect(verifyPrepared(p.order, p.binding, p.signature, NOW)).toEqual({ ok: true });
   });
   it("over the ceiling: no order at all, and the largest size that fits offered as a new choice", () => {
@@ -52,6 +54,12 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
     const p = prepare(sell("178.4121", 40, 5), "stated", NOW);
     if (p.status !== "prepared") throw new Error("expected prepared");
     expect(verifyPrepared({ ...p.order, ...change } as never, p.binding, p.signature, NOW)).toMatchObject({ ok: false, reason: expect.stringMatching(/differs/) });
+  });
+  it("a preparation verified after the session switched to a US session is rejected: the order would route elsewhere", () => {
+    const p = prepare(sell("178.4121", 40, 5), "stated", NOW);
+    if (p.status !== "prepared") throw new Error("expected prepared");
+    expect(verifyPrepared(p.order, p.binding, p.signature, NOW, "overnight")).toMatchObject({ ok: false, reason: expect.stringMatching(/US market/) });
+    expect(verifyPrepared(p.order, p.binding, p.signature, NOW, "weekend_mm")).toEqual({ ok: true });
   });
   it("a preparation older than two minutes is rejected; the book is read again first", () => {
     const p = prepare(sell("178.4121", 40, 5), "stated", NOW);

@@ -14,6 +14,20 @@ const C = (o: Partial<typeof EMPTY_CONSTRAINTS>) => ({ ...EMPTY_CONSTRAINTS, ...
 const turn1 = (fee?: number) => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 40, userFeeBps: fee });
 const turn2 = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "35" }, ceilingBps: 40 });
 
+describe("the next session is never the recommendation: Bitget routes it to the US market, which the engine does not price", () => {
+  const over = () => sound({ ...ctx(), capture: rhims(), intent: { side: "sell", baseQty: "178.4121" }, ceilingBps: 30, userFeeBps: 5 });
+  it("no hard exit, full size over the ceiling: the partial that fits is recommended, waiting stays an option", () => {
+    const out = templateAnalysis(over(), evidence(), C({ takerFeeBps: 5 }));
+    expect(out.recommendation).toBe("largest_within_ceiling");
+    expect(out.admissible.map((a) => a.kind)).toContain("requote_at_switch");
+    expect(validate(out, over(), evidence())).toEqual([]);
+  });
+  it("a model answer recommending it is replaced", () => {
+    const out = templateAnalysis(over(), evidence(), C({ takerFeeBps: 5 }));
+    expect(validate({ ...out, recommendation: "requote_at_switch" }, over(), evidence()).map((v) => v.rule)).toContain("unpriced_alternative");
+  });
+});
+
 describe("template analyst on the lead demo", () => {
   it("turn 1: fee-sensitive -> asks for the fee, no recommendation, hard deadline excludes limit and partial", () => {
     const c = C({ thesis: "GLP-1", hardDeadlineNy: "2026-10-08", mustBeFlat: true });

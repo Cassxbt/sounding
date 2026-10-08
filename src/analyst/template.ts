@@ -117,9 +117,10 @@ export function templateAnalysis(res: SoundingResult, pack: EvidencePack, c: Con
   else if (timeUnknownOnDeadline.length) clarification = t.askTime;
 
   const hardExit = c.mustBeFlat && !!c.hardDeadlineNy;
-  // Under a hard exit only a full-size route that is within ceiling now can be recommended; re-quote is a plan step.
+  // Under a hard exit only a full-size route that is within ceiling now can be recommended. Waiting is never the
+  // recommendation: the next session routes the order to the US market, which the engine does not price.
   const rec = admissible.find((a) => a.kind === "immediate_cross")?.kind
-    ?? (hardExit ? null : admissible.find((a) => a.kind === "requote_at_switch")?.kind ?? admissible[0]?.kind ?? null);
+    ?? (hardExit ? null : admissible.find((a) => a.kind !== "requote_at_switch")?.kind ?? null);
   const noRoute = hardExit && !rec && !clarification;
   const binding = res.feeSensitive && !feeKnown ? t.bindFee(lo, hi)
     : noRoute ? t.bindNone(res.ceilingBps)

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml/badge.svg)](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-330%20passing-10b981)
+![Tests](https://img.shields.io/badge/tests-333%20passing-10b981)
 ![Claims](https://img.shields.io/badge/pnpm%20verify-16%2F16%20claims-10b981)
 ![Bitget](https://img.shields.io/badge/Bitget-rTokens%20·%20Agent%20Hub-00c2c2)
 ![Model](https://img.shields.io/badge/model-Qwen%203.8%20Max-6d28d9)
@@ -199,8 +199,8 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 | Engine decisions and receipts | **Real.** Exact decimals; receipts hashed, signed, and replayable offline (`pnpm replay`). |
 | Qwen reading and ruling | **Real**, on Bitget's S2 endpoint, checked by code on every turn. |
 | Agent Hub fee read | **Real**, through Agent Hub's read-only client, recorded with a read-only key on the developer's machine (taker 5 bps, the same as Bitget's published promotional rate). The public site holds no key and never shows one account's fee as anyone else's; an agent passes the trader's own. |
-| Which book fills | **Weekends and US holidays only.** Bitget's Stock 2.0 guide routes rToken orders to NASDAQ/NYSE in US sessions and matches them on its own book, with market makers, on weekends and US holidays. Sounding prices only the second case and refuses the first (`ROUTED_TO_US_MARKET`). Sampled on a weekday overnight (2026-10-08, 270 samples), the ticker's whole-share quotes beat the book's best ask 252 times, which is what a routed quote looks like (`evidence/routing-20261008`). |
-| Weekend order type | **Limit IOC, prepared, never sent.** The prepared order is a limit at the deepest price the walk reached, immediate-or-cancel: Bitget fills no share past the price Sounding checked and cancels what it cannot fill at once. Bitget's weekend FAQ lists limit orders, and Agent Hub's `order` tool takes `price` and `timeInForce`; whether Bitget accepts IOC on an rToken over a weekend is not tested. |
+| Which book fills | **Weekends and US holidays only.** Bitget's Stock 2.0 guide routes rToken orders to NASDAQ/NYSE in US sessions and matches them on its own book, with market makers, on weekends and US holidays. Sounding prices only the second case and refuses the first (`ROUTED_TO_US_MARKET`). Sampled on a weekday overnight (2026-10-08, 270 samples), the ticker quoted whole shares every time and the public book fractional ones in 269: two venues, as Bitget describes (`evidence/routing-20261008`). |
+| Weekend order type | **Limit IOC, prepared, never sent.** The prepared order is a limit at the deepest price the walk reached, immediate-or-cancel: Bitget fills no share past the price Sounding checked and cancels what it cannot fill at once. The checked cost is the walk's average; each prepared order also states its worst case, every share at the limit (46.01 bps for the 178.4121 sell checked at 36.87), and the skill puts both on the confirmation card. Bitget's weekend FAQ lists limit orders, and Agent Hub's `order` tool takes `price` and `timeInForce`; whether Bitget accepts IOC on an rToken over a weekend is not tested. |
 | Agent Hub order | **Prepared, never sent.** Shown as a dry run: Bitget's demo environment listed 6 of the 90 weekend-tradable rTokens, all with empty books, when checked on 2026-10-05, so a paper fill would prove nothing. |
 | Enforcement | **Advisory.** The skill tells an agent to send only what Sounding prepared; it cannot stop a client that skips it. |
 | Fills | **Not promised.** Every answer is conditional on the snapshot it names; hidden liquidity and the future book are out of reach. |
@@ -213,7 +213,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 pnpm install
 cp .env.example .env.local
 pnpm dev        # http://localhost:3000
-pnpm test       # 330 tests in 15 files
+pnpm test       # 333 tests in 15 files
 pnpm verify     # every claim above, recomputed
 pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 ```

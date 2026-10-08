@@ -23,10 +23,10 @@ const NOT_USED = [
 function orderPath() {
   const dir = join(process.cwd(), "evidence/agenthub-20261008");
   const hub = readFileSync(join(dir, "bgc-dry-run.jsonl"), "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { data: { wouldSend: Record<string, string> } }).data.wouldSend);
-  const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; order?: { price: string }; proposal?: { size: string; unit: string }; binding?: { allInBps: string; ceilingBps: number; fee: { bps: number; source: string } } } });
+  const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; order?: { price: string }; proposal?: { size: string; unit: string }; binding?: { allInBps: string; worstCaseBps?: string; ceilingBps: number; fee: { bps: number; source: string } } } });
   return hub.map((h, i) => {
     const o = ours[i], p = o.preparation;
-    const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}, as a limit IOC at ${p.order!.price}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
+    const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}, as a limit IOC at ${p.order!.price}${p.binding!.worstCaseBps ? ` (at most ${p.binding!.worstCaseBps} bps if the better bids go before the send)` : ""}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
     return { order: `${h.side} ${h.qty} ${h.symbol}`, hub: "previews it", said, ok: p?.status === "prepared" };
   });
 }

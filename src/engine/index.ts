@@ -66,7 +66,7 @@ export function sound(i: SoundingInput): SoundingResult {
   // Gate 2b: venue. In US sessions Bitget routes rToken orders to NASDAQ/NYSE, so its own book is not where the order
   // fills; only on weekends and US holidays does Bitget match on that book.
   if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm")
-    return fail("ROUTED_TO_US_MARKET", `${sess.state.replace("_", "-")} session: Bitget routes rToken orders to NASDAQ/NYSE in US sessions; Sounding prices orders where Bitget's own book is the market (weekends and US holidays)`, { weekendTradable: elig.weekendTradable });
+    return fail("ROUTED_TO_US_MARKET", `${sess.state.replace("_", "-")} session: Bitget routes rToken orders to the US market (NASDAQ/NYSE, per Bitget) in US sessions; Sounding prices orders where Bitget's own book is the market (weekends and US holidays)`, { weekendTradable: elig.weekendTradable });
   // Gate 3: weekend eligibility
   if ((sess.state === "weekend_mm" || sess.state === "holiday_mm") && !elig.weekendTradable)
     return fail("UNAVAILABLE_THIS_SESSION", "weekendTradable=no for this instrument; a visible quote does not make it available in this session", { weekendTradable: false });

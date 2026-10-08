@@ -73,7 +73,7 @@ export function classifySession(at: Date, states: MarketStates | null, cal: Cale
 
 /** Next expected session-switch instant is a recheck window, not a promise. */
 export function nextSwitchHint(sess: SessionResult): string {
-  if (sess.state === "weekend_mm" || sess.state === "holiday_mm") return "From the next US session (NY 04:00 pre-market on the next trading day) Bitget routes the order to NASDAQ/NYSE, a venue Sounding does not price; Bitget cancels unfilled weekend limit orders at the switch.";
+  if (sess.state === "weekend_mm" || sess.state === "holiday_mm") return "From 20:00 New York on the evening before the next US trading day, when its overnight session opens, Bitget routes the order to the US market, which Sounding does not price; Bitget cancels unfilled weekend limit orders at the switch.";
   return "Recheck at the next session boundary; costs and routing may change.";
 }
 
