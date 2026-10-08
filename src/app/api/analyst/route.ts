@@ -28,7 +28,8 @@ const ask = (constraints: Constraints, clarification: string): AnalystOutput => 
 const levelsOf = (c: { raw: { data: { asks: [string, string][]; bids: [string, string][] } } }) => ({ asks: c.raw.data.asks.slice(0, 40), bids: c.raw.data.bids.slice(0, 40) });
 
 export async function POST(req: Request) {
-  const b = (await req.json()) as Body;
+  let b: Body;
+  try { b = (await req.json()) as Body; } catch { return NextResponse.json({ error: "body must be JSON" }, { status: 400 }); }
   const mode = b.mode === "live" ? "live" : "recorded";
   try {
     const terms = parseTerms(b);

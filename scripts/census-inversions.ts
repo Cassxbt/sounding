@@ -1,10 +1,10 @@
 // Quote versus size, recomputed with Sounding's own engine walk from a stored census.
-// Usage: pnpm exec tsx scripts/census-inversions.ts <census.json> [budgetUsdt=5000] [feeBps=20] [ceilingBps=50]
+// Usage: pnpm exec tsx scripts/census-inversions.ts <census.json> [budgetUsdt=5000] [feeBps=5] [ceilingBps=50]
 import { readFileSync } from "node:fs";
 import { buyWithBudget, validateBook } from "../src/engine/book";
 import { allInBps, allInFrom } from "../src/engine/cost";
 
-const [file, budget = "5000", fee = "20", ceiling = "50"] = process.argv.slice(2);
+const [file, budget = "5000", fee = "5", ceiling = "50"] = process.argv.slice(2);
 const census = JSON.parse(readFileSync(file, "utf8")) as { captured_utc: string; rows: { symbol: string; raw: { data: { asks: [string, string][]; bids: [string, string][]; ts: string } } }[] };
 const rows = census.rows.map((r) => {
   const v = validateBook(r.raw as never);

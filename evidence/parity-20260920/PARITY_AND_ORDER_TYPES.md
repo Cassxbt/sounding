@@ -2,7 +2,7 @@
 
 ## Source parity: Bitget web UI order book vs public spot API
 - Instrument: RHOODUSDT (rHOOD/USDT, badge "US-Stock"), weekendTradable=yes.
-- UI screenshot: `parity-rhood-ui-092559Z.jpg` (captured 09:25:59 UTC, VPN on; site is geo-restricted from Nigeria without VPN).
+- UI screenshot: `parity-rhood-ui-092559Z.jpg` (captured 09:25:59 UTC).
 - API capture: `parity-rhood-api-092559.json`, exchange ts 1789896360407 (09:26:00.407 UTC), `GET /api/v2/spot/market/orderbook?symbol=RHOODUSDT&limit=5`.
 
 | Side | UI (price / qty) | API (price / qty) | Match |

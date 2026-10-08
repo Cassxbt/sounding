@@ -76,6 +76,12 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     if (name === "symbol") { if (listed) out.push(checkSymbol(String(value), p.span, listed)); continue; }
     if (name === "side") { out.push(checkSide(String(value), p.span)); continue; }
     if ((name === "takerFeeBps" || name === "ceilingBps") && (signed(p.span) || /[-−]\s*\d/.test(p.span))) { out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "a negative figure" }); continue; }
+    // A maker fee is not the taker fee the order pays: the words decide, whatever field the model used.
+    if (name === "takerFeeBps") {
+      const at = text.toLowerCase().indexOf(p.span.toLowerCase());
+      const clause = at >= 0 ? around(text, at, true).text : p.span;
+      if (MAKER.test(clause) && !/\btaker\b|吃单/i.test(clause)) { out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "a maker fee" }); continue; }
+    }
     // A typed size must be a positive number; "-100" or "0" is a question, never another size.
     if ((name === "sizeShares" || name === "sizeQuoteUsdt") && (/[-−]\s*\d/.test(p.span) || signed(p.span) || !(Number(String(value).replace(/,/g, "")) > 0))) {
       out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "not a positive size" });
@@ -284,6 +290,8 @@ function clarify(fields: IntakeField[], lang: "en" | "zh" = "en"): string | null
   if (note === "a negative figure") return t.negative(/^\s*[-−]/.test(span) ? span.trim() : `-${span}`, label);
   if (note === "not a positive size") return t.notSize(span, conflict.name === "sizeQuoteUsdt");
   if (note === "someone else's fee") return t.othersFee(span);
+  if (note === "a maker fee") return t.maker(span);
+  if (note === "bare ticker") return t.bareTicker(String(conflict.value));
   if (note?.startsWith("two values")) return t.twoValues(label, note.replace("two values: ", ""));
   if (note?.startsWith("two figures")) return t.twoFigures(label, note.replace("two figures: ", ""));
   if (note === "mentioned but not read") return t.unread(label, span);
@@ -300,6 +308,8 @@ const ASK = {
     negative: (shown: string, l: string) => `"${shown}" is negative. What is ${l}, exactly?`,
     notSize: (span: string, usdt: boolean) => `"${span}" is not a size that can be traded. How many ${usdt ? "USDT do you want to spend" : "shares do you want to trade"}?`,
     othersFee: (span: string) => `"${span}" sounds like someone else's fee. What is your own taker fee, exactly?`,
+    maker: (span: string) => `"${span}" reads as a maker fee, and crossing the book pays the taker fee. What is your taker fee, exactly?`,
+    bareTicker: (v: string) => `Do you mean ${v}? Name the rToken (for example rHIMS) so the right book is read.`,
     twoValues: (l: string, v: string) => `Your message gives two different values for ${l} (${v}). Which is it?`,
     twoFigures: (l: string, v: string) => `Your message gives ${v} for ${l}. Which is it?`,
     unread: (l: string, span: string) => `You mentioned ${l} ("${span}") but I could not read it. What is ${l}, exactly?`,
@@ -313,6 +323,8 @@ const ASK = {
     negative: (shown: string, l: string) => `"${shown}" 是负数。${l}具体是多少？`,
     notSize: (span: string, usdt: boolean) => `"${span}" 不是可以交易的数量。你想${usdt ? "花多少 USDT" : "交易多少股"}？`,
     othersFee: (span: string) => `"${span}" 听起来是别人的费率。你自己的 taker 费率具体是多少？`,
+    maker: (span: string) => `"${span}" 看起来是挂单（maker）费率，而立即吃单付的是 taker 费率。你的 taker 费率具体是多少？`,
+    bareTicker: (v: string) => `你是指 ${v} 吗？请写明 rToken（例如 rHIMS），以便读取正确的订单簿。`,
     twoValues: (l: string, v: string) => `你的消息里${l}有两个不同的值（${v}）。是哪一个？`,
     twoFigures: (l: string, v: string) => `你的消息里${l}给了 ${v}。是哪一个？`,
     unread: (l: string, span: string) => `你提到了${l}（"${span}"），但我没能读出来。${l}具体是多少？`,
@@ -328,9 +340,38 @@ const ASK = {
  * checks as the model's (sign, size, unit, a real calendar date, limits mentioned but not read), so a fallback can
  * ask but never price something the trader did not say.
  */
+/**
+ * The regex reader only prices a size it can see is the order: one figure, not a holding, a price or a share of
+ * a position. Anything else is asked; the model reader handles the phrasing a regex cannot.
+ */
+function fallbackSizeDoubt(text: string): { name: "sizeShares" | "sizeQuoteUsdt"; span: string; note: string } | null {
+  const unitOf = (u: string) => (/usdt|^u$|美元/i.test(u) ? "sizeQuoteUsdt" as const : "sizeShares" as const);
+  const sized = [...text.matchAll(/(?<![\w.,])([-−]?\d[\d,]*(?:\.\d+)?)\s*(shares?\b|sh\b|股|usdt\b|u\b|美元)/gi)];
+  const verbed = [...text.matchAll(/(?:\b(?:sell|buy|make it|change it to)|卖出?|买入?)\s*([-−]?\d[\d,]*(?:\.\d+)?)/gi)];
+  const values = new Set([...sized, ...verbed].map((m) => Number(m[1].replace(/[,\s]/g, ""))));
+  const first = sized[0] ?? verbed[0];
+  if (!first) return null;
+  const name = sized[0] ? unitOf(sized[0][2]) : "sizeShares";
+  if (values.size > 1) return { name, span: [...values].join(" and "), note: `two values: ${[...values].join(" and ")}` };
+  const before = text.slice(Math.max(0, (first.index ?? 0) - 24), first.index);
+  if (/\b(?:i\s+(?:hold|have|own|got)|my|at|@|price|per|each)\b[^\d]{0,14}$|(?:我有|持有|价格)[^\d]{0,6}$/i.test(before)) return { name, span: first[0].trim(), note: "it reads as a holding or a price, not the order" };
+  if (/\b(?:half|quarter|third|some|part)\b|一半|部分/i.test(text)) return { name, span: first[0].trim(), note: "it reads as part of a position, not a size" };
+  return null;
+}
+
 export function regexIntake(text: string, prior: Constraints, today: string, listed?: Listed[]): Intake {
   const x = extractConstraints(text, prior);
   const fields = checkFields(x.proposed, text, today, listed).map((f) => (f.source === "code" ? f : { ...f, source: "code" as const }));
+  const doubt = fallbackSizeDoubt(text);
+  if (doubt) {
+    for (const f of fields) if (f.name === "sizeShares" || f.name === "sizeQuoteUsdt") f.status = "rejected_meaning";
+    fields.push({ name: doubt.name, value: "", span: doubt.span, source: "code", status: "conflict", note: doubt.note });
+  }
+  // A bare ticker ("HIMS") is read only when the model names it; the fallback asks rather than price the controls' symbol.
+  if (listed && !fields.some((f) => f.name === "symbol")) {
+    const loose = readSymbols(text, listed, true);
+    if (loose.length) fields.push({ name: "symbol", value: loose.map((sym) => `r${listed.find((l) => l.symbol === sym)?.code ?? sym}`).join(", "), span: loose.join(", "), source: "code", status: "conflict", note: "bare ticker" });
+  }
   // Readings no check covers come straight from the regex.
   const rest = { ...prior, exclusiveExposure: x.constraints.exclusiveExposure, proxyConsent: x.constraints.proxyConsent, thesis: x.constraints.thesis };
   return { ...applyFields(rest, fields), fields, clarification: clarify(fields, replyLanguage(text)), reader: "regex" };

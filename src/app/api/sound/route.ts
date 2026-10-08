@@ -10,8 +10,10 @@ export const maxDuration = 30;
 interface Body { symbol: string; side: "buy" | "sell"; amount: string; ceilingBps?: unknown; userFeeBps?: unknown; mode: "recorded" | "live"; previousBpsPreFee?: string; fixture?: string }
 
 export async function POST(req: Request) {
-  const b = (await req.json()) as Body;
+  let b: Body;
+  try { b = (await req.json()) as Body; } catch { return NextResponse.json({ error: "body must be JSON" }, { status: 400 }); }
   if (!b.symbol || (b.side !== "buy" && b.side !== "sell")) return NextResponse.json({ error: "symbol and side (buy or sell) required" }, { status: 400 });
+  if (b.previousBpsPreFee !== undefined && !/^-?\d+(\.\d+)?$/.test(String(b.previousBpsPreFee))) return NextResponse.json({ error: "previousBpsPreFee must be a number" }, { status: 400 });
   const mode = b.mode === "live" ? "live" : "recorded";
   try {
     const amount = parseAmount(b.amount);

@@ -4,12 +4,15 @@ import type { BookCapture } from "@/engine/types";
 export class HttpError extends Error { constructor(message: string, public status: number) { super(message); } }
 
 /** Numbers a trader can send are checked here, once, for every route: nothing is broadened or defaulted silently. */
+/** A number, or a plain decimal string; true, "0,500" or "1e3" are not read as numbers. */
+const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && /^\s*\d+(\.\d+)?\s*$/.test(v) ? Number(v) : NaN);
+
 export function parseTerms(b: { ceilingBps?: unknown; userFeeBps?: unknown }): { ceilingBps: number; userFeeBps?: number } {
   // An omitted ceiling is the desk's stated default; a stated 0 stays 0.
-  const ceilingBps = b.ceilingBps === undefined || b.ceilingBps === null || b.ceilingBps === "" ? 50 : Number(b.ceilingBps);
+  const ceilingBps = b.ceilingBps === undefined || b.ceilingBps === null || b.ceilingBps === "" ? 50 : num(b.ceilingBps);
   if (!Number.isFinite(ceilingBps) || ceilingBps < 0 || ceilingBps > 10_000) throw new HttpError("ceilingBps must be a number from 0 to 10000", 400);
   if (b.userFeeBps === undefined || b.userFeeBps === null || b.userFeeBps === "") return { ceilingBps };
-  const userFeeBps = Number(b.userFeeBps);
+  const userFeeBps = num(b.userFeeBps);
   if (!Number.isFinite(userFeeBps) || userFeeBps < 0 || userFeeBps > 1_000) throw new HttpError("userFeeBps must be a number from 0 to 1000", 400);
   return { ceilingBps, userFeeBps };
 }

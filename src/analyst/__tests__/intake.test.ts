@@ -352,3 +352,29 @@ describe("after the README stress test", () => {
     expect(replyLanguage(t)).toBe("zh");
   });
 });
+
+describe("after the code review (2026-10-08)", () => {
+  const UNI = [{ code: "HIMS", symbol: "RHIMSUSDT" }, { code: "SPY", symbol: "RSPYUSDT" }];
+  const D = "2026-09-20";
+  it.each([["我的挂单费率 2 bps，卖出 100 股 rHIMS", "2 bps"], ["Sell 100 shares of rHIMS. I get 2 bps as a maker", "2 bps"]])("a maker fee is asked about, never priced as the taker fee: %s", (t, span) => {
+    const f = checkFields([{ name: "takerFeeBps", value: 2, span }], t, D, UNI).find((x) => x.name === "takerFeeBps");
+    expect(f?.status).toBe("conflict");
+  });
+  it.each([
+    "I hold 500 shares of rHIMS, sell 100",
+    "sell half of my 200 shares of rHIMS",
+    "Sell 100 shares of rHIMS. Actually make it 150",
+    "I have 5000 USDT, buy rHIMS",
+    "buy rHIMS at 28.5 USDT",
+    "sell 100 or maybe 200 shares of rHIMS",
+  ])("the fallback asks when the size is not plainly one order: %s", (t) => {
+    expect(regexIntake(t, EMPTY_CONSTRAINTS, D, UNI).clarification).toBeTruthy();
+  });
+  it("a bare ticker the fallback cannot confirm is asked, never swapped for the controls'", () => {
+    const r = regexIntake("sell 100 shares of HIMS", EMPTY_CONSTRAINTS, D, UNI);
+    expect(r.clarification).toBeTruthy();
+  });
+  it("a plain order still reads", () => {
+    expect(regexIntake("Sell 100 shares of rHIMS, fee 5 bps", EMPTY_CONSTRAINTS, D, UNI)).toMatchObject({ clarification: null, sizeShares: "100" });
+  });
+});

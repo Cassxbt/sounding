@@ -42,6 +42,8 @@ function inClosure(cal: Calendar, clock: NyClock): { closed: boolean; remark?: s
   return { closed: false };
 }
 
+const NEXT_DAY: Record<string, string> = { SUNDAY: "MONDAY", MONDAY: "TUESDAY", TUESDAY: "WEDNESDAY", WEDNESDAY: "THURSDAY", THURSDAY: "FRIDAY", FRIDAY: "SATURDAY", SATURDAY: "SUNDAY" };
+
 export interface SessionResult { state: SessionState; detail: string; clock: NyClock }
 
 export function classifySession(at: Date, states: MarketStates | null, cal: Calendar | null): SessionResult {
@@ -51,10 +53,12 @@ export function classifySession(at: Date, states: MarketStates | null, cal: Cale
   // Weekend regularConfig from the calendar is authoritative for closed days.
   const weekendDays = new Set(cal.regularConfig.map((d) => d.toUpperCase()));
   const closure = inClosure(cal, clock);
-  // Overnight session wraps Friday 20:00 -> Saturday 04:00 per the state list; treat Saturday >= 04:00 and Sunday as weekend.
-  const inWeekend = (day === "SATURDAY" && clock.minutes >= 4 * 60) || day === "SUNDAY" || (day === "MONDAY" && clock.minutes < 4 * 60 && weekendDays.has("SUNDAY"));
+  // A US trading day runs from 20:00 NY the evening before (its overnight session) to 20:00 NY that day, the same
+  // boundary Bitget's calendar closures use (a holiday on D is D-1 20:00 -> D 20:00). A closed weekday in
+  // regularConfig is therefore a market-maker session from 20:00 the evening before: Friday 20:00 -> Sunday 20:00.
+  const tradingDay = clock.minutes >= 20 * 60 ? NEXT_DAY[day] : day;
   if (closure.closed) return { state: "holiday_mm", detail: `Bitget calendar closure (${closure.remark}); weekend/holiday market-maker session`, clock };
-  if (inWeekend && weekendDays.has(day === "MONDAY" ? "SUNDAY" : day)) return { state: "weekend_mm", detail: "US exchanges closed; Bitget on-platform matching + market-maker liquidity", clock };
+  if (weekendDays.has(tradingDay)) return { state: "weekend_mm", detail: "US exchanges closed; Bitget on-platform matching + market-maker liquidity", clock };
   for (const s of states.stateList) {
     const [sh, sm] = s.startTime.split(":").map(Number); const [eh, em] = s.endTime.split(":").map(Number);
     const start = sh * 60 + sm, end = eh * 60 + em;

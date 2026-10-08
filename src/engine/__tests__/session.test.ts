@@ -15,9 +15,8 @@ describe("New York clock ignores the API daylight label", () => {
 describe("session classification", () => {
   const c = () => ({ s: states(), cal: calendar() });
   it("Sunday 09:02 UTC -> weekend_mm", () => expect(classifySession(at("2026-09-20T09:02:35.800Z"), c().s, c().cal).state).toBe("weekend_mm"));
-  it("Saturday 02:00 NY (06:00 UTC) is still Friday overnight session", () => {
-    // overnight 20:00-04:00 wraps; Saturday before 04:00 NY belongs to the overnight window
-    expect(classifySession(at("2026-09-19T06:00:00Z"), c().s, c().cal).state).toBe("overnight");
+  it("Saturday 02:00 NY (06:00 UTC) is the weekend: Saturday's closed day began Friday 20:00", () => {
+    expect(classifySession(at("2026-09-19T06:00:00Z"), c().s, c().cal).state).toBe("weekend_mm");
   });
   it("Saturday 05:00 NY -> weekend_mm", () => expect(classifySession(at("2026-09-19T09:00:00Z"), c().s, c().cal).state).toBe("weekend_mm"));
   it("Monday 10:00 NY (14:00 UTC, EDT) -> regular", () => expect(classifySession(at("2026-09-21T14:00:00Z"), c().s, c().cal).state).toBe("regular"));
@@ -57,4 +56,17 @@ describe("next session from the overnight session", () => {
   it("Wednesday 21:00 NY overnight: Thursday", () => {
     expect(nextSessionNy(classifySession(new Date("2026-09-24T01:00:00Z"), states(), calendar()), calendar())).toBe("2026-09-24");
   });
+});
+
+describe("a closed day runs from 20:00 NY the evening before, as Bitget's calendar windows do", () => {
+  const c = () => ({ s: states(), cal: calendar() });
+  // 2026-10-02 is a Friday; NY is UTC-4 (EDT).
+  it.each([
+    ["Friday 19:59 NY: after-hours", "2026-10-02T23:59:00Z", "after_hours"],
+    ["Friday 21:19 NY: weekend market makers", "2026-10-03T01:19:00Z", "weekend_mm"],
+    ["Saturday 02:00 NY: weekend", "2026-10-03T06:00:00Z", "weekend_mm"],
+    ["Sunday 19:59 NY: weekend", "2026-10-04T23:59:00Z", "weekend_mm"],
+    ["Sunday 20:00 NY: Monday's overnight session", "2026-10-05T00:00:00Z", "overnight"],
+    ["Monday 03:59 NY: overnight", "2026-10-05T07:59:00Z", "overnight"],
+  ])("%s", (_, iso, state) => expect(classifySession(at(iso), c().s, c().cal).state).toBe(state));
 });
