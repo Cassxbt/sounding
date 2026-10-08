@@ -21,7 +21,7 @@ export interface Binding {
 
 export type Preparation =
   | { status: "prepared"; order: AgentHubOrder; command: string; binding: Binding; binding_sha256: string; signature?: string; signed: boolean; book: "live" | "recorded" }
-  | { status: "refused"; reason: string; proposal?: { size: string; unit: "sh" | "USDT"; remainder: string; note: string } };
+  | { status: "refused"; code: string; reason: string; proposal?: { size: string; unit: "sh" | "USDT"; remainder: string; note: string } };
 
 const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
 
@@ -31,14 +31,15 @@ const WITHIN = "WITHIN_CEILING_ON_THIS_SNAPSHOT";
  * else comes back as a reason, and a smaller size is a new order the trader has to choose.
  */
 export function prepare(res: SoundingResult, feeSource: FeeSource, now: Date): Preparation {
-  if (!res.ok) return { status: "refused", reason: `the engine refused this order: ${res.gateDetail ?? res.gate}` };
-  if (res.feeSensitive) return { status: "refused", reason: "your fee decides this order and it is not known: state it, or read it from your account with a read-only key" };
+  if (!res.ok) return { status: "refused", code: res.gate ?? "REFUSED", reason: `the engine refused this order: ${res.gateDetail ?? res.gate}` };
+  if (res.feeSensitive) return { status: "refused", code: "FEE_DECIDES", reason: "your fee decides this order and it is not known: state it, or read it from your account with a read-only key" };
   const d = decidingRow(res);
   if (!d || d.verdict !== WITHIN) {
     const clip = res.alternatives?.find((a) => a.kind === "largest_within_ceiling");
     const unit = res.intent.side === "sell" ? "sh" : "USDT";
     return {
       status: "refused",
+      code: d?.verdict ?? "INSUFFICIENT_VISIBLE_DEPTH",
       reason: d?.allInBps ? `${d.allInBps} bps at ${d.source === "user" ? "your" : "the scenario"} ${d.feeBps} bps fee is over your ${res.ceilingBps} bps ceiling` : "the visible book cannot fill this order",
       ...(clip?.qty ? { proposal: { size: clip.qty, unit, remainder: clip.remainder ?? "0", note: "a smaller order; nothing is prepared until you choose it" } } : {}),
     };

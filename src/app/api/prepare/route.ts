@@ -41,6 +41,7 @@ export async function POST(req: Request) {
       catch (e) { fee = { source: "scenario", note: `account fee not read: ${(e as Error).message}` }; }
     }
     const u = await universe(mode);
+    if (!u.stockInfo.some((s) => s.symbol === b.symbol)) return NextResponse.json({ preparation: { status: "refused", code: "INVALID_INSTRUMENT", reason: `${b.symbol} is not on Bitget's Reality list` } }, { status: 400 });
     const { capture, historical } = await bookFor(mode, b.symbol, b.fixture);
     const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
     const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: fee.bps });

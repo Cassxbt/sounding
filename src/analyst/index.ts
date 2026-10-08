@@ -1,7 +1,7 @@
 import type { SoundingResult } from "@/engine/types";
 import type { AnalystOutput, Constraints, EvidencePack } from "./schema";
 import { templateAnalysis } from "./template";
-import { asOfNy, validate, type RuleViolation } from "./rules";
+import { asOfNy, relevantEvidenceIds, validate, type RuleViolation } from "./rules";
 import { QWEN, qwenAnalyze, qwenAvailable } from "./qwen";
 
 export const EMPTY_CONSTRAINTS: Constraints = { thesis: null, hardDeadlineNy: null, mustBeFlat: false, exclusiveExposure: false, proxyConsent: false, takerFeeBps: null };
@@ -49,7 +49,7 @@ export function buildUserPrompt(result: SoundingResult, evidence: EvidencePack, 
     intent: result.intent, ceilingBps: result.ceilingBps, referenceMid: result.referenceMid, leg: result.leg, fees: result.fees, feeSensitive: result.feeSensitive,
     alternatives: result.alternatives, nextSessionNy: result.nextSessionNy, asOfNy: asOfNy(result), exchange_ts: result.receipt.exchange_ts, historical: result.freshness.historical,
   };
-  return `ENGINE OUTPUT (authoritative, do not alter):\n${JSON.stringify(engineView, null, 1)}\n\nEVIDENCE PACK (${evidence.source_kind}):\n${JSON.stringify(evidence.records, null, 1)}\n\nCONSTRAINTS SO FAR:\n${JSON.stringify(constraints)}\n\n${previous ? `PREVIOUS ANALYSIS:\n${JSON.stringify(previous)}\n\n` : ""}CONVERSATION:\n${turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n")}\n\nREPLY LANGUAGE: ${replyLanguage(lastUser(turns)) === "zh" ? "Simplified Chinese" : "English"}\n\nUpdate the constraints from the conversation, then produce the analysis.`;
+  return `ENGINE OUTPUT (authoritative, do not alter):\n${JSON.stringify(engineView, null, 1)}\n\nEVIDENCE PACK (${evidence.source_kind}):\n${JSON.stringify(evidence.records, null, 1)}\n\nRELEVANT EVIDENCE (decided by code; mark exactly these relevant and every other record not relevant): ${JSON.stringify(relevantEvidenceIds(evidence, constraints, asOfNy(result)).relevant)}\n\nCONSTRAINTS SO FAR:\n${JSON.stringify(constraints)}\n\n${previous ? `PREVIOUS ANALYSIS:\n${JSON.stringify(previous)}\n\n` : ""}CONVERSATION:\n${turns.map((t) => `${t.role.toUpperCase()}: ${t.text}`).join("\n")}\n\nREPLY LANGUAGE: ${replyLanguage(lastUser(turns)) === "zh" ? "Simplified Chinese" : "English"}\n\nUpdate the constraints from the conversation, then produce the analysis.`;
 }
 
 export async function runAnalyst(args: { result: SoundingResult; evidence: EvidencePack; turns: AnalystTurn[]; constraints: Constraints; previous?: AnalystOutput; mode?: "model" | "template" }): Promise<AnalystResponse> {
@@ -61,6 +61,9 @@ export async function runAnalyst(args: { result: SoundingResult; evidence: Evide
   try {
     const { parsed } = await qwenAnalyze(SYSTEM, buildUserPrompt(result, evidence, constraints, turns, previous));
     if (!parsed) return { output: template, producedBy: "template", provider: "qwen", model, violations: [{ rule: "parse_failed", detail: "model output did not parse" }] };
+    // Which records are relevant is code's decision (issuer, date, horizon), stated in the prompt; the model's flags follow it.
+    const { relevant } = relevantEvidenceIds(evidence, parsed.constraints, asOfNy(result));
+    parsed.evidence = (parsed.evidence ?? []).map((e) => ({ ...e, relevant: relevant.includes(e.recordId) }));
     const violations = validate(parsed, result, evidence, constraints, lang);
     if (violations.length) {
       // The fallback answers from the checked intake, never from the rejected model's constraints.

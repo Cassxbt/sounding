@@ -378,3 +378,9 @@ describe("after the code review (2026-10-08)", () => {
     expect(regexIntake("Sell 100 shares of rHIMS, fee 5 bps", EMPTY_CONSTRAINTS, D, UNI)).toMatchObject({ clarification: null, sizeShares: "100" });
   });
 });
+
+describe("vague sizes in words", () => {
+  it.each(["Sell a couple hundred rHIMS, fee 5 bps", "sell a few hundred shares of rHIMS"])("asked, never the form's size: %s", (t) => {
+    expect(regexIntake(t, EMPTY_CONSTRAINTS, "2026-09-20", [{ code: "HIMS", symbol: "RHIMSUSDT" }]).clarification).toBeTruthy();
+  });
+});

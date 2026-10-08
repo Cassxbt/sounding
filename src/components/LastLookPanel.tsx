@@ -11,7 +11,7 @@ interface Props { original: SoundingResult; mode: "recorded" | "live"; confirmFi
 
 const STATUS: Record<LastLookResult["status"], { title: string; tone: "within" | "over" }> = {
   STANDS_ON_FRESH_BOOK: { title: "Stands on the fresh book.", tone: "within" },
-  VOID_STALE: { title: "Void. The market moved.", tone: "over" },
+  VOID_STALE: { title: "Void. The decision no longer holds.", tone: "over" },
   VOID_GATE: { title: "Void. A gate failed.", tone: "over" },
 };
 

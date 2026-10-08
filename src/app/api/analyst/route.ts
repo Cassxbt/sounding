@@ -47,7 +47,10 @@ export async function POST(req: Request) {
     // The order is what the words say; the controls only fill what the words leave out.
     const order = { symbol: read.symbol ?? b.symbol, side: read.side ?? b.side };
     const switched = order.symbol !== b.symbol || order.side !== b.side;
-    const constraints: Constraints = { ...read.constraints, takerFeeBps: read.constraints.takerFeeBps ?? terms.userFeeBps ?? null };
+    // A new order said in words opens a conversation: its fee and ceiling are the words', never the form's. Later
+    // turns keep what the conversation established; the form's values apply only to a message that names no order.
+    const newOrder = !b.previous && Boolean(read.sizeShares || read.sizeQuoteUsdt || read.symbol);
+    const constraints: Constraints = { ...read.constraints, takerFeeBps: read.constraints.takerFeeBps ?? (newOrder ? null : terms.userFeeBps ?? null) };
     // A size that does not read as a positive number is treated as not stated, and asked for.
     const positive = (v?: string) => { try { return v ? parseAmount(v) : undefined; } catch { return undefined; } };
     // An open question means nothing is priced: no card, no routes, only the question.
@@ -71,15 +74,20 @@ export async function POST(req: Request) {
       if (e instanceof HttpError && e.status === 404) return NextResponse.json({ result: null, order, analyst: null, constraints, intake: read, note: `No recorded book for r${codeOf(order.symbol)}. Switch to live to sound it.` });
       throw e;
     }
-    const ceilingBps = read.ceilingBps ?? terms.ceilingBps;
+    const ceilingBps = read.ceilingBps ?? (newOrder ? undefined : terms.ceilingBps);
     const userFee = constraints.takerFeeBps ?? undefined;
     // Values read from the chat are held to the same bounds as values typed in the form.
     for (const [field, v, bound] of [["fee", userFee, "0 to 1,000"], ["ceiling", ceilingBps, "0 to 10,000"]] as const) {
+      if (v === undefined) continue;
       try { parseTerms(field === "fee" ? { userFeeBps: v } : { ceilingBps: v }); }
       catch {
         const q = replyLanguage(lastUser) === "zh" ? `${v} bps 的${field === "fee" ? "费率" : "上限"}超出了 ${bound} bps 的范围。你的${field === "fee" ? " taker 费率" : "成本上限"}具体是多少？` : `A ${field} of ${v} bps is outside ${bound} bps. What is your ${field === "fee" ? "taker fee" : "cost ceiling"}, exactly?`;
         return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, q), producedBy: "template", violations: [] }, constraints, intake: read });
       }
+    }
+    if (ceilingBps === undefined) {
+      const q = replyLanguage(lastUser) === "zh" ? "这笔订单你能接受的全部成本上限是多少（bps 或 %）？" : "What is the most this order may cost you, all-in (bps or %)?";
+      return NextResponse.json({ result: null, order, actionable: false, analyst: { output: ask(constraints, q), producedBy: "template", violations: [] }, constraints, intake: read });
     }
     const price = (capture = book.capture, now = book.historical ? new Date(Number(capture.exchange_ts)) : new Date()): SoundingResult =>
       sound({ capture, intent, ceilingBps, now, historical: book.historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: userFee });
