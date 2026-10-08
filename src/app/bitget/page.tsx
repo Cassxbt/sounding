@@ -27,7 +27,7 @@ function orderPath() {
   return hub.map((h, i) => {
     const o = ours[i], p = o.preparation;
     const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
-    return { order: `${h.side} ${h.qty} ${h.symbol}`, hub: "would send", said, ok: p?.status === "prepared" };
+    return { order: `${h.side} ${h.qty} ${h.symbol}`, hub: "previews it", said, ok: p?.status === "prepared" };
   });
 }
 
@@ -68,7 +68,7 @@ export default async function Bitget() {
 
         <section className="border-t border-rule-soft py-20">
           <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Agent Hub sends what it is told. Sounding decides what it is told.</h2>
-          <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-2">Bitget Agent Hub lets an AI agent trade a Bitget account: its flow is a dry run, a confirmation card naming pair, side and quantity, then the send. Nothing in it asks what the size costs. Sounding sits at that step: it reads the trader&rsquo;s own fee through Agent Hub&rsquo;s read-only client, walks the book at the full size, and hands back the exact Agent Hub order only when it fits, bound to its receipt. Anything else comes back as a reason. It is a check an agent chooses to run: it cannot stop a client that skips it, which is why the skill tells the agent to send only the order Sounding prepared.</p>
+          <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-2">Bitget Agent Hub lets an AI agent trade a Bitget account: its flow is a dry run, a confirmation card naming pair, side and quantity, then the send. Its own <span className="mono">pre_trade_check</span> reads the ticker price, the balance and the positions; nothing in it walks the book at the order&rsquo;s size. Sounding sits at that step: the agent reads the trader&rsquo;s own fee with Agent Hub&rsquo;s <span className="mono">account_overview</span> and passes it in, Sounding walks the book at the full size, and hands back the exact Agent Hub order only when it fits, bound to its receipt. Anything else comes back as a reason. It is a check an agent chooses to run: it cannot stop a client that skips it, which is why the skill tells the agent to send only the order Sounding prepared.</p>
           <div className="mt-10 overflow-x-auto">
             <table className="w-full min-w-[640px] text-[14px]">
               <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">order, live rHIMS book, 40 bps ceiling</th><th className="pb-3 font-normal">Agent Hub dry run (bgc 3.0.0)</th><th className="pb-3 font-normal">Sounding</th></tr></thead>

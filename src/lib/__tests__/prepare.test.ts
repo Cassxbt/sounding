@@ -61,3 +61,15 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
     expect(prepare(sell("178.412132", 50, 5), "stated", NOW)).toMatchObject({ status: "refused" });
   });
 });
+
+describe("prepare after the sponsor-integrity audit", () => {
+  it("a scenario fee is named as a scenario, never as the trader's", () => {
+    const p = prepare(sell("178.4121", 30), "scenario", NOW);
+    expect(p.status).toBe("refused");
+    if (p.status === "refused") expect(p.reason).not.toMatch(/your \d+ bps fee/);
+  });
+  it("the fee decides: refused without one, prepared at the trader's 5 bps (sell 50 rHIMS, 20 bps ceiling)", () => {
+    expect(prepare(sell("50", 20), "scenario", NOW)).toMatchObject({ status: "refused", reason: expect.stringMatching(/fee/) });
+    expect(prepare(sell("50", 20, 5), "stated", NOW)).toMatchObject({ status: "prepared" });
+  });
+});

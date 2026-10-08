@@ -42,7 +42,7 @@ Every frame is the live desk on Bitget's books. Recording: linked here at submis
 
 A quote prices the first few shares. An order is all of them. A trader, or an AI agent acting for one, looks at the best bid on a Bitget rToken, adds a fee, and sees a cost inside their limit. The order then walks down the book and fills worse. On one recorded Sunday, at Bitget's published 5 bps rToken fee, the best ask said yes and the full order said no for 28 of the 89 weekend-tradable names a 25,000 USDT buy could fill.
 
-Bitget's own agent stack has the same gap. Agent Hub's flow is a dry run, then a confirmation card naming pair, side, quantity and account, then the send. Nothing in it asks what the size costs. I hit that head-on: its dry run would send a 5,000-share rHIMS sell the visible book cannot fill, and even `side=hold, qty=-5`.
+Bitget's own agent stack has the same gap. Agent Hub's flow is a dry run, then a confirmation card naming pair, side, quantity and account, then the send. Its `pre_trade_check` reads the ticker price, the balance and the positions; nothing in the flow walks the book at the order's size. Its dry run previews whatever it is given: a 5,000-share rHIMS market sell the visible book cannot fill comes back as a ready preview.
 
 So I treated *"the size does not fit"* as a first-class answer, sitting right next to *"the price looks fine."*
 
@@ -128,7 +128,7 @@ The model reads and explains. It never does the arithmetic, and it cannot pass a
 | Reality stock-info | `GET /api/v3/reality/market/stock-info` | refused: `INVALID_INSTRUMENT` |
 | Market states, calendar | `GET /api/v3/reality/market/states` · `/calendar` | refused: `SESSION_UNKNOWN` |
 | Instrument rules | `GET /api/v3/market/instruments?category=SPOT` | refused: `INVALID_INSTRUMENT` |
-| Agent Hub, read-only | `@bitget-ai/bitget-agent-sdk` 3.3.1 · `getAccountFeeRate` | the fee falls to the published scenarios, and an answer that depends on it is asked instead of prepared |
+| Agent Hub, read-only | `account_overview` (agent, the trader's account) · SDK 3.3.1 `getAccountFeeRate` (self-hosted, its operator's account) | the fee falls to the published 5 and 10 bps scenarios; an answer that depends on which is asked instead of prepared (sell 50 rHIMS under 20 bps on the recorded book: refused without a fee, prepared at 5 bps) |
 | Agent Hub, order path | `order` tool · `bgc order --action place` | nothing receives the checked order: the answer stays advice, and an agent left to Agent Hub alone sends what it is told |
 | Qwen on Bitget's S2 endpoint | `hackathon.bitgetops.com/v1` | the fallback reader cannot read "0.05%", "0.3%" or "before the 8th", and asks for limits already given |
 
@@ -140,7 +140,7 @@ The first four rows are computed by the engine on every build (`src/lib/deletion
 | side `hold`, qty `-5` | would send | rejected as input |
 | sell 50 | would send | prepared: 14.62 bps all-in at the account's own 5 bps fee, read through Agent Hub |
 
-The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. Their account's own fee is read through Agent Hub when a read-only key is configured. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
+The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. An agent reads the trader's own fee with Agent Hub's `account_overview` and passes it in; a self-hosted Sounding with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate`. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
 ## Designed for agents: the refusal vocabulary
 
@@ -158,7 +158,7 @@ Every refusal is a code an agent can branch on, never prose alone.
 
 ## Engineering decisions and the hard problems
 
-- **The model never does arithmetic.** Qwen proposes and explains; code re-reads every value it quotes and checks every figure it writes against the engine's output, in any unit, English or Chinese. An answer that breaks one of 14 named rules is replaced by a deterministic template.
+- **The model never does arithmetic.** Qwen proposes and explains; code re-reads every value it quotes and checks every cost figure it writes (bps, %, 基点, 千分之) against the engine's output, English or Chinese. An answer that breaks one of 16 named rules is replaced by a deterministic template.
 - **Ask, never default.** A size in words, a corrected fee, a past or impossible date, a negative size: each is a question back to the trader, never the form's value quietly priced instead.
 - **The fee is charged on what is traded.** Adding the fee on top misjudges orders sitting near the ceiling, so every verdict, clip, chart and census cell uses the exact formula.
 - **Correct in public.** The research first assumed a 20 bps fee. When an independent review showed Bitget publishes 5 bps, the census was restated on the same frozen books with the original figures left beside the new ones.
@@ -198,7 +198,8 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 | Bitget books and metadata | **Real.** Live in live mode. Recorded mode replays frozen, hashed captures and says so on every answer. |
 | Engine decisions and receipts | **Real.** Exact decimals; receipts hashed, signed, and replayable offline (`pnpm replay`). |
 | Qwen reading and ruling | **Real**, on Bitget's S2 endpoint, checked by code on every turn. |
-| Agent Hub fee read | **Real**, through Agent Hub's read-only client, recorded with a read-only key on the developer's machine. The public site holds no key and never shows one account's fee as anyone else's. |
+| Agent Hub fee read | **Real**, through Agent Hub's read-only client, recorded with a read-only key on the developer's machine (taker 5 bps, the same as Bitget's published promotional rate). The public site holds no key and never shows one account's fee as anyone else's; an agent passes the trader's own. |
+| Book vs routed quote | **Unverified.** Bitget's ticker can quote more size than the public order book shows (2026-10-08 03:40Z: RSPY ask 776.96 × 793 on the ticker, 777.72 × 19.68 at the top of the book). Sounding walks the visible book; whether an order also fills against that other liquidity is not tested, so a refusal on the visible book may be conservative. |
 | Agent Hub order | **Prepared, never sent.** Shown as a dry run: Bitget's demo environment listed 6 of the 90 weekend-tradable rTokens, all with empty books, when checked on 2026-10-05, so a paper fill would prove nothing. |
 | Enforcement | **Advisory.** The skill tells an agent to send only what Sounding prepared; it cannot stop a client that skips it. |
 | Fills | **Not promised.** Every answer is conditional on the snapshot it names; hidden liquidity and the future book are out of reach. |
@@ -219,7 +220,7 @@ pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 | Variable | Purpose | Required |
 |---|---|---|
 | `BITGET_QWEN_API_KEY` | Qwen on Bitget's S2 endpoint; without it the deterministic reader and template answer | no |
-| `BITGET_API_KEY` · `BITGET_SECRET_KEY` · `BITGET_PASSPHRASE` | a read-only Bitget key, used only to read your own taker fee through Agent Hub | no |
+| `BITGET_API_KEY` · `BITGET_SECRET_KEY` · `BITGET_PASSPHRASE` | a read-only Bitget key, used only to read the operator's taker fee through Agent Hub's SDK | no |
 | `SOUNDING_RECEIPT_KEY` | signs receipts and prepared orders; without it nothing prepared can be verified | to verify |
 
 The suite mirrors the claims: the lead order's figures, each Bitget input withheld, the exact fee formula at the ceiling, intake asking instead of defaulting (signed, zero, worded and corrected sizes and fees, impossible dates, English and Chinese), every figure in an answer checked against the engine, and a prepared order rejected when changed, unsigned or stale.

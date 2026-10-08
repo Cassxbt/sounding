@@ -306,3 +306,11 @@ describe("a negated exit claim is not an overclaim", () => {
   it.each(["No priced route satisfies the hard exit on this snapshot.", "Nothing here gets you flat by the deadline.", "Crossing does not satisfy your hard exit.", "当前没有任何路线能满足清仓要求。"])("passes: %s", (e) => expect(rules(e)).not.toContain("overclaim_plan_step"));
   it.each(["Crossing now satisfies your hard exit.", "This gets you flat by Oct 8.", "此路线满足清仓要求。"])("still caught: %s", (e) => expect(rules(e)).toContain("overclaim_plan_step"));
 });
+
+describe("the change note is checked like every other field", () => {
+  it("an invented figure or a promise in changedBecause is caught", () => {
+    const out = templateAnalysis(turn1(8), evidence(), C({ takerFeeBps: 8 }));
+    expect(validate({ ...out, changedBecause: "the cost fell to 3 bps" }, turn1(8), evidence()).map((v) => v.rule)).toContain("invented_number");
+    expect(validate({ ...out, changedBecause: "now guaranteed to fill" }, turn1(8), evidence()).map((v) => v.rule)).toContain("promise_language");
+  });
+});

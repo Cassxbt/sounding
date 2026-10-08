@@ -16,7 +16,7 @@ const TOOLS = [
         side: { type: "string", enum: ["buy", "sell"] },
         amount: { type: "string", description: "buy: USDT to spend; sell: shares" },
         ceilingBps: { type: "number", description: "the most the trader accepts, all-in, in basis points" },
-        userFeeBps: { type: "number", description: "the trader's taker fee in bps, if they stated it" },
+        userFeeBps: { type: "number", description: "the trader's taker fee in bps: as they stated it, or read with Agent Hub's account_overview (feeRate.takerFeeRate × 10000)" },
       },
     },
   },
@@ -28,6 +28,7 @@ const TOOLS = [
 ];
 
 async function call(name, args) {
+  if (!TOOLS.some((t) => t.name === name)) return { content: [{ type: "text", text: `unknown tool ${name}` }], isError: true };
   const body = name === "sounding_verify_order" ? { verify: args } : { ...args, mode: "live" };
   const r = await fetch(`${BASE}/api/prepare`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(30_000) });
   return { content: [{ type: "text", text: JSON.stringify(await r.json(), null, 1) }], isError: !r.ok };

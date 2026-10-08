@@ -39,7 +39,7 @@ export function prepare(res: SoundingResult, feeSource: FeeSource, now: Date): P
     const unit = res.intent.side === "sell" ? "sh" : "USDT";
     return {
       status: "refused",
-      reason: d?.allInBps ? `${d.allInBps} bps at your ${d.feeBps} bps fee is over your ${res.ceilingBps} bps ceiling` : "the visible book cannot fill this order",
+      reason: d?.allInBps ? `${d.allInBps} bps at ${d.source === "user" ? "your" : "the scenario"} ${d.feeBps} bps fee is over your ${res.ceilingBps} bps ceiling` : "the visible book cannot fill this order",
       ...(clip?.qty ? { proposal: { size: clip.qty, unit, remainder: clip.remainder ?? "0", note: "a smaller order; nothing is prepared until you choose it" } } : {}),
     };
   }

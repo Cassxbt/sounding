@@ -5,13 +5,14 @@ description: >
   isReality = yes) through @bitget-ai/bitget-agent-mcp or bgc, after the dry run and
   before the confirmation card. Checks what the order costs at its full size on the
   live book against the trader's own ceiling and fee, and supplies the only order
-  arguments to send. Triggers: sell/buy an rToken "under 0.3%", "keep costs below",
+  arguments to send. Complements Agent Hub's pre_trade_check, which reads the
+  ticker price, balance and positions but not the book at the order's size. Triggers: sell/buy an rToken "under 0.3%", "keep costs below",
   "at my fee", 下单前检查成本、按我的数量算成本、不超过千分之三、卖出 rHIMS、买入 rSPY.
   Do NOT use for crypto pairs, futures, or orders the trader sizes by price only.
 metadata:
   version: 0.5.0
   author: cassxbt
-  updated: 2026-10-07
+  updated: 2026-10-08
   requires:
     bins: ["node"]
     node: ">=20"
@@ -23,7 +24,15 @@ license: MIT
 
 # Sounding pre-check for rToken orders
 
-Agent Hub's flow is `get_auth_status → discover → dryRun → 主网确认卡 → 用户确认 → 执行`. The confirmation card names pair, side, quantity and account, but not what the size costs. This skill adds that, between the dry run and the card.
+Agent Hub's flow is `get_auth_status → discover → dryRun → 主网确认卡 → 用户确认 → 执行`. Its `pre_trade_check` prompt reads the ticker price, the balance and the positions. Nothing in the flow walks the order book at the order's full size, so the confirmation card names pair, side, quantity and account, but not what that size costs. This skill adds it, before the card.
+
+## Install
+
+1. Run the MCP server beside `@bitget-ai/bitget-agent-mcp`. In your MCP client config:
+   ```json
+   { "mcpServers": { "sounding": { "command": "node", "args": ["/path/to/sounding/agent/sounding-mcp.mjs"], "env": { "SOUNDING_URL": "https://sounding-zeta.vercel.app" } } } }
+   ```
+2. Copy this folder into your agent's skills directory (for example `~/.claude/skills/sounding-precheck/`), next to Bitget's `bitget-agentic` and `uta` skills.
 
 ## When
 
@@ -31,15 +40,18 @@ Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in wo
 
 ## Steps
 
-1. Read the trader's limits from their words: size, ceiling (all-in, bps), fee if they say it. Do not fill a ceiling they did not give: ask.
-2. Call `sounding_prepare_order` with `symbol`, `side`, `amount` (buy: USDT, sell: shares), `ceilingBps`, and `userFeeBps` if stated.
-3. If `preparation.status` is `refused`:
-   - Show `reason`. Do not place any order.
+1. Read the trader's limits from their words: size, and ceiling (all-in, bps). Do not fill a ceiling they did not give: ask.
+2. Read the trader's own taker fee with Agent Hub: `account_overview({ category: "SPOT", symbol })` returns `feeRate.takerFeeRate`; multiply by 10,000 for bps. If they stated a fee, use theirs.
+3. Call `sounding_prepare_order` with `symbol`, `side`, `amount` (buy: USDT, sell: shares), `ceilingBps` and `userFeeBps`.
+4. If `preparation.status` is `refused`:
+   - Show `reason`. Place no order.
    - If there is a `proposal`, offer it as a new, smaller order with its `remainder` left unpriced. Prepare it again only if the trader chooses it.
-4. If `prepared`:
-   - Run the Agent Hub `order` tool with exactly `preparation.order` and `--dry-run` (the same command is in `preparation.command`). Change nothing.
+5. If `prepared`:
+   - Preview with Agent Hub's `order` tool using exactly `preparation.order` plus `dryRun: true` (CLI: `preparation.command`). Change nothing.
    - Add one line to the 确认卡: `Sounding: {binding.allInBps} bps all-in at {binding.fee.bps} bps ({binding.fee.source}), within {binding.ceilingBps} bps · receipt {binding.receipt_sha256 first 12}`.
-5. After the trader confirms, call `sounding_verify_order` with `order`, `binding`, `signature`. Send only if it returns `ok: true`. If it is older than two minutes, start again at step 2.
+6. After the trader confirms, and immediately before sending:
+   - Call `sounding_prepare_order` again with the same inputs. Send only if it is `prepared` and its `binding.order_sha256` equals the one the trader confirmed; otherwise show the new answer and start again.
+   - Call `sounding_verify_order` with `order`, `binding`, `signature`. Send only on `ok: true`.
 
 ## Never
 

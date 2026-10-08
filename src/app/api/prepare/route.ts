@@ -20,9 +20,16 @@ interface Body {
  * else Bitget's published scenarios, and an order whose answer depends on them is not prepared.
  */
 export async function POST(req: Request) {
-  const b = (await req.json()) as Body;
-  if (b.verify) return NextResponse.json(verifyPrepared(b.verify.order, b.verify.binding, b.verify.signature, new Date()));
+  let b: Body;
+  try { b = (await req.json()) as Body; } catch { return NextResponse.json({ error: "body must be JSON" }, { status: 400 }); }
+  if (b.verify) {
+    const v = b.verify;
+    if (!v.order || !v.binding || typeof v.binding.prepared_at !== "string") return NextResponse.json({ error: "verify needs order, binding and signature from a preparation" }, { status: 400 });
+    return NextResponse.json(verifyPrepared(v.order, v.binding, v.signature, new Date()));
+  }
   if (!b.symbol || (b.side !== "buy" && b.side !== "sell")) return NextResponse.json({ error: "symbol and side (buy or sell) required" }, { status: 400 });
+  // An order is prepared only against the trader's own ceiling; there is no default to fall back on.
+  if (b.ceilingBps === undefined || b.ceilingBps === null || b.ceilingBps === "") return NextResponse.json({ error: "ceilingBps required: the most the trader accepts, all-in" }, { status: 400 });
   const mode = b.mode === "live" ? "live" : "recorded";
   try {
     const amount = parseAmount(b.amount);
@@ -37,7 +44,7 @@ export async function POST(req: Request) {
     const { capture, historical } = await bookFor(mode, b.symbol, b.fixture);
     const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
     const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: fee.bps });
-    return NextResponse.json({ preparation: prepare(result, fee.source, historical ? now : new Date()), fee, receipt_sha256: result.receipt.receipt_sha256, agentHub: "@bitget-ai/bitget-agent-sdk@3.3.1" });
+    return NextResponse.json({ preparation: prepare(result, fee.source, historical ? now : new Date()), fee, receipt_sha256: result.receipt.receipt_sha256, ...(fee.source === "bitget_account" ? { feeReadBy: "@bitget-ai/bitget-agent-sdk@3.3.1 getAccountFeeRate" } : {}) });
   } catch (e) {
     if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is prepared on recorded rules` }, { status: 503 });
     const j = errorJson(e);

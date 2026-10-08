@@ -119,7 +119,7 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   if (res.worstCase) engineBps.push(res.worstCase.feeBps, Number(res.worstCase.allInBps));
   if (out.constraints.takerFeeBps !== null) engineBps.push(out.constraints.takerFeeBps);
   if (res.leg?.bpsPreFee) engineBps.push(Number(res.leg.bpsPreFee));
-  const shown = [out.explanation, out.bindingConstraint, out.clarification ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
+  const shown = [out.explanation, out.bindingConstraint, out.clarification ?? "", out.changedBecause ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
   // A figure may be an engine figure rounded to the precision it is written in ("0.37%", "36.9 bps"), never another one.
   const round = (x: number, dp: number) => Math.round(x * 10 ** dp) / 10 ** dp;
   for (const m of shown.matchAll(/([-−]\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(bps?\b|basis\s+points?|个?基点|%|percent\b|per\s+cent\b)/gi)) {
@@ -137,7 +137,7 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   for (const k of kinds) if (!classified.has(k)) v.push({ rule: "unclassified_alternative", detail: `${k} neither admissible nor excluded` });
 
   // no promises: fill certainty, safety, guarantees, probabilities, price targets, catalysts
-  const texts = [out.explanation, out.bindingConstraint, out.clarification ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
+  const texts = [out.explanation, out.bindingConstraint, out.clarification ?? "", out.changedBecause ?? "", ...out.admissible.map((a) => a.reason), ...out.excluded.map((a) => a.reason), ...out.evidence.map((e) => e.reason)].join(" \n ");
   const banned = /\b(guarantee[sd]?|certain(?:ty|ly)?|will (?:be )?fill|fill certainty|safe(?:ly)?|risk[- ]free|price target|catalyst|probabilit(?:y|ies)|\d+\s*%\s*(?:chance|likely))\b/i;
   // The reply follows the trader's language, so the same promises are checked in Chinese.
   const bannedZh = /保证|一定(?:会)?成交|肯定(?:会)?成交|确定(?:会)?成交|无风险|零风险|稳赚|安全的|目标价|催化剂|成交概率|\d+\s*%\s*(?:的)?(?:概率|可能)/;
