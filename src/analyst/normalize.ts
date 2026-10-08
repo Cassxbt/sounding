@@ -56,7 +56,8 @@ function dayAfter(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-const EXCLUSIVE = /\bbefore\b|\bprior to\b|\bahead of\b|前/;
+// 前 means "before" except inside words like 目前 (currently), 提前 (in advance) or 前天/前面.
+const EXCLUSIVE = /\bbefore\b|\bprior to\b|\bahead of\b|(?<![目提])前(?![天面])/;
 const INCLUSIVE = /on or before|no later than|inclusive|[（(]含[)）]|含当天|最晚|最迟/;
 /** "Not before the 8th" names the earliest day to act, not a deadline. */
 export const EARLIEST = /not before|no earlier than|\bafter\b|不早于|之后|以后|前不|前别/;
@@ -98,9 +99,9 @@ function readNamedDate(span: string, today: string): string | null {
   let x = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (x) return fmt(Number(x[1]), Number(x[2]), Number(x[3]));
   // A year the trader writes is theirs: "Oct 8, 2027" is never rolled to this year.
-  x = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4})\b)?/);
+  x = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+((?:19|20)\d{2})\b)?/);
   if (x) return x[3] ? fmt(Number(x[3]), MONTHS[x[1]], Number(x[2])) : withYear(MONTHS[x[1]], Number(x[2]));
-  x = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?(?:,?\s+(\d{4})\b)?/);
+  x = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?(?:,?\s+((?:19|20)\d{2})\b)?/);
   if (x) return x[3] ? fmt(Number(x[3]), MONTHS[x[2]], Number(x[1])) : withYear(MONTHS[x[2]], Number(x[1]));
   x = s.match(/(?:(\d{4})\s*年\s*)?(\d{1,2})月(\d{1,2})[日号]/);
   if (x) return x[1] ? fmt(Number(x[1]), Number(x[2]), Number(x[3])) : withYear(Number(x[2]), Number(x[3]));
@@ -240,5 +241,22 @@ export function canonicalText(text: string): string {
     .replace(/[\uFF0D\uFE63](?=\s*[\d.\uFF0E])/g, "-")
     .replace(/\uFF0E(?=\d)/g, ".")
     .replace(/\uFF05/g, "%")
+    .replace(/(^|\s)[\u2010-\u2014](?=\s*\d)/g, "$1-")
+    .replace(/(\d)\uFF0C(?=\d{3}(?!\d))/g, "$1,")
     .replace(/(^|[^\w.])([-\u2212]?)\.(\d)/g, "$1$20.$3");
+}
+
+const NEGATION = /\b(?:not|never|no way|no longer|doubt|unable|cannot|won't|wouldn't|couldn't|can't|don't|isn't)\b|n't\b|不能|无法|不可以|没法|不行/i;
+
+/**
+ * A release ("I can hold through", "not urgent") is negated when its own clause, read up to the phrase, says it isn't
+ * so: "I don't think I'll be able to hold through". A release that is itself worded negatively is judged on the words
+ * before it, so "it's not urgent anymore" still releases.
+ */
+export function negatedRelease(text: string, phrase: string): boolean {
+  const i = text.toLowerCase().indexOf(phrase.toLowerCase());
+  if (i < 0) return NEGATION.test(phrase);
+  const before = text.slice(0, i), start = Math.max(...[".", "!", "?", ";", ",", "。", "！", "？", "；", "，"].map((c) => before.lastIndexOf(c))) + 1;
+  const own = /^\s*(?:not|no)\b/i.test(phrase) ? "" : phrase;
+  return NEGATION.test(before.slice(start) + " " + own);
 }

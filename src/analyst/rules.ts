@@ -130,7 +130,9 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
   }
   // A figure written as an all-in cost must be one: the ceiling or the fee is never the order's cost.
   const allIn: number[] = [...(res.fees ?? []).map((f) => Number(f.allInBps)), ...(res.alternatives ?? []).flatMap((x) => Object.values(x.allInBpsByFee ?? {}).map(Number)), ...(res.worstCase ? [Number(res.worstCase.allInBps)] : [])].filter(Number.isFinite);
-  for (const m of shown.matchAll(/((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(bps?\b|basis\s+points?|%)\s*all[- ]?in\b(?!\s*(?:ceiling|cap|limit))/gi)) {
+  for (const m of shown.matchAll(/((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(bps?\b|basis\s+points?|%)\s*all[- ]?in\b(?!\s*(?:ceiling|cap|limit|is your))/gi)) {
+    // "At most 50 bps all-in", "under your 0.5% all-in": the figure is the limit, not a cost.
+    if (/\b(?:at most|under|below|within|no more than|up to|max(?:imum)?|ceiling|cap|limit)\b[^.\d]{0,12}$/i.test(shown.slice(Math.max(0, (m.index ?? 0) - 24), m.index))) continue;
     const raw = m[1].replace(/,/g, ""), pct = m[2] === "%", bps = Number(raw) * (pct ? 100 : 1), dp = Math.max(0, (raw.split(".")[1]?.length ?? 0) - (pct ? 2 : 0));
     if (!allIn.some((e) => round(e, dp) === round(bps, dp))) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not the all-in cost of any priced route` });
   }

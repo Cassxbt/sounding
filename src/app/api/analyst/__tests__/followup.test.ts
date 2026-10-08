@@ -47,11 +47,56 @@ describe("the trader's stated contract survives a follow-up", () => {
   });
 });
 
+describe("negation is read over the whole clause (stress review)", () => {
+  const hard = { ceilingBps: 20, constraints: { ...c, mustBeFlat: true, hardDeadlineNy: "2026-09-21" } };
+  it.each([
+    "I don't think I'll be able to hold through the deadline",
+    "I doubt I could hold through Monday",
+    "There's no way I can hold through Monday",
+    "I'm no longer going to be able to hold through it",
+  ])("keeps the hard exit: %s", async (t) => {
+    const j = await post(`Sell 10 shares of rHIMS, fee 8 bps. ${t}.`, hard);
+    expect(j.constraints.mustBeFlat).toBe(true);
+  });
+  it("a release worded negatively still releases: 'it's not urgent anymore'", async () => {
+    const j = await post("Sell 10 shares of rHIMS, fee 8 bps. It's not urgent anymore.", hard);
+    expect(j.constraints.mustBeFlat).toBe(false);
+  });
+});
+
+describe("dates are read from their own words (stress review)", () => {
+  it("'after open' elsewhere in the message does not drop the deadline", async () => {
+    const j = await post("Sell 10 shares of rHIMS after open, fee 8 bps. Must be flat by Sep 22 at the latest.");
+    expect(j.constraints.hardDeadlineNy).toBe("2026-09-22");
+  });
+  it("an ordinal with a year keeps the year", async () => {
+    const j = await post("Sell 10 shares of rHIMS, fee 8 bps. Must be flat by October 8th, 2027.");
+    expect(j.constraints.hardDeadlineNy).toBe("2027-10-08");
+  });
+  it("目前 is not 'before': the day stays the day", () => {
+    const text = "目前持有，必须在10月8日清仓";
+    const f = checkFields([{ name: "hardDeadlineNy", value: "2026-10-08", span: "10月8日" }], text, "2026-09-20");
+    expect(applyFields(EMPTY_CONSTRAINTS, f).constraints.hardDeadlineNy).toBe("2026-10-08");
+  });
+});
+
+describe("signs and separators phones type (stress review)", () => {
+  it.each(["Sell –100 shares of rHIMS, fee 8 bps.", "Sell — 100 shares of rHIMS, fee 8 bps."])("a dash before a size is a minus: asked, nothing priced (%s)", async (t) => {
+    const j = await post(t);
+    expect(j.result).toBeNull();
+  });
+});
+
 describe("numbers keep their roles", () => {
   it("the ceiling is not accepted as the order's all-in cost", () => {
     const r = result(), out = templateAnalysis(r, pack(), c);
     out.explanation = "Cross now at full size: 50 bps all-in at your 8 bps fee, inside your 50 bps ceiling on this snapshot.";
     expect(validate(out, r, pack(), c, "en").map((v) => v.rule)).toContain("invented_number");
+  });
+  it("a limit written as all-in is not a cost claim: 'at most 50 bps all-in'", () => {
+    const r = result(), out = templateAnalysis(r, pack(), c);
+    out.explanation = "Crossing now costs 39.86 bps, at most 50 bps all-in as you asked.";
+    expect(validate(out, r, pack(), c, "en").map((v) => v.rule)).not.toContain("invented_number");
   });
 });
 

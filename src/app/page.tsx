@@ -34,7 +34,7 @@ const PRESETS: Preset[] = [
 
 const ALT: Record<Alternative["kind"], { icon: typeof Lightning; title: string }> = {
   immediate_cross: { icon: Lightning, title: "Cross now, full size" },
-  largest_within_ceiling: { icon: Scissors, title: "The largest size that fits" },
+  largest_within_ceiling: { icon: Scissors, title: "The largest size whose average fits" },
   resting_limit: { icon: Hourglass, title: "Rest a limit order" },
   requote_at_switch: { icon: Clock, title: "Wait for the next session" },
 };

@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml/badge.svg)](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-342%20passing-10b981)
+![Tests](https://img.shields.io/badge/tests-355%20passing-10b981)
 ![Claims](https://img.shields.io/badge/pnpm%20verify-16%2F16%20claims-10b981)
 ![Bitget](https://img.shields.io/badge/Bitget-rTokens%20·%20Agent%20Hub-00c2c2)
 ![Model](https://img.shields.io/badge/model-Qwen%203.8%20Max-6d28d9)
@@ -21,7 +21,7 @@ When Nasdaq is shut, Bitget's own rToken order book is the market, and its best 
 
 ## ▶ Demo
 
-A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size that fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run previews it as given; Sounding hands back no order. A size that fits comes back as the exact Agent Hub order, bound to a signed receipt.
+A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size whose average fits. At a 50 bps ceiling the full order fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run previews it as given; Sounding hands back no order, and offers the size it can send. An order that fits comes back as the exact Agent Hub order, a limit at the ceiling price, bound to a signed receipt.
 
 Every frame is the deployed desk on recorded weekend Bitget books. Recording: linked here at submission.
 
@@ -140,6 +140,8 @@ The first four rows are computed by the engine on every build (`src/lib/deletion
 | side `hold`, qty `-5` | previews it | rejected as input |
 | sell 50 | previews it | prepared: 19.89 bps all-in, as the exact Agent Hub order, a limit IOC at 27.93, where one share costs 40 bps: no fill can cost more (worst case 38.88), signed |
 
+**Two sizes, two questions.** The desk answers on the order's average cost on this book: 101.834 sh of the lead sell average exactly 30 bps. A prepared order must hold every share inside the ceiling, because that is what a limit order lets Bitget enforce: on the same book only the first four bid levels, 66.0764 sh, sit at or above 27.96, the 30 bps ceiling price. So `/api/prepare` refuses 101.834 at 30 bps and offers 66.0764; at 50 bps it prepares the full 178.4121 sh at 27.90.
+
 The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. An agent reads the trader's own fee with Agent Hub's `account_overview` and passes it in; a self-hosted Sounding with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate`. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
 ## Designed for agents: the refusal vocabulary
@@ -173,7 +175,7 @@ Every refusal is a code an agent can branch on, never prose alone.
 |---|---|---|
 | `lead.best-bid` | 17.48 bps | recorded rHIMS book, 5 bps fee |
 | `lead.full-size` | 36.87 bps, over 30 | the same book, 178.4121 sh |
-| `lead.fits` | 101.834 sh | the largest size within 30 bps |
+| `lead.fits` | 101.834 sh | the largest size whose average is within 30 bps |
 | `census.5k-50` | 6 / 90 | best ask within 50 bps, 5,000 USDT buy over |
 | `census.25k-50` | 28 / 89 | the same at 25,000 USDT |
 | `census.fee-decides` | 17 / 89 | within at 5 bps, over at the 10 bps list rate |
@@ -213,7 +215,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 pnpm install
 cp .env.example .env.local
 pnpm dev        # http://localhost:3000
-pnpm test       # 342 tests in 16 files
+pnpm test       # 355 tests in 16 files
 pnpm verify     # every claim above, recomputed
 pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 ```

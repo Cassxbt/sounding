@@ -52,7 +52,11 @@ export function prepare(res: SoundingResult, raw: RawOrderbook, feeSource: FeeSo
   if (res.feeSensitive) return { status: "refused", code: "FEE_DECIDES", reason: "your fee decides this order and it is not known: state it, or read it from your account with a read-only key" };
   const d = decidingRow(res)!, spec = res.spec!, side = res.intent.side, mid = D(res.referenceMid!);
   const qtyDp = Number(spec.quantityPrecision);
-  const limit = ceilingPrice(mid, res.ceilingBps, d.feeBps, side, Number(spec.pricePrecision));
+  // A ceiling so wide that its price is near zero: a sell's limit is raised to the lowest price whose order value
+  // meets Bitget's minimum. Raising a sell's limit only tightens it, so the ceiling still holds.
+  const priceDp = Number(spec.pricePrecision), tick = D(10).pow(-priceDp);
+  const floor = side === "sell" ? Decimal.max(tick, D(spec.minOrderAmount).div(res.intent.baseQty).toDecimalPlaces(priceDp, Decimal.ROUND_UP)) : tick;
+  const limit = Decimal.max(ceilingPrice(mid, res.ceilingBps, d.feeBps, side, priceDp), floor);
   const worst = costAt(mid, limit, d.feeBps, side);
   // Rounded on the trader's side, so this holds; checked exactly anyway rather than trusting the arithmetic above.
   if (worst.gt(res.ceilingBps)) return { status: "refused", code: "OVER_CEILING_ON_THIS_SNAPSHOT", reason: "no tick price keeps a share inside your ceiling at this fee" };
@@ -62,8 +66,10 @@ export function prepare(res: SoundingResult, raw: RawOrderbook, feeSource: FeeSo
 
   if (!fits) {
     const unit = side === "sell" ? "sh" : "USDT";
-    const shares = Decimal.min(reachable, side === "sell" ? qty : reachable).toDecimalPlaces(qtyDp, Decimal.ROUND_DOWN);
-    const size = side === "sell" ? shares : shares.mul(limit).toDecimalPlaces(2, Decimal.ROUND_DOWN);
+    // A buy is offered what the asks inside the limit cost, so the offer re-prepares to the same shares.
+    const spend = raw.data.asks.filter(([p]) => D(p).lte(limit)).reduce((t, [p, q]) => t.plus(D(p).mul(q)), D(0));
+    const size = side === "sell" ? Decimal.min(reachable, qty).toDecimalPlaces(qtyDp, Decimal.ROUND_DOWN) : Decimal.min(spend, D(res.intent.quoteBudget)).toDecimalPlaces(2, Decimal.ROUND_DOWN);
+    const shares = side === "sell" ? size : size.div(limit).toDecimalPlaces(qtyDp, Decimal.ROUND_DOWN);
     const asked = D(side === "sell" ? res.intent.baseQty : res.intent.quoteBudget);
     const offer = shares.gte(spec.minOrderQty) && shares.mul(limit).gte(spec.minOrderAmount) && size.lt(asked);
     const reason = d.verdict !== WITHIN

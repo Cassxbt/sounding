@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { around, canonicalText, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, replyLanguage, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
+import { around, canonicalText, costFigures, dayBefore, negatedRelease, CUES, EARLIEST, SIZE_CUE, readBps, replyLanguage, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -93,7 +93,7 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
       if (stated && stated !== name) { const v = readQty(p.span); if (v) { out.push({ name: stated, value: v, span: p.span, source: "code", status: "accepted", note: "unit read by code from the cited words" }); continue; } }
     }
     // "Not able to hold through" quotes the words of a release; the negation just before them keeps the deadline.
-    if (name === "releaseDeadline" && negated(p.span, text)) { out.push({ name, value, span: p.span, source: "model", status: "rejected_meaning", note: "a negated release keeps the deadline" }); continue; }
+    if (name === "releaseDeadline" && negatedRelease(text, p.span)) { out.push({ name, value, span: p.span, source: "model", status: "rejected_meaning", note: "a negated release keeps the deadline" }); continue; }
     const c = codeRead(name, p.span, today);
     if (c === undefined || c === null) { out.push({ name, value, span: p.span, source: "model", status: "accepted", note: c === null ? "code cannot read this phrase; span verified" : undefined }); continue; }
     if (same(c, value)) out.push({ name, value: c, span: p.span, source: "model+code", status: "accepted" });
@@ -108,12 +108,6 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
   }
   missingLimits(out, text);
   return out;
-}
-
-const NEGATION = /\b(?:not|never|no longer able|unable|cannot|can't|couldn't|won't)\b|不能|无法|不可以|没法/i;
-function negated(span: string, text: string): boolean {
-  const i = text.toLowerCase().indexOf(span.toLowerCase());
-  return NEGATION.test(span) || (i >= 0 && NEGATION.test(text.slice(Math.max(0, i - 16), i)));
 }
 
 /** The unit a size's words state: inside the cited span, or the word right after it ("100" then "shares"). */
@@ -261,11 +255,14 @@ function missingLimits(out: IntakeField[], text: string) {
 /** A deadline is never taken on the model's word: code must read the same date, and it must not have passed. */
 function checkDeadline(value: string | number | boolean, span: string, today: string, text = span): IntakeField {
   const base = { name: "hardDeadlineNy" as const, value, span, source: "model" as const };
-  // The date is read with the words around the quote: "before" just ahead of it, or a year just after it, belong to it.
+  // A qualifier directly ahead of the quote ("before", "not before") and a year directly after it belong to the date;
+  // nothing else around it does, so "sell after open, by Sep 22" and "目前…10月8日" read as written.
   const i = text.toLowerCase().indexOf(span.toLowerCase());
-  const clause = i < 0 ? span : text.slice(Math.max(0, i - 12), i + span.length) + (text.slice(i + span.length).match(/^,?\s+\d{4}\b/)?.[0] ?? "");
-  if (EARLIEST.test(clause.toLowerCase())) return { ...base, status: "rejected_meaning", note: "an earliest date to act, not a deadline" };
-  const c = readDate(clause, today);
+  const lead = i < 0 ? "" : text.slice(Math.max(0, i - 16), i).toLowerCase();
+  const year = i < 0 ? "" : text.slice(i + span.length).match(/^,?\s+(?:19|20)\d{2}\b/)?.[0] ?? "";
+  if (EARLIEST.test(span.toLowerCase()) || /\b(?:not before|no earlier than|after)\s+(?:the\s+)?$/.test(lead)) return { ...base, status: "rejected_meaning", note: "an earliest date to act, not a deadline" };
+  const read = readDate(span + year, today);
+  const c = read && /\b(?:before|prior to|ahead of)\s+(?:the\s+)?$/.test(lead) && !/\b(?:before|prior to|ahead of)\b/i.test(span) ? dayBefore(read) : read;
   if (!c) return { ...base, status: "conflict", note: "code cannot confirm a date from these words" };
   if (c < today) return { ...base, status: "conflict", note: `this date has already passed (code reads ${c})` };
   // Code is authoritative on a date it can read; its reading is used when the model's is past or later (looser).

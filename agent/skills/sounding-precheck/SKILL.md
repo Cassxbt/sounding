@@ -11,7 +11,7 @@ description: >
   "at my fee", 下单前检查成本、按我的数量算成本、不超过千分之三、卖出 rHIMS、买入 rSPY.
   Do NOT use for crypto pairs, futures, or orders the trader sizes by price only.
 metadata:
-  version: 0.6.0
+  version: 0.7.0
   author: cassxbt
   updated: 2026-10-08
   requires:

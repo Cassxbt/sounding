@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sound } from "@/engine";
-import { canonicalJson, sha256 } from "@/engine/book";
+import { canonicalJson, rawHash, sha256 } from "@/engine/book";
 import { calendar, instruments, rhims, rspy, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
 import { prepare, verifyPrepared } from "../prepare";
 
@@ -91,6 +91,24 @@ describe("a buy is a limit IOC that cannot spend more than the budget", () => {
     expect(p.order).toEqual({ action: "place", category: "SPOT", symbol: "RSPYUSDT", side: "buy", orderType: "limit", price: "765.55", timeInForce: "ioc", qty: "1.3062" });
     expect(Number(p.order.qty) * Number(p.order.price)).toBeLessThanOrEqual(1000);
     expect(p.binding).toMatchObject({ allInBps: "15.09", worstCaseBps: "39.95", expected: { qty: "1.3062", cash: "997.49", unspentUsdt: "2.51" } });
+  });
+});
+
+describe("offers re-prepare at their edges (stress review)", () => {
+  beforeEach(() => { process.env.SOUNDING_RECEIPT_KEY = "test-key"; });
+  afterEach(() => { delete process.env.SOUNDING_RECEIPT_KEY; });
+  it("a buy budget larger than the asks inside the limit is offered what those asks cost, and that offer prepares", () => {
+    const cap = rspy(); cap.raw.data.asks = [["763.00", "1"], ["763.10", "1"], ["900.00", "50"]]; cap.raw_sha256 = rawHash(cap.raw);
+    const buy = (b: string) => sound({ ...ctx(), capture: cap, intent: { side: "buy", quoteBudget: b }, ceilingBps: 100, userFeeBps: 5 });
+    const p = prepare(buy("5000"), cap.raw, "stated", NOW);
+    expect(p.status).toBe("refused");
+    if (p.status !== "refused" || !p.proposal) throw new Error("expected a proposal");
+    expect(prepare(buy(p.proposal.size), cap.raw, "stated", NOW).status).toBe("prepared");
+  });
+  it("a ceiling so wide that the ceiling price is below zero still prepares at a real tick", () => {
+    const p = prepare(sell("10", 10000, 5), rhims().raw, "stated", NOW);
+    expect(p.status).toBe("prepared");
+    if (p.status === "prepared") expect(Number(p.order.price)).toBeGreaterThan(0);
   });
 });
 

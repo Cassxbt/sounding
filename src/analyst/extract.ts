@@ -1,5 +1,5 @@
 import type { Constraints } from "./schema";
-import { dayBefore } from "./normalize";
+import { dayBefore, negatedRelease } from "./normalize";
 
 export interface Proposal { name: string; value: unknown; span: string }
 
@@ -24,7 +24,7 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   for (const fee of fees) cite("takerFeeBps", Number(fee[2]), fee, 1);
 
   const iso = t.match(/(deadline|by|before)\s*(?:is\s*)?(\d{4}-\d{2}-\d{2})/);
-  const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by|before)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:,?\s+(\d{4})\b)?/);
+  const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by|before)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+((?:19|20)\d{2})\b)?/);
   if (iso) { c.hardDeadlineNy = iso[1] === "before" ? dayBefore(iso[2]) : iso[2]; cite("hardDeadlineNy", c.hardDeadlineNy, iso); }
   else if (named) {
     const d = `${named[3] ?? year}-${MONTHS[named[1]]}-${named[2].padStart(2, "0")}`;
@@ -33,8 +33,8 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   }
 
   if (/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/.test(t)) c.mustBeFlat = true;
-  const release = t.match(/(?<!\b(?:not|never|un)\s*)(?:can|could|able to)\s+hold\s+through|no\s+(?:longer\s+)?(?:a\s+)?deadline|deadline\s+(?:is\s+)?(?:gone|removed|off)|not\s+urgent/);
-  if (release) { c.mustBeFlat = false; c.hardDeadlineNy = null; cite("releaseDeadline", true, release); }
+  const release = t.match(/(?:can|could|able to)\s+hold\s+through|no\s+(?:longer\s+)?(?:a\s+)?deadline|deadline\s+(?:is\s+)?(?:gone|removed|off)|not\s+urgent/);
+  if (release && !negatedRelease(t, release[0])) { c.mustBeFlat = false; c.hardDeadlineNy = null; cite("releaseDeadline", true, release); }
   if (/only\s+(?:want\s+)?this\s+(?:company|stock|name)|only\s+[a-z]+\s+exposure|no\s+(?:etf|proxy|proxies)/.test(t)) c.exclusiveExposure = true;
   if (/(?:ok|fine|happy|consent)\s+(?:with|to)\s+(?:a\s+)?(?:proxy|etf|substitute)/.test(t)) c.proxyConsent = true;
 
