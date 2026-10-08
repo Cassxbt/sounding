@@ -49,8 +49,8 @@ Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in wo
    - Otherwise show `reason`. Place no order.
    - If there is a `proposal`, offer it as a new, smaller order with its `remainder` left unpriced. Prepare it again only if the trader chooses it.
 5. If `prepared`:
-   - Preview with Agent Hub's `order` tool using exactly `preparation.order` plus `dryRun: true` (CLI: `preparation.command`). Change nothing: it is a limit IOC at the deepest price Sounding walked, so Bitget fills no share past it. Never turn it into a market order.
-   - Add one line to the 确认卡: `Sounding: {binding.allInBps} bps all-in at {binding.fee.bps} bps ({binding.fee.source}), within {binding.ceilingBps} bps · at most {binding.worstCaseBps} bps if the better levels go before the send · receipt {binding.receipt_sha256 first 12}`. The trader decides on both numbers.
+   - Preview with Agent Hub's `order` tool using exactly `preparation.order` plus `dryRun: true` (CLI: `preparation.command`). Change nothing: it is a limit IOC at the trader's ceiling price, so Bitget fills no share that costs more than the ceiling. Never turn it into a market order or move its price.
+   - Add one line to the 确认卡: `Sounding: {binding.allInBps} bps all-in on this book at {binding.fee.bps} bps ({binding.fee.source}); no fill can cost more than {binding.worstCaseBps}, inside {binding.ceilingBps} · receipt {binding.receipt_sha256 first 12}`. For a buy, add `{binding.expected.unspentUsdt} USDT of the budget stays unspent`.
 6. After the trader confirms, and immediately before sending:
    - Call `sounding_prepare_order` again with the same inputs. Send only if it is `prepared` and its `binding.order_sha256` equals the one the trader confirmed; otherwise show the new answer and start again.
    - Call `sounding_verify_order` with `order`, `binding`, `signature`. Send only on `ok: true`.

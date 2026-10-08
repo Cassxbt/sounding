@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       } else {
         // It stands, but every number shown must be the fresh book's: an answer that no longer checks out is rebuilt on it.
         const again2 = validate(analyst.output, result, evidence, constraints, replyLanguage(lastUser));
-        if (again2.length) analyst.output = templateAnalysis(result, evidence, constraints, b.previous, replyLanguage(lastUser));
+        if (again2.length) Object.assign(analyst, { output: templateAnalysis(result, evidence, constraints, b.previous, replyLanguage(lastUser)), producedBy: "template", violations: [...analyst.violations, ...again2] });
       }
     }
     // A decision is actionable only with no question open and no withdrawn answer.

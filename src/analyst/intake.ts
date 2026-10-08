@@ -1,6 +1,6 @@
 import type { Constraints } from "./schema";
 import { qwenJson, qwenAvailable, INTAKE_TIMEOUT_MS } from "./qwen";
-import { around, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, replyLanguage, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
+import { around, canonicalText, costFigures, CUES, EARLIEST, SIZE_CUE, readBps, replyLanguage, readDate, readQty, readSide, readSymbols, resolveSymbol, spanInText, unknownRTickers, type Listed } from "./normalize";
 import { extractConstraints } from "./extract";
 
 /**
@@ -72,7 +72,7 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
     const name = p.name as FieldName;
     const value = p.value as string | number | boolean;
     if (!spanInText(p.span, text)) { out.push({ name, value, span: p.span, source: "model", status: "rejected_span", note: "cited words are not in the message" }); continue; }
-    if (name === "hardDeadlineNy") { out.push(checkDeadline(value, p.span, today)); continue; }
+    if (name === "hardDeadlineNy") { out.push(checkDeadline(value, p.span, today, text)); continue; }
     if (name === "symbol") { if (listed) out.push(checkSymbol(String(value), p.span, listed)); continue; }
     if (name === "side") { out.push(checkSide(String(value), p.span)); continue; }
     if ((name === "takerFeeBps" || name === "ceilingBps") && (signed(p.span) || /[-−]\s*\d/.test(p.span))) { out.push({ name, value, span: p.span, source: "model", status: "conflict", note: "a negative figure" }); continue; }
@@ -92,6 +92,8 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
       const stated = unitOf(p.span, text);
       if (stated && stated !== name) { const v = readQty(p.span); if (v) { out.push({ name: stated, value: v, span: p.span, source: "code", status: "accepted", note: "unit read by code from the cited words" }); continue; } }
     }
+    // "Not able to hold through" quotes the words of a release; the negation just before them keeps the deadline.
+    if (name === "releaseDeadline" && negated(p.span, text)) { out.push({ name, value, span: p.span, source: "model", status: "rejected_meaning", note: "a negated release keeps the deadline" }); continue; }
     const c = codeRead(name, p.span, today);
     if (c === undefined || c === null) { out.push({ name, value, span: p.span, source: "model", status: "accepted", note: c === null ? "code cannot read this phrase; span verified" : undefined }); continue; }
     if (same(c, value)) out.push({ name, value: c, span: p.span, source: "model+code", status: "accepted" });
@@ -106,6 +108,12 @@ export function checkFields(proposed: { name: string; value: unknown; span: stri
   }
   missingLimits(out, text);
   return out;
+}
+
+const NEGATION = /\b(?:not|never|no longer able|unable|cannot|can't|couldn't|won't)\b|不能|无法|不可以|没法/i;
+function negated(span: string, text: string): boolean {
+  const i = text.toLowerCase().indexOf(span.toLowerCase());
+  return NEGATION.test(span) || (i >= 0 && NEGATION.test(text.slice(Math.max(0, i - 16), i)));
 }
 
 /** The unit a size's words state: inside the cited span, or the word right after it ("100" then "shares"). */
@@ -251,10 +259,13 @@ function missingLimits(out: IntakeField[], text: string) {
 }
 
 /** A deadline is never taken on the model's word: code must read the same date, and it must not have passed. */
-function checkDeadline(value: string | number | boolean, span: string, today: string): IntakeField {
+function checkDeadline(value: string | number | boolean, span: string, today: string, text = span): IntakeField {
   const base = { name: "hardDeadlineNy" as const, value, span, source: "model" as const };
-  if (EARLIEST.test(span.toLowerCase())) return { ...base, status: "rejected_meaning", note: "an earliest date to act, not a deadline" };
-  const c = readDate(span, today);
+  // The date is read with the words around the quote: "before" just ahead of it, or a year just after it, belong to it.
+  const i = text.toLowerCase().indexOf(span.toLowerCase());
+  const clause = i < 0 ? span : text.slice(Math.max(0, i - 12), i + span.length) + (text.slice(i + span.length).match(/^,?\s+\d{4}\b/)?.[0] ?? "");
+  if (EARLIEST.test(clause.toLowerCase())) return { ...base, status: "rejected_meaning", note: "an earliest date to act, not a deadline" };
+  const c = readDate(clause, today);
   if (!c) return { ...base, status: "conflict", note: "code cannot confirm a date from these words" };
   if (c < today) return { ...base, status: "conflict", note: `this date has already passed (code reads ${c})` };
   // Code is authoritative on a date it can read; its reading is used when the model's is past or later (looser).
@@ -378,6 +389,7 @@ export function regexIntake(text: string, prior: Constraints, today: string, lis
 }
 
 export async function intake(text: string, prior: Constraints, todayNy: string, mode: "model" | "template" = "model", listed?: Listed[]): Promise<Intake> {
+  text = canonicalText(text);
   if (mode === "template" || !qwenAvailable() || !text.trim()) return regexIntake(text, prior, todayNy, listed);
   try {
     const { json } = await qwenJson(SYSTEM.replace("TODAY", todayNy), text, "intake", INTAKE_TIMEOUT_MS);

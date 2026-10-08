@@ -46,7 +46,7 @@ export function census(): { captured_utc: string; names: number; cells: CensusCe
   return { captured_utc: c.captured_utc, names: c.rows.length, cells, lead: { median, inversions } };
 }
 
-export interface AtlasSummary { rounds: number; attemptedRounds?: number; metadataOutageRounds?: number; first?: string; last?: string; bySession: Record<string, number>; failedBooks: number; totalBooks: number; fees: { decides: number; list: number }; hosts: string[]; cells: Record<string, { snapshots: number; invalid: number; insufficient: number; overAtSize: number; topYesSizeNo: number; feeFlip: number }>; flips: Record<string, { pairs: number; changed: number; toUnpriced: number }> }
+export interface AtlasSummary { rounds: number; attemptedRounds?: number; metadataOutageRounds?: number; first?: string; last?: string; bySession: Record<string, number>; failedBooks: number; totalBooks: number; fees: { decides: number; list: number }; hosts: string[]; cells: Record<string, { snapshots: number; invalid: number; insufficient: number; overAtSize: number; topYesSizeNo: number; feeFlip: number }>; flips: Record<string, { pairs: number; changed: number; toUnpriced: number }>; rereadSeconds?: Record<string, { pairs: number; min: number; median: number; p95: number; max: number }> }
 
 /** The repeated atlas, as last analysed (scripts/atlas-analyze.ts); absent until the first analysis is committed. */
 export function atlas(): AtlasSummary | null {

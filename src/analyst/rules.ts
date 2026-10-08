@@ -128,6 +128,12 @@ export function validate(out: AnalystOutput, res: SoundingResult, pack: Evidence
     const bps = Number(raw) * (pct ? 100 : 1), dp = Math.max(0, (raw.split(".")[1]?.length ?? 0) - (pct ? 2 : 0));
     if (m[1] || !engineBps.some((e) => round(e, dp) === round(bps, dp))) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not an engine figure` });
   }
+  // A figure written as an all-in cost must be one: the ceiling or the fee is never the order's cost.
+  const allIn: number[] = [...(res.fees ?? []).map((f) => Number(f.allInBps)), ...(res.alternatives ?? []).flatMap((x) => Object.values(x.allInBpsByFee ?? {}).map(Number)), ...(res.worstCase ? [Number(res.worstCase.allInBps)] : [])].filter(Number.isFinite);
+  for (const m of shown.matchAll(/((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s*(bps?\b|basis\s+points?|%)\s*all[- ]?in\b(?!\s*(?:ceiling|cap|limit))/gi)) {
+    const raw = m[1].replace(/,/g, ""), pct = m[2] === "%", bps = Number(raw) * (pct ? 100 : 1), dp = Math.max(0, (raw.split(".")[1]?.length ?? 0) - (pct ? 2 : 0));
+    if (!allIn.some((e) => round(e, dp) === round(bps, dp))) v.push({ rule: "invented_number", detail: `${m[0].trim()} is not the all-in cost of any priced route` });
+  }
   // Figures written in Chinese words (百分之零点三七, 千分之四, 万8) are read by the same reader intake uses.
   for (const f of costFigures(shown).filter((g) => /[百千万]/.test(g.raw))) {
     const dp = String(f.bps).split(".")[1]?.length ?? 0;

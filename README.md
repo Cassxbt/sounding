@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml/badge.svg)](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-332%20passing-10b981)
+![Tests](https://img.shields.io/badge/tests-342%20passing-10b981)
 ![Claims](https://img.shields.io/badge/pnpm%20verify-16%2F16%20claims-10b981)
 ![Bitget](https://img.shields.io/badge/Bitget-rTokens%20·%20Agent%20Hub-00c2c2)
 ![Model](https://img.shields.io/badge/model-Qwen%203.8%20Max-6d28d9)
@@ -53,7 +53,7 @@ So I treated *"the size does not fit"* as a first-class answer, sitting right ne
 3. **Walk.** The engine walks Bitget's book level by level at the full size, in exact decimals, with the taker fee charged on the traded amount. It does so on weekends and US holidays, when Bitget matches rToken orders on that book. In US sessions Bitget routes them to NASDAQ/NYSE, so Sounding refuses with `ROUTED_TO_US_MARKET` rather than price a book the order would not fill against.
 4. **Decide.** Within the ceiling at a known fee, or over it with the largest size that fits. An unknown fee that changes the answer is asked.
 5. **Look again.** Before acting, a fresh book is walked. The decision stands only within 10 bps and two minutes.
-6. **Hand over.** For an agent, the exact Agent Hub `order` arguments, bound to a signed receipt, or a refusal with a reason.
+6. **Hand over.** For an agent, the exact Agent Hub `order` arguments: a limit at the trader's ceiling price, so Bitget fills no share that costs more than the ceiling, bound to a signed receipt. Or a refusal with a reason and the size that does fit.
 
 ## Verify it yourself in 90 seconds
 
@@ -63,12 +63,12 @@ No account, no key. Nothing is sent to the exchange. These run on the recorded S
 # An order the book cannot carry: refused, with the size that fits offered as a new order
 curl -s https://sounding-zeta.vercel.app/api/prepare -H 'content-type: application/json' \
   -d '{"symbol":"RHIMSUSDT","side":"sell","amount":"5000","ceilingBps":40,"userFeeBps":5,"mode":"recorded"}'
-# → {"preparation":{"status":"refused","code":"INSUFFICIENT_VISIBLE_DEPTH","reason":"the visible book cannot fill this order","proposal":{"size":"257.1401","unit":"sh",…}},…}
+# → {"preparation":{"status":"refused","code":"INSUFFICIENT_VISIBLE_DEPTH","reason":"the visible book cannot fill this order","proposal":{"size":"66.0764","unit":"sh",…}},…}
 
 # An order that fits: the exact Agent Hub order, bound to its receipt
 curl -s https://sounding-zeta.vercel.app/api/prepare -H 'content-type: application/json' \
   -d '{"symbol":"RHIMSUSDT","side":"sell","amount":"50","ceilingBps":40,"userFeeBps":5,"mode":"recorded"}'
-# → {"preparation":{"status":"prepared","order":{"action":"place","category":"SPOT","symbol":"RHIMSUSDT","side":"sell","orderType":"limit","price":"27.98","timeInForce":"ioc","qty":"50"},"command":"bgc order --action place … --dry-run","binding":{…"allInBps":"19.89"…},"signed":…,"book":"recorded"},…}
+# → {"preparation":{"status":"prepared","order":{"action":"place","category":"SPOT","symbol":"RHIMSUSDT","side":"sell","orderType":"limit","price":"27.93","timeInForce":"ioc","qty":"50"},"command":"bgc order --action place … --dry-run","binding":{…"allInBps":"19.89","worstCaseBps":"38.88"…},"signed":…,"book":"recorded"},…}
 ```
 
 Then open [/bitget](https://sounding-zeta.vercel.app/bitget), where the engine runs one order with each Bitget input withheld, and run every number in this README again:
@@ -128,7 +128,7 @@ The model reads and explains. It never does the arithmetic, and it cannot pass a
 | Reality stock-info | `GET /api/v3/reality/market/stock-info` | refused: `INVALID_INSTRUMENT` |
 | Market states, calendar | `GET /api/v3/reality/market/states` · `/calendar` | refused: `SESSION_UNKNOWN` |
 | Instrument rules | `GET /api/v3/market/instruments?category=SPOT` | refused: `INVALID_INSTRUMENT` |
-| Agent Hub, read-only | `account_overview` (agent, the trader's account) · SDK 3.3.1 `getAccountFeeRate` (self-hosted, its operator's account) | the fee falls to the published 5 and 10 bps scenarios; an answer that depends on which is asked instead of prepared (sell 50 rHIMS under 20 bps on the recorded book: refused without a fee, prepared at 5 bps) |
+| Agent Hub, read-only | `account_overview` (agent, the trader's account) · SDK 3.3.1 `getAccountFeeRate` (self-hosted, its operator's account) | the fee falls to the published 5 and 10 bps scenarios; an answer that depends on which is asked instead of prepared (sell 16 rHIMS under 20 bps on the recorded book: refused without a fee, prepared at 5 bps) |
 | Agent Hub, order path | `order` tool · `bgc order --action place` | nothing receives the checked order: the answer stays advice, and an agent left to Agent Hub alone sends what it is told |
 | Qwen on Bitget's S2 endpoint | `hackathon.bitgetops.com/v1` | the fallback reader cannot read "0.05%", "0.3%" or "before the 8th", and asks for limits already given |
 
@@ -136,9 +136,9 @@ The first four rows are computed by the engine on every build (`src/lib/deletion
 
 | Order | Agent Hub dry run (`bgc` 3.0.0) | Sounding (`/api/prepare`, production) |
 |---|---|---|
-| sell 5000 | previews it | refused, `INSUFFICIENT_VISIBLE_DEPTH`: the visible book cannot fill it; 257.1401 sh offered as a new order |
+| sell 5000 | previews it | refused, `INSUFFICIENT_VISIBLE_DEPTH`: the visible book cannot fill it; 66.0764 sh, what fills now inside a limit at the ceiling price, offered as a new order |
 | side `hold`, qty `-5` | previews it | rejected as input |
-| sell 50 | previews it | prepared: 19.89 bps all-in, within 40, as the exact Agent Hub order (limit IOC at 27.98, the deepest bid walked), signed |
+| sell 50 | previews it | prepared: 19.89 bps all-in, as the exact Agent Hub order, a limit IOC at 27.93, where one share costs 40 bps: no fill can cost more (worst case 38.88), signed |
 
 The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. An agent reads the trader's own fee with Agent Hub's `account_overview` and passes it in; a self-hosted Sounding with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate`. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
@@ -150,7 +150,7 @@ Every refusal is a code an agent can branch on, never prose alone.
 |---|---|
 | Engine gates | `INVALID_INSTRUMENT` · `SESSION_UNKNOWN` · `ROUTED_TO_US_MARKET` · `UNAVAILABLE_THIS_SESSION` · `INVALID_BOOK` · `NO_EXECUTABLE_QUOTE` · `FRESHNESS_UNKNOWN` · `UNSTABLE_QUOTE` · `INVALID_QUANTITY_PRECISION` · `BELOW_MIN_ORDER` |
 | Verdicts | `WITHIN_CEILING_ON_THIS_SNAPSHOT` · `OVER_CEILING_ON_THIS_SNAPSHOT` · `INSUFFICIENT_VISIBLE_DEPTH` |
-| Preparation | `prepared` (with `order`, `binding`, `signed`, `book: live \| recorded`) · `refused` (with `reason` and, when one exists, `proposal`) |
+| Preparation | `prepared` (with `order`, `binding` carrying `allInBps`, `worstCaseBps` and `expected`, `signed`, `book: live \| recorded`) · `refused` with a code (an engine gate, a verdict, `FEE_DECIDES`, `PAST_CEILING_PRICE`, `BELOW_MIN_ORDER`), a `reason` and, when one exists, a `proposal` that itself prepares |
 | Verification | `ok`, or a reason: the order differs, not issued by this server, no signing key, older than two minutes |
 
 - `agent/sounding-mcp.mjs`: a dependency-free MCP server with `sounding_prepare_order` and `sounding_verify_order`, to run beside `@bitget-ai/bitget-agent-mcp`.
@@ -199,10 +199,10 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 | Engine decisions and receipts | **Real.** Exact decimals; receipts hashed, signed, and replayable offline (`pnpm replay`). |
 | Qwen reading and ruling | **Real**, on Bitget's S2 endpoint, checked by code on every turn. |
 | Agent Hub fee read | **Real**, through Agent Hub's read-only client, recorded with a read-only key on the developer's machine (taker 5 bps, the same as Bitget's published promotional rate). The public site holds no key and never shows one account's fee as anyone else's; an agent passes the trader's own. |
-| Which book fills | **Weekends and US holidays only.** Bitget's Stock 2.0 guide routes rToken orders to NASDAQ/NYSE in US sessions and matches them on its own book, with market makers, on weekends and US holidays. Sounding prices only the second case and refuses the first (`ROUTED_TO_US_MARKET`). Sampled on a weekday overnight (2026-10-08, 270 samples), the ticker quoted whole shares every time and the public book fractional ones in 269: two venues, as Bitget describes (`evidence/routing-20261008`). |
-| Weekend order type | **Limit IOC, prepared, never sent.** The prepared order is a limit at the deepest price the walk reached, immediate-or-cancel: Bitget fills no share past the price Sounding checked and cancels what it cannot fill at once. The checked cost is the walk's average; each prepared order also states its worst case, every share at the limit (46.01 bps for the 178.4121 sell checked at 36.87), and the skill puts both on the confirmation card. Bitget's weekend FAQ lists limit orders, and Agent Hub's `order` tool takes `price` and `timeInForce`; whether Bitget accepts IOC on an rToken over a weekend is not tested. |
+| Which book fills | **Weekends and US holidays only.** Bitget's Stock 2.0 guide routes rToken orders to NASDAQ/NYSE in US sessions and matches them on its own book, with market makers, on weekends and US holidays. Sounding prices only the second case and refuses the first (`ROUTED_TO_US_MARKET`). On a weekday overnight (2026-10-08, 270 samples) the public ticker and the public book also disagreed: whole-share quotes on one, fractional on the other. That does not identify a venue by itself; Bitget's published routing is the reason, and the scope is the conservative reading of it (`evidence/routing-20261008`). |
+| Weekend order type | **Limit IOC, prepared, never sent.** The prepared order is a limit at the trader's ceiling price, immediate-or-cancel: one share at that price costs exactly the ceiling at the trader's fee, so no fill can cost more, and what cannot fill at once is cancelled. An order is prepared only when its whole size fills inside that limit on the book it was checked on; otherwise the size that does is offered. Bitget's weekend FAQ lists limit orders, and Agent Hub's `order` tool takes `price` and `timeInForce`; whether Bitget accepts IOC on an rToken over a weekend is not tested. |
 | Agent Hub order | **Prepared, never sent.** Shown as a dry run: Bitget's demo environment listed 6 of the 90 weekend-tradable rTokens, all with empty books, when checked on 2026-10-05, so a paper fill would prove nothing. |
-| Enforcement | **Advisory.** The skill tells an agent to send only what Sounding prepared; it cannot stop a client that skips it. |
+| Enforcement | **Advisory to send, enforced once sent.** The skill tells an agent to send only what Sounding prepared; it cannot stop a client that skips it. An order it does send is a limit at the ceiling price, which Bitget's matching holds: no share fills past it. |
 | Fills | **Not promised.** Every answer is conditional on the snapshot it names; hidden liquidity and the future book are out of reach. |
 | Research | **Real, corrected.** The census was restated on 2026-10-07 from 57/89 to 28/89 at 25,000 USDT; the originals remain on `/research`. Runs made on engine 0.4.0 say so. |
 | Sampling | **Real, with a gap.** Every 30 minutes on a declared schedule; a 21-hour gap on Oct 4–5 is recorded, not filled (`evidence/atlas-202610`). |
@@ -213,7 +213,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 pnpm install
 cp .env.example .env.local
 pnpm dev        # http://localhost:3000
-pnpm test       # 332 tests in 15 files
+pnpm test       # 342 tests in 16 files
 pnpm verify     # every claim above, recomputed
 pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 ```

@@ -54,8 +54,10 @@ export function validateBook(raw: RawOrderbook): BookValidity {
   if (!ts || !/^\d{13}$/.test(ts)) return { valid: false, code: "INVALID_BOOK", detail: "missing exchange ts" };
   if (asks.length === 0 && bids.length === 0) return { valid: false, code: "NO_EXECUTABLE_QUOTE", detail: "empty book" };
   if (asks.length === 0 || bids.length === 0) return { valid: false, code: "INVALID_BOOK", detail: "one-sided book" };
+  // Every level must be a plain positive decimal, as Bitget sends it: "Infinity", "1e9" or a number type is refused, never walked.
+  const plain = (v: unknown) => typeof v === "string" && /^\d+(\.\d+)?$/.test(v) && D(v).gt(0);
   for (const [p, q] of [...asks, ...bids]) {
-    if (!(D(p).gt(0)) || !D(q).gt(0)) return { valid: false, code: "INVALID_BOOK", detail: `bad level ${p}/${q}` };
+    if (!plain(p) || !plain(q)) return { valid: false, code: "INVALID_BOOK", detail: `bad level ${p}/${q}` };
   }
   // Walking assumes best-first order; a book out of order would price the wrong levels first.
   for (let k = 1; k < asks.length; k++) if (!D(asks[k][0]).gt(asks[k - 1][0])) return { valid: false, code: "INVALID_BOOK", detail: `asks out of order at level ${k + 1}` };
@@ -117,6 +119,17 @@ export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): Le
   const vwap = cash.div(qty);
   const bps = mid.minus(vwap).div(mid).mul(10000);
   return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), vwap: vwap.toFixed(6), deepestPrice: D(bids[used - 1][0]).toString(), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
+}
+
+/** Buy an exact share quantity: walk asks for it. Used to price the order a buy budget becomes. */
+export function buyShares(raw: RawOrderbook, baseQty: string, mid: Decimal): LegCost {
+  const asks = raw.data.asks; const qty = D(baseQty);
+  const { cash, unfilled, used } = walkForQty(asks, qty);
+  const base = { side: "buy" as const, levelsConsumed: used, visibleNotional: notional(asks).toFixed(2) };
+  if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), thinTop: false, ...base };
+  const vwap = cash.div(qty);
+  const bps = vwap.minus(mid).div(mid).mul(10000);
+  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), vwap: vwap.toFixed(6), deepestPrice: D(asks[used - 1][0]).toString(), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: false, ...base };
 }
 
 /** true when the exact all-in cost of this leg is at or under the ceiling */

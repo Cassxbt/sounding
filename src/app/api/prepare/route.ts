@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     const { capture, historical } = await bookFor(mode, b.symbol, b.fixture);
     const now = historical ? new Date(Number(capture.exchange_ts)) : new Date();
     const result = sound({ capture, intent, ceilingBps, now, historical, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments, userFeeBps: fee.bps });
-    return NextResponse.json({ preparation: prepare(result, fee.source, historical ? now : new Date()), fee, receipt_sha256: result.receipt.receipt_sha256, ...(fee.source === "bitget_account" ? { feeReadBy: "@bitget-ai/bitget-agent-sdk@3.3.1 getAccountFeeRate" } : {}) });
+    return NextResponse.json({ preparation: prepare(result, capture.raw, fee.source, historical ? now : new Date()), fee, receipt_sha256: result.receipt.receipt_sha256, ...(fee.source === "bitget_account" ? { feeReadBy: "@bitget-ai/bitget-agent-sdk@3.3.1 getAccountFeeRate" } : {}) });
   } catch (e) {
     if (e instanceof LiveMetadataUnavailable) return NextResponse.json({ error: `live Bitget metadata unavailable (${e.message}); nothing is prepared on recorded rules` }, { status: 503 });
     const j = errorJson(e);

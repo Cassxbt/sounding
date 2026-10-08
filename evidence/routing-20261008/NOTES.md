@@ -8,4 +8,4 @@ Bitget's support article "What Is Bitget US Stock 2.0" (2026-08-28, https://www.
 - the ticker's best ask was better than the book's in 252, while its best bid was worse than the book's in 200: the two quotes do not come from one book;
 - the ticker's top size was more than twice the book's top size in 195, and larger than the book's whole visible ask side in 20.
 
-The ticker and the public book are two different venues at that hour, which is what Bitget's routing describes. Sounding therefore prices orders only in weekend and holiday sessions, where the book it walks is the one the order fills against, and refuses the rest with `ROUTED_TO_US_MARKET` (engine 0.6.0).
+The two public feeds disagree at that hour. That does not by itself identify which venue fills an order; Bitget's published routing does, and Sounding's scope (weekends and US holidays only) is the conservative reading of it. Sounding therefore prices orders only in weekend and holiday sessions, where the book it walks is the one the order fills against, and refuses the rest with `ROUTED_TO_US_MARKET` (engine 0.6.0).

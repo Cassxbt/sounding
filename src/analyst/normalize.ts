@@ -97,12 +97,13 @@ function readNamedDate(span: string, today: string): string | null {
   };
   let x = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (x) return fmt(Number(x[1]), Number(x[2]), Number(x[3]));
-  x = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?/);
-  if (x) return withYear(MONTHS[x[1]], Number(x[2]));
-  x = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)/);
-  if (x) return withYear(MONTHS[x[2]], Number(x[1]));
-  x = s.match(/(\d{1,2})月(\d{1,2})[日号]/);
-  if (x) return withYear(Number(x[1]), Number(x[2]));
+  // A year the trader writes is theirs: "Oct 8, 2027" is never rolled to this year.
+  x = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4})\b)?/);
+  if (x) return x[3] ? fmt(Number(x[3]), MONTHS[x[1]], Number(x[2])) : withYear(MONTHS[x[1]], Number(x[2]));
+  x = s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?(?:,?\s+(\d{4})\b)?/);
+  if (x) return x[3] ? fmt(Number(x[3]), MONTHS[x[2]], Number(x[1])) : withYear(MONTHS[x[2]], Number(x[1]));
+  x = s.match(/(?:(\d{4})\s*年\s*)?(\d{1,2})月(\d{1,2})[日号]/);
+  if (x) return x[1] ? fmt(Number(x[1]), Number(x[2]), Number(x[3])) : withYear(Number(x[2]), Number(x[3]));
   x = s.match(/\b(\d{1,2})\/(\d{1,2})\b/);
   if (x) return withYear(Number(x[1]), Number(x[2]));
   x = s.match(/(?<![\d.])(\d{1,2})\.(\d{1,2})(?![\d%.])/);
@@ -227,4 +228,17 @@ export function replyLanguage(text: string): "en" | "zh" {
   // Tickers and units are written in Latin letters whatever the language ("卖出 100 股 rHIMS").
   const latin = (text.replace(/\b(?:r[A-Za-z]{1,6}|[A-Z]{2,}(?:USDT)?|bps?|usdt|u|sh)\b/g, "").match(/[A-Za-z]/g) ?? []).length;
   return cjk > 0 && cjk * 2 >= latin ? "zh" : "en";
+}
+
+/**
+ * One spelling for the characters a phone keyboard varies: full-width digits, minus, point and percent become ASCII,
+ * and a decimal written without its leading zero (".5") gets one. Everything that reads the message reads this.
+ */
+export function canonicalText(text: string): string {
+  return text
+    .replace(/[\uFF10-\uFF19]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xFF10 + 48))
+    .replace(/[\uFF0D\uFE63](?=\s*[\d.\uFF0E])/g, "-")
+    .replace(/\uFF0E(?=\d)/g, ".")
+    .replace(/\uFF05/g, "%")
+    .replace(/(^|[^\w.])([-\u2212]?)\.(\d)/g, "$1$20.$3");
 }

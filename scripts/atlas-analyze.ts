@@ -35,6 +35,7 @@ const files = readdirSync(dir).filter((f) => f.endsWith(".json.gz")).sort();
 const cells = new Map<string, { snapshots: number; invalid: number; insufficient: number; overAtSize: number; topYesSizeNo: number; feeFlip: number }>();
 // pairs/changed: priced at both captures. toUnpriced: priced first, then invalid or too thin on the re-capture.
 const flips = new Map<string, { pairs: number; changed: number; toUnpriced: number }>();
+const gaps = new Map<string, number[]>();
 const rounds: { round: number; started_utc: string; host?: string; session: string; books: number; failed: number; transportFailed: number; apiError: number; metadataFailed: boolean }[] = [];
 const bump = <T extends object>(m: Map<string, T>, k: string, init: T) => m.get(k) ?? (m.set(k, init), m.get(k)!);
 
@@ -65,6 +66,8 @@ for (const f of files) {
   for (const b of r.flip.books.filter((x) => x.status === 200 && x.body)) {
     const a = first.get(b.symbol);
     if (!a) continue;
+    // The re-read is scheduled after the whole sweep, so the gap is measured from the two exchange timestamps, not assumed.
+    bump(gaps, `+${b.offset_s}s`, [] as number[]).push((Number(b.body!.data.ts) - Number(a.data.ts)) / 1000);
     for (const side of ["buy", "sell"] as const) for (const fee of FEES) {
       const c0 = costs(a, side, 5000)?.full(fee), c1 = costs(b.body!, side, 5000)?.full(fee);
       if (!c0) continue;
@@ -84,6 +87,7 @@ const result = {
   fees: { decides: FEE, list: LIST, charged: "on traded notional" }, hosts: [...new Set(rounds.map((r) => r.host ?? "local"))],
   cells: Object.fromEntries([...cells].map(([k, v]) => [k, v])),
   flips: Object.fromEntries([...flips].map(([k, v]) => [k, v])),
+  rereadSeconds: Object.fromEntries([...gaps].map(([k, v]) => { const x = [...v].sort((p, q) => p - q), at = (f: number) => Number(x[Math.min(x.length - 1, Math.floor(f * x.length))].toFixed(1)); return [k, { pairs: x.length, min: at(0), median: at(0.5), p95: at(0.95), max: at(1) }]; })),
   roundsDetail: rounds,
 };
 writeFileSync(out, JSON.stringify(result, null, 1));

@@ -24,12 +24,16 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   for (const fee of fees) cite("takerFeeBps", Number(fee[2]), fee, 1);
 
   const iso = t.match(/(deadline|by|before)\s*(?:is\s*)?(\d{4}-\d{2}-\d{2})/);
-  const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/);
+  const named = t.match(/(?:hard\s+deadline|deadline|flat\s+by|out\s+by|by|before)\s+(?:is\s+)?(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:,?\s+(\d{4})\b)?/);
   if (iso) { c.hardDeadlineNy = iso[1] === "before" ? dayBefore(iso[2]) : iso[2]; cite("hardDeadlineNy", c.hardDeadlineNy, iso); }
-  else if (named) { c.hardDeadlineNy = `${year}-${MONTHS[named[1]]}-${named[2].padStart(2, "0")}`; cite("hardDeadlineNy", c.hardDeadlineNy, named); }
+  else if (named) {
+    const d = `${named[3] ?? year}-${MONTHS[named[1]]}-${named[2].padStart(2, "0")}`;
+    c.hardDeadlineNy = named[0].startsWith("before") ? dayBefore(d) : d;
+    cite("hardDeadlineNy", c.hardDeadlineNy, named);
+  }
 
   if (/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/.test(t)) c.mustBeFlat = true;
-  const release = t.match(/(?:can|could|able to)\s+hold\s+through|no\s+(?:longer\s+)?(?:a\s+)?deadline|deadline\s+(?:is\s+)?(?:gone|removed|off)|not\s+urgent/);
+  const release = t.match(/(?<!\b(?:not|never|un)\s*)(?:can|could|able to)\s+hold\s+through|no\s+(?:longer\s+)?(?:a\s+)?deadline|deadline\s+(?:is\s+)?(?:gone|removed|off)|not\s+urgent/);
   if (release) { c.mustBeFlat = false; c.hardDeadlineNy = null; cite("releaseDeadline", true, release); }
   if (/only\s+(?:want\s+)?this\s+(?:company|stock|name)|only\s+[a-z]+\s+exposure|no\s+(?:etf|proxy|proxies)/.test(t)) c.exclusiveExposure = true;
   if (/(?:ok|fine|happy|consent)\s+(?:with|to)\s+(?:a\s+)?(?:proxy|etf|substitute)/.test(t)) c.proxyConsent = true;
@@ -45,6 +49,7 @@ export function extractConstraints(text: string, prev: Constraints, year = 2026)
   if (sh) { const v = sh[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeShares = v; cite("sizeShares", v, sh, 1); }
   // Read a USDT amount whatever the side; the route asks when it is the wrong unit for the order.
   else if (q) { const v = q[2].replace(/[\s,]/g, ""); if (Number(v) > 0) sizeQuote = v; cite("sizeQuoteUsdt", v, q, 1); }
-  if (c.mustBeFlat && !prev.mustBeFlat) { const m = t.match(/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/); if (m) cite("mustBeFlat", true, m); }
+  // Cited whenever said, so a restated requirement is read again rather than asked about.
+  if (c.mustBeFlat) { const m = t.match(/must\s+be\s+(?:flat|out|filled)|hard\s+deadline|need\s+to\s+be\s+(?:flat|out)/); if (m) cite("mustBeFlat", true, m); }
   return { constraints: c, sizeShares, sizeQuote, proposed };
 }

@@ -6,7 +6,7 @@ import { classifySession, nextSessionNy, NEXT_SWITCH_HINT, type Calendar, type M
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.6.0";
+export const ENGINE_VERSION = "sounding-engine/0.7.0";
 import { DEFAULT_FEE_SCENARIOS_BPS } from "./fees";
 export { DEFAULT_FEE_SCENARIOS_BPS, FEE_SCENARIO_SOURCES } from "./fees";
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
@@ -124,7 +124,7 @@ export function sound(i: SoundingInput): SoundingResult {
 
   const alternatives: Alternative[] = [];
   if (leg.status === "OK") {
-    alternatives.push({ kind: "immediate_cross", qty: leg.qty, allInBpsByFee: Object.fromEntries(fees.map((f) => [f.feeBps, f.allInBps!])), tradeoffs: [`a limit IOC at ${leg.deepestPrice}, the deepest price walked: nothing fills past it, and what cannot fill at once is cancelled; acceptance and fill not promised`, "conditional on this snapshot"] });
+    alternatives.push({ kind: "immediate_cross", qty: leg.qty, allInBpsByFee: Object.fromEntries(fees.map((f) => [f.feeBps, f.allInBps!])), tradeoffs: ["a limit, immediate-or-cancel: nothing fills past its price, and what cannot fill at once is cancelled; acceptance and fill not promised", "conditional on this snapshot"] });
   }
   if (decidingVerdicts.some((f) => f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT")) {
     const worstFee = i.userFeeBps !== undefined ? i.userFeeBps : Math.max(...scenarios.map((s) => s.feeBps));
