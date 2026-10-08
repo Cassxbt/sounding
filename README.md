@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml/badge.svg)](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-328%20passing-10b981)
+![Tests](https://img.shields.io/badge/tests-329%20passing-10b981)
 ![Claims](https://img.shields.io/badge/pnpm%20verify-16%2F16%20claims-10b981)
 ![Bitget](https://img.shields.io/badge/Bitget-rTokens%20·%20Agent%20Hub-00c2c2)
 ![Model](https://img.shields.io/badge/model-Qwen%203.8%20Max-6d28d9)
@@ -68,7 +68,7 @@ curl -s https://sounding-zeta.vercel.app/api/prepare -H 'content-type: applicati
 # An order that fits: the exact Agent Hub order, bound to its receipt
 curl -s https://sounding-zeta.vercel.app/api/prepare -H 'content-type: application/json' \
   -d '{"symbol":"RHIMSUSDT","side":"sell","amount":"50","ceilingBps":40,"userFeeBps":5,"mode":"recorded"}'
-# → {"preparation":{"status":"prepared","order":{"action":"place","category":"SPOT","symbol":"RHIMSUSDT","side":"sell","orderType":"market","qty":"50"},"command":"bgc order --action place … --dry-run","binding":{…"allInBps":"19.89"…},"signed":…,"book":"recorded"},…}
+# → {"preparation":{"status":"prepared","order":{"action":"place","category":"SPOT","symbol":"RHIMSUSDT","side":"sell","orderType":"limit","price":"27.98","timeInForce":"ioc","qty":"50"},"command":"bgc order --action place … --dry-run","binding":{…"allInBps":"19.89"…},"signed":…,"book":"recorded"},…}
 ```
 
 Then open [/bitget](https://sounding-zeta.vercel.app/bitget), where the engine runs one order with each Bitget input withheld, and run every number in this README again:
@@ -138,7 +138,7 @@ The first four rows are computed by the engine on every build (`src/lib/deletion
 |---|---|---|
 | sell 5000 | previews it | refused, `INSUFFICIENT_VISIBLE_DEPTH`: the visible book cannot fill it; 257.1401 sh offered as a new order |
 | side `hold`, qty `-5` | previews it | rejected as input |
-| sell 50 | previews it | prepared: 19.89 bps all-in, within 40, as the exact Agent Hub order, signed |
+| sell 50 | previews it | prepared: 19.89 bps all-in, within 40, as the exact Agent Hub order (limit IOC at 27.98, the deepest bid walked), signed |
 
 The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. An agent reads the trader's own fee with Agent Hub's `account_overview` and passes it in; a self-hosted Sounding with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate`. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
@@ -200,7 +200,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 | Qwen reading and ruling | **Real**, on Bitget's S2 endpoint, checked by code on every turn. |
 | Agent Hub fee read | **Real**, through Agent Hub's read-only client, recorded with a read-only key on the developer's machine (taker 5 bps, the same as Bitget's published promotional rate). The public site holds no key and never shows one account's fee as anyone else's; an agent passes the trader's own. |
 | Which book fills | **Weekends and US holidays only.** Bitget's Stock 2.0 guide routes rToken orders to NASDAQ/NYSE in US sessions and matches them on its own book, with market makers, on weekends and US holidays. Sounding prices only the second case and refuses the first (`ROUTED_TO_US_MARKET`). Sampled on a weekday overnight (2026-10-08, 270 samples), the ticker's whole-share quotes beat the book's best ask 252 times, which is what a routed quote looks like (`evidence/routing-20261008`). |
-| Weekend order type | **Market, as the UI offers it.** The prepared order is a market order. Bitget's weekend FAQ lists limit and TP/SL orders; its rToken order form showed both Limit and Market on a Sunday (`evidence/parity-20260920`). A market order sent on a weekend is not tested. |
+| Weekend order type | **Limit IOC, prepared, never sent.** The prepared order is a limit at the deepest price the walk reached, immediate-or-cancel: Bitget fills no share past the price Sounding checked and cancels what it cannot fill at once. Bitget's weekend FAQ lists limit orders, and Agent Hub's `order` tool takes `price` and `timeInForce`; whether Bitget accepts IOC on an rToken over a weekend is not tested. |
 | Agent Hub order | **Prepared, never sent.** Shown as a dry run: Bitget's demo environment listed 6 of the 90 weekend-tradable rTokens, all with empty books, when checked on 2026-10-05, so a paper fill would prove nothing. |
 | Enforcement | **Advisory.** The skill tells an agent to send only what Sounding prepared; it cannot stop a client that skips it. |
 | Fills | **Not promised.** Every answer is conditional on the snapshot it names; hidden liquidity and the future book are out of reach. |
@@ -213,7 +213,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 pnpm install
 cp .env.example .env.local
 pnpm dev        # http://localhost:3000
-pnpm test       # 328 tests in 15 files
+pnpm test       # 329 tests in 15 files
 pnpm verify     # every claim above, recomputed
 pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 ```

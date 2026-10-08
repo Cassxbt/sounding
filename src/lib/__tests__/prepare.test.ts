@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sound } from "@/engine";
 import { canonicalJson, sha256 } from "@/engine/book";
-import { calendar, instruments, rhims, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
+import { calendar, instruments, rhims, rspy, states, stockInfo, T_RHIMS } from "@/engine/__tests__/helpers";
 import { prepare, verifyPrepared } from "../prepare";
 
 const ctx = () => ({ stockInfo: stockInfo(), states: states(), calendar: calendar(), instruments: instruments(), historical: true, now: T_RHIMS });
@@ -29,8 +29,9 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
     const p = prepare(sell("178.4121", 40, 5), "bitget_account", NOW);
     expect(p.status).toBe("prepared");
     if (p.status !== "prepared") return;
-    expect(p.order).toEqual({ action: "place", category: "SPOT", symbol: "RHIMSUSDT", side: "sell", orderType: "market", qty: "178.4121" });
-    expect(p.command).toBe("bgc order --action place --category SPOT --symbol RHIMSUSDT --side sell --orderType market --qty 178.4121 --dry-run");
+    // A limit IOC at the deepest bid the walk reached: Bitget fills no share below the price Sounding checked.
+    expect(p.order).toEqual({ action: "place", category: "SPOT", symbol: "RHIMSUSDT", side: "sell", orderType: "limit", price: "27.91", timeInForce: "ioc", qty: "178.4121" });
+    expect(p.command).toBe("bgc order --action place --category SPOT --symbol RHIMSUSDT --side sell --orderType limit --price 27.91 --timeInForce ioc --qty 178.4121 --dry-run");
     expect(p.binding).toMatchObject({ fee: { bps: 5, source: "bitget_account" }, ceilingBps: 40, allInBps: "36.87" });
     expect(verifyPrepared(p.order, p.binding, p.signature, NOW)).toEqual({ ok: true });
   });
@@ -59,6 +60,18 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
   });
   it("an engine refusal (a size Bitget would reject) prepares nothing", () => {
     expect(prepare(sell("178.412132", 50, 5), "stated", NOW)).toMatchObject({ status: "refused" });
+  });
+});
+
+describe("a buy is a limit IOC that cannot spend more than the budget", () => {
+  beforeEach(() => { process.env.SOUNDING_RECEIPT_KEY = "test-key"; });
+  afterEach(() => { delete process.env.SOUNDING_RECEIPT_KEY; });
+  it("1,000 USDT of rSPY: shares at the deepest ask the walk reached, floored to Bitget's precision", () => {
+    const res = sound({ ...ctx(), capture: rspy(), intent: { side: "buy", quoteBudget: "1000" }, ceilingBps: 100, userFeeBps: 5 });
+    const p = prepare(res, "stated", NOW);
+    if (p.status !== "prepared") throw new Error("expected prepared");
+    expect(p.order).toEqual({ action: "place", category: "SPOT", symbol: "RSPYUSDT", side: "buy", orderType: "limit", price: "763.79", timeInForce: "ioc", qty: "1.3092" });
+    expect(Number(p.order.qty) * Number(p.order.price)).toBeLessThanOrEqual(1000);
   });
 });
 

@@ -124,7 +124,7 @@ export function sound(i: SoundingInput): SoundingResult {
 
   const alternatives: Alternative[] = [];
   if (leg.status === "OK") {
-    alternatives.push({ kind: "immediate_cross", qty: leg.qty, allInBpsByFee: Object.fromEntries(fees.map((f) => [f.feeBps, f.allInBps!])), tradeoffs: ["market or marketable-limit; Bitget UI offers both on weekends; acceptance and fill not promised", "conditional on this snapshot"] });
+    alternatives.push({ kind: "immediate_cross", qty: leg.qty, allInBpsByFee: Object.fromEntries(fees.map((f) => [f.feeBps, f.allInBps!])), tradeoffs: [`a limit IOC at ${leg.deepestPrice}, the deepest price walked: nothing fills past it, and what cannot fill at once is cancelled; acceptance and fill not promised`, "conditional on this snapshot"] });
   }
   if (decidingVerdicts.some((f) => f.verdict !== "WITHIN_CEILING_ON_THIS_SNAPSHOT")) {
     const worstFee = i.userFeeBps !== undefined ? i.userFeeBps : Math.max(...scenarios.map((s) => s.feeBps));

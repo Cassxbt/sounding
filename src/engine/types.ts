@@ -78,6 +78,8 @@ export interface LegCost {
   /** same cash at full precision; the minimum-order gate compares this */
   cashExact?: string;
   vwap?: string;
+  /** price of the deepest level the walk reached: no share of the order fills worse than this on this book */
+  deepestPrice?: string;
   /** one-leg cost vs reference mid, pre-fee, basis points, rounded for display */
   bpsPreFee?: string;
   /** same cost at full precision; every ceiling comparison uses this, never the display value */

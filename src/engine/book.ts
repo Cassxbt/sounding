@@ -105,7 +105,7 @@ export function buyWithBudget(raw: RawOrderbook, quoteBudget: string, mid: Decim
   if (exhausted || shares.eq(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), thinTop: false, ...base };
   const vwap = spent.div(shares);
   const bps = vwap.minus(mid).div(mid).mul(10000);
-  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
+  return { status: "OK", qty: shares.toFixed(6), cash: spent.toFixed(2), cashExact: spent.toString(), vwap: vwap.toFixed(6), deepestPrice: D(asks[used - 1][0]).toString(), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(asks, budget.div(D(asks[0][0])), D(asks[0][0]), mid, vwap, "buy"), ...base };
 }
 
 /** Sell base shares: walk bids for the full quantity. */
@@ -116,7 +116,7 @@ export function sellShares(raw: RawOrderbook, baseQty: string, mid: Decimal): Le
   if (unfilled.gt(0)) return { status: "INSUFFICIENT_VISIBLE_DEPTH", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), thinTop: false, ...base };
   const vwap = cash.div(qty);
   const bps = mid.minus(vwap).div(mid).mul(10000);
-  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), vwap: vwap.toFixed(6), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
+  return { status: "OK", qty: qty.toString(), cash: cash.toFixed(2), cashExact: cash.toString(), vwap: vwap.toFixed(6), deepestPrice: D(bids[used - 1][0]).toString(), bpsPreFee: bps.toFixed(2), bpsPreFeeExact: bps.toString(), thinTop: thinTop(bids, qty, D(bids[0][0]), mid, vwap, "sell"), ...base };
 }
 
 /** true when the exact all-in cost of this leg is at or under the ceiling */

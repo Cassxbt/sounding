@@ -1,6 +1,6 @@
 import { canonicalJson, canSign, receiptSignatureValid, sha256, signReceiptHash } from "@/engine/book";
 import { decidingRow, MAX_DECISION_AGE_MS } from "@/engine/decision";
-import type { Intent, SoundingResult } from "@/engine/types";
+import { D, type Intent, type SoundingResult } from "@/engine/types";
 import { bgcCommand, orderFor, type AgentHubOrder } from "./agenthub";
 
 export type FeeSource = "stated" | "bitget_account" | "scenario";
@@ -44,7 +44,9 @@ export function prepare(res: SoundingResult, feeSource: FeeSource, now: Date): P
       ...(clip?.qty ? { proposal: { size: clip.qty, unit, remainder: clip.remainder ?? "0", note: "a smaller order; nothing is prepared until you choose it" } } : {}),
     };
   }
-  const order = orderFor(res.symbol, res.intent);
+  const order = orderFor(res.symbol, res.intent, res.leg!.deepestPrice!, Number(res.spec!.quantityPrecision));
+  if (D(order.qty).lt(res.spec!.minOrderQty) || D(order.qty).mul(order.price).lt(res.spec!.minOrderAmount))
+    return { status: "refused", code: "BELOW_MIN_ORDER", reason: `at ${order.price} the budget buys ${order.qty} sh, under Bitget's minimum order` };
   const binding: Binding = {
     engineVersion: res.receipt.engineVersion, receipt_sha256: res.receipt.receipt_sha256!, exchange_ts: res.receipt.exchange_ts, symbol: res.symbol,
     intent: res.intent, ceilingBps: res.ceilingBps, allInBps: d.allInBps!, fee: { bps: d.feeBps, source: d.source === "user" ? feeSource : "scenario" },
