@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml/badge.svg)](https://github.com/Cassxbt/sounding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-329%20passing-10b981)
+![Tests](https://img.shields.io/badge/tests-330%20passing-10b981)
 ![Claims](https://img.shields.io/badge/pnpm%20verify-16%2F16%20claims-10b981)
 ![Bitget](https://img.shields.io/badge/Bitget-rTokens%20·%20Agent%20Hub-00c2c2)
 ![Model](https://img.shields.io/badge/model-Qwen%203.8%20Max-6d28d9)
@@ -213,7 +213,7 @@ Why the model is needed: the same thirty blind tasks, with and without Qwen, run
 pnpm install
 cp .env.example .env.local
 pnpm dev        # http://localhost:3000
-pnpm test       # 329 tests in 15 files
+pnpm test       # 330 tests in 15 files
 pnpm verify     # every claim above, recomputed
 pnpm replay fixtures/rhims-20260920T090235Z.json sell 178.4121 30 5
 ```

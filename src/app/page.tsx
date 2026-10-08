@@ -36,7 +36,7 @@ const ALT: Record<Alternative["kind"], { icon: typeof Lightning; title: string }
   immediate_cross: { icon: Lightning, title: "Cross now, full size" },
   largest_within_ceiling: { icon: Scissors, title: "The largest size that fits" },
   resting_limit: { icon: Hourglass, title: "Rest a limit order" },
-  requote_at_switch: { icon: Clock, title: "Re-sound at the next session" },
+  requote_at_switch: { icon: Clock, title: "Wait for the next session" },
 };
 
 /** Engine tradeoff codes in the words a trader would use; anything unmapped keeps its own text. */
@@ -87,7 +87,7 @@ export default function Page() {
     return () => clearInterval(t);
   }, [resp]);
 
-  const expired = !!resp && !resp.result.freshness.historical && age > 5000;
+  const expired = !!resp && resp.result.ok && !resp.result.freshness.historical && age > 5000;
 
   // The mode is passed in by callers that change it; React state would still hold the old one here.
   // Only the latest request may land; an earlier, slower one is dropped.
@@ -178,7 +178,7 @@ export default function Page() {
               transition={{ duration: 0.7, delay: 0.12 }}
               className="mt-6 max-w-[34rem] text-[17px] leading-relaxed text-ink-2"
             >
-              Sounding walks the real Bitget book for your exact size, then holds it to your fee, your ceiling and your deadline. One decision, or a named refusal with the largest size that fits.
+              When Nasdaq is shut, Bitget&rsquo;s own rToken book is the market. Sounding walks it for your exact size, then holds it to your fee, your ceiling and your deadline. One decision, or a named refusal with the largest size that fits.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: reduce ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }} className="mt-9">
               <AnalystPanel
@@ -208,7 +208,7 @@ export default function Page() {
             ) : res ? (
               <>
                 {withdrawn && <div className="rounded-2xl bg-over-bg px-4 py-3 text-[14px] text-over">The live book moved while the answer was written. The route was withdrawn; the card shows the fresh book. Re-sound before acting.</div>}
-                <DecisionCard res={res} best={side === "sell" ? resp.levels.bids[0]?.[0] : resp.levels.asks[0]?.[0]} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} />
+                <DecisionCard res={res} best={side === "sell" ? resp.levels.bids[0]?.[0] : resp.levels.asks[0]?.[0]} side={side} code={code} busy={busy} freshness={freshness} stale={expired} onRecorded={() => switchMode("recorded")} onSuggestion={(a) => { setAmount(a); setActive(""); run({ amount: a }); }} />
               </>
             ) : <div className="h-[420px] animate-pulse rounded-[22px] border border-rule-soft bg-paper-2/50" />}
             <div className="rounded-[22px] border border-rule-soft p-2">

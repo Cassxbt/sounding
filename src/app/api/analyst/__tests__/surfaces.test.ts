@@ -88,6 +88,12 @@ describe("a live answer is only ever shown with the book it was checked on (re-a
     expect(j.result.gate).toBe("ROUTED_TO_US_MARKET");
     expect(j.analyst).toBeNull();
   });
+  it("on a weekday the venue refusal comes before any question about the words", async () => {
+    vi.setSystemTime(new Date("2026-10-09T15:00:00Z"));
+    mockLive(1);
+    const j = await (await post({ ...live, turns: [{ role: "user", text: "Sell 178.4121 rHIMS. I pay 0.05% taker, keep it under 0.3% all-in, and I must be out before the 8th." }] })).json();
+    expect(j.result.gate).toBe("ROUTED_TO_US_MARKET");
+  });
   it("moved: no route, no stale number, one neutral answer", async () => {
     mockLive(0.99);
     const j = await (await post(live)).json();

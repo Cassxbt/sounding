@@ -11,6 +11,8 @@ import { FEE_SCENARIO_SOURCES } from "@/engine/fees";
 
 interface Props {
   res: SoundingResult;
+  /** back to the recorded weekend book, offered when the live session routes the order elsewhere */
+  onRecorded?: () => void;
   /** best bid for a sell, best ask for a buy: what the quote alone says */
   best?: string;
   side: "buy" | "sell";
@@ -90,7 +92,7 @@ function Meter({ fees, ceiling, deciding }: { fees: FeeScenario[]; ceiling: numb
   );
 }
 
-export function DecisionCard({ res, side, code, busy, freshness, stale, onSuggestion, best }: Props) {
+export function DecisionCard({ res, side, code, busy, freshness, stale, onSuggestion, onRecorded, best }: Props) {
   const d = decidingRow(res);
   const within = d?.verdict === WITHIN;
   const unknownFee = !res.fees?.some((f) => f.source === "user");
@@ -114,6 +116,12 @@ export function DecisionCard({ res, side, code, busy, freshness, stale, onSugges
             </div>
           </div>
           <p className="text-[15px] leading-relaxed text-ink-2">{res.gateDetail}</p>
+          {res.gate === "ROUTED_TO_US_MARKET" && onRecorded && (
+            <button onClick={onRecorded} className="group inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13px] font-medium text-paper transition-transform duration-[var(--dur-micro)] hover:-translate-y-px active:translate-y-0">
+              See it on a recorded weekend book
+              <ArrowRight size={14} className="transition-transform duration-[var(--dur-short)] group-hover:translate-x-0.5" />
+            </button>
+          )}
           {res.suggestion && (
             <button
               onClick={() => onSuggestion(res.suggestion!.baseQty ?? res.suggestion!.quoteBudget!)}

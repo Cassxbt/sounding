@@ -9,7 +9,7 @@ import { EMPTY_CONSTRAINTS, replyLanguage, runAnalyst, type AnalystTurn } from "
 import { validate } from "@/analyst/rules";
 import { intake } from "@/analyst/intake";
 import { templateAnalysis } from "@/analyst/template";
-import { nyClock } from "@/engine/session";
+import { classifySession, nyClock } from "@/engine/session";
 import type { AnalystOutput, Constraints } from "@/analyst/schema";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +41,12 @@ export async function POST(req: Request) {
     // "Today" for reading dates is the clock of the book on the controls, so recorded dates resolve as they did then.
     const controlsBook = await bookFor(mode, b.symbol, b.fixture);
     const today = nyClock(controlsBook.historical ? new Date(Number(controlsBook.capture.exchange_ts)) : new Date()).date;
+    // A live book in a US session is not where an rToken order fills, so no reading of the words can change the answer.
+    if (!controlsBook.historical && !["weekend_mm", "holiday_mm"].includes(classifySession(new Date(), u.states, u.calendar).state)) {
+      const intent: Intent = b.side === "buy" ? { side: "buy", quoteBudget: controlsAmount } : { side: "sell", baseQty: controlsAmount };
+      const result = sound({ capture: controlsBook.capture, intent, ceilingBps: terms.ceilingBps, now: new Date(), historical: false, stockInfo: u.stockInfo, states: u.states, calendar: u.calendar, instruments: u.instruments });
+      return NextResponse.json({ order: { symbol: b.symbol, side: b.side }, amount: controlsAmount, ceilingBps: terms.ceilingBps, result, levels: levelsOf(controlsBook.capture), capture: controlsBook.capture, analyst: null, note: `engine refused: ${result.gate}` });
+    }
     const lastUser = [...(b.turns ?? [])].reverse().find((t) => t.role === "user")?.text ?? "";
     const read = await intake(lastUser, { ...EMPTY_CONSTRAINTS, ...(b.constraints ?? {}) }, today, b.analyst === "template" ? "template" : "model", listed);
 

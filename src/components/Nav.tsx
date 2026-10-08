@@ -51,7 +51,7 @@ export function Nav({ mode, onMode, eligible, total, source }: Props) {
             </li>
           ))}
         </ul>
-        {eligible !== undefined && <span className="ml-auto hidden min-w-0 truncate mono text-[11px] text-ink-3 xl:block">{eligible} of {total?.toLocaleString("en-US")} weekend-tradable · {source}</span>}
+        {eligible !== undefined && <span className="ml-auto hidden min-w-0 truncate mono text-[11px] text-ink-3 xl:block">{eligible} weekend-tradable of {total?.toLocaleString("en-US")} listed · {source}</span>}
         <div className={`ml-auto flex items-center gap-1.5 ${eligible !== undefined ? "xl:ml-3" : ""}`}>
           {mode && onMode && (
             <div role="radiogroup" aria-label="Data source" className="flex rounded-full bg-paper p-0.5">
