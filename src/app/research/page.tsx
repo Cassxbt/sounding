@@ -83,7 +83,7 @@ export default function Research() {
                       const f = Object.entries(a.flips).filter(([k]) => k.startsWith(`${s}|`) && k.includes(`|+30s|fee${a.fees.decides}`)).reduce((t, [, v]) => ({ pairs: t.pairs + v.pairs, changed: t.changed + v.changed, gone: t.gone + v.toUnpriced }), { pairs: 0, changed: 0, gone: 0 });
                       return (
                         <tr key={s} className="border-t border-rule-soft">
-                          <td className="py-3">{SESSION[s] ?? s}</td>
+                          <td className="py-3">{SESSION[s] ?? s}{s !== "weekend_mm" && s !== "holiday_mm" && <span className="block text-[12px] text-ink-3">orders routed to the US market</span>}</td>
                           <td className="mono">{k5 ? `${k5.topYesSizeNo} / ${k5.snapshots} (${pct(k5.topYesSizeNo, k5.snapshots)})` : "—"}</td>
                           <td className="mono">{k25 ? `${k25.topYesSizeNo} / ${k25.snapshots} (${pct(k25.topYesSizeNo, k25.snapshots)})` : "—"}</td>
                           <td className="mono">{f.pairs ? `${f.changed} / ${f.pairs}${f.gone ? ` (+${f.gone} no longer fillable)` : ""}` : "—"}</td>
@@ -95,6 +95,7 @@ export default function Research() {
               </div>
             </>
           ) : <p className="mt-6 text-[14px] text-ink-3">The first analysis has not been published yet.</p>}
+          <p className="mt-6 max-w-3xl text-[13px] text-ink-3">Only the weekend and holiday rows describe the book an order meets. In US sessions Bitget routes rToken orders to NASDAQ/NYSE, so those rows read a book the order does not fill against; they stay in the record because they were on the schedule, and Sounding refuses orders in those sessions.</p>
           <p className="mt-6 max-w-3xl text-[13px] text-ink-3">What this cannot show: fills, hidden or off-book liquidity, hours that were not sampled, or that one week is typical. A missed round stays missing.</p>
           <pre className="mono mt-6 overflow-x-auto rounded-xl bg-paper-2 p-4 text-[12px] text-ink-2">pnpm exec tsx scripts/census-inversions.ts evidence/census-20260920/eligible-census-RAW-20260920T0902Z.json 5000 {fee} 50{"\n"}pnpm exec tsx scripts/atlas-analyze.ts</pre>
         </section>

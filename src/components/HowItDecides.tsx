@@ -11,7 +11,7 @@ export function HowItDecides({ res }: { res?: SoundingResult }) {
   const live = res && !res.freshness.historical;
   const gates: Step[] = [
     { icon: Book, name: "Instrument", does: "Listed on Bitget, with its quantity precision and minimum order.", now: res?.spec ? `${res.symbol} · ${res.spec.quantityPrecision} dp · min ${res.spec.minOrderAmount} USDT` : undefined },
-    { icon: Clock, name: "Session", does: "US session or weekend market-maker session, from Bitget's own states and calendar.", now: res?.session.replace("_", " ") },
+    { icon: Clock, name: "Session", does: "Weekends and US holidays only: in US sessions Bitget routes rToken orders to NASDAQ/NYSE, so its own book is not where they fill. Read from Bitget's own states and calendar.", now: res?.session.replace("_", " ") },
     { icon: CalendarCheck, name: "Weekend eligibility", does: "Only names Bitget flags weekend-tradable are sounded on a weekend.", now: res?.weekendTradable === undefined ? undefined : res.weekendTradable ? "weekendTradable · yes" : "weekendTradable · no" },
     { icon: Ruler, name: "Exchange constraints", does: "A size the exchange would reject is refused with one it would accept.", now: res?.gate === "INVALID_QUANTITY_PRECISION" || res?.gate === "BELOW_MIN_ORDER" ? res.gate.toLowerCase().replace(/_/g, " ") : res?.ok ? "valid size" : undefined },
     { icon: Stack, name: "Book validity", does: "Empty, crossed or malformed books are refused, never walked.", now: res?.ok ? "valid book" : undefined },

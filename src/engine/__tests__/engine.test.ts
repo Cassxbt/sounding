@@ -108,6 +108,19 @@ describe("gates", () => {
     const r = sound({ ...ctx(), capture: fx, intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 });
     expect(r.ok).toBe(false); expect(r.gate).toBe("UNAVAILABLE_THIS_SESSION"); expect(r.weekendTradable).toBe(false);
   });
+  it.each([
+    ["regular, Monday 10:00 NY", "2026-09-21T14:00:00Z"],
+    ["overnight, Tuesday 22:00 NY", "2026-09-23T02:00:00Z"],
+    ["pre-market, Monday 05:00 NY", "2026-09-21T09:00:00Z"],
+  ])("%s -> ROUTED_TO_US_MARKET: the order goes to the US venue, not the book Sounding walks", (_, iso) => {
+    const r = sound({ ...ctx(), now: new Date(iso), capture: rhims(), intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 });
+    expect(r.ok).toBe(false); expect(r.gate).toBe("ROUTED_TO_US_MARKET"); expect(r.gateDetail).toMatch(/NASDAQ\/NYSE/);
+    expect(r.fees).toBeUndefined();
+  });
+  it("Labor Day (calendar closure on a Monday) is Bitget's own book: priced", () => {
+    const r = sound({ ...ctx(), now: new Date("2026-09-07T14:00:00Z"), capture: rhims(), intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 });
+    expect(r.session).toBe("holiday_mm"); expect(r.ok).toBe(true);
+  });
   it("unknown symbol -> INVALID_INSTRUMENT", () => {
     const r = sound({ ...ctx(), capture: { ...rhims(), symbol: "RNOPEUSDT" }, intent: { side: "sell", baseQty: "1" }, ceilingBps: 50 });
     expect(r.gate).toBe("INVALID_INSTRUMENT");

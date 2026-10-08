@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { POST } from "../route";
 import { readBps, readDate } from "@/analyst/normalize";
@@ -77,6 +77,17 @@ describe("a live answer is only ever shown with the book it was checked on (re-a
     });
   }
   const live = { ...controls, mode: "live", turns: [{ role: "user", text: "sell it, fee 8 bps" }] };
+  // A live book is priced only where Bitget's own book is the market; pin the clock to a Sunday.
+  beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-04T15:00:00Z")); });
+  afterEach(() => vi.useRealTimers());
+  it("a weekday live book is refused: the order would route to the US market", async () => {
+    vi.setSystemTime(new Date("2026-10-08T15:00:00Z"));
+    mockLive(1);
+    const j = await (await post(live)).json();
+    expect(j.result.ok).toBe(false);
+    expect(j.result.gate).toBe("ROUTED_TO_US_MARKET");
+    expect(j.analyst).toBeNull();
+  });
   it("moved: no route, no stale number, one neutral answer", async () => {
     mockLive(0.99);
     const j = await (await post(live)).json();

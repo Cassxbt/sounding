@@ -6,7 +6,7 @@ import { classifySession, nextSessionNy, nextSwitchHint, type Calendar, type Mar
 import type { Alternative, BookCapture, CostVerdict, FeeScenario, InstrumentSpec, Intent, LegCost, Receipt, SoundingResult } from "./types";
 import { D } from "./types";
 
-export const ENGINE_VERSION = "sounding-engine/0.5.0";
+export const ENGINE_VERSION = "sounding-engine/0.6.0";
 import { DEFAULT_FEE_SCENARIOS_BPS } from "./fees";
 export { DEFAULT_FEE_SCENARIOS_BPS, FEE_SCENARIO_SOURCES } from "./fees";
 export const FRESHNESS = { maxExchangeAgeMs: 5000, maxRttMs: 2000, maxClockOffsetMs: 2000 };
@@ -63,6 +63,10 @@ export function sound(i: SoundingInput): SoundingResult {
   if (!elig.known) return fail("INVALID_INSTRUMENT", "symbol not present in Bitget Reality stock-info");
   // Gate 2: session
   if (sess.state === "unknown") return fail("SESSION_UNKNOWN", sess.detail, { weekendTradable: elig.weekendTradable });
+  // Gate 2b: venue. In US sessions Bitget routes rToken orders to NASDAQ/NYSE, so its own book is not where the order
+  // fills; only on weekends and US holidays does Bitget match on that book.
+  if (sess.state !== "weekend_mm" && sess.state !== "holiday_mm")
+    return fail("ROUTED_TO_US_MARKET", `${sess.state.replace("_", "-")} session: Bitget routes rToken orders to NASDAQ/NYSE via StockRoute in US sessions; Sounding prices orders where Bitget's own book is the market (weekends and US holidays)`, { weekendTradable: elig.weekendTradable });
   // Gate 3: weekend eligibility
   if ((sess.state === "weekend_mm" || sess.state === "holiday_mm") && !elig.weekendTradable)
     return fail("UNAVAILABLE_THIS_SESSION", "weekendTradable=no for this instrument; a visible quote does not make it available in this session", { weekendTradable: false });

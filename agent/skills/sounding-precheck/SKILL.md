@@ -3,14 +3,15 @@ name: sounding-precheck
 description: >
   Use before placing any Bitget rToken order (tokenized US stock, symbol R…USDT,
   isReality = yes) through @bitget-ai/bitget-agent-mcp or bgc, after the dry run and
-  before the confirmation card. Checks what the order costs at its full size on the
+  before the confirmation card, on weekends and US holidays, when Bitget matches rToken
+  orders on its own book. Checks what the order costs at its full size on that
   live book against the trader's own ceiling and fee, and supplies the only order
   arguments to send. Complements Agent Hub's pre_trade_check, which reads the
   ticker price, balance and positions but not the book at the order's size. Triggers: sell/buy an rToken "under 0.3%", "keep costs below",
   "at my fee", 下单前检查成本、按我的数量算成本、不超过千分之三、卖出 rHIMS、买入 rSPY.
   Do NOT use for crypto pairs, futures, or orders the trader sizes by price only.
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   author: cassxbt
   updated: 2026-10-08
   requires:
@@ -36,7 +37,7 @@ Agent Hub's flow is `get_auth_status → discover → dryRun → 主网确认卡
 
 ## When
 
-Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in words: "sell 178 rHIMS, keep it under 0.3%".
+Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in words, "sell 178 rHIMS, keep it under 0.3%", during a weekend or US-holiday session. Then Bitget matches the order on its own book with market makers, and that book is the one Sounding walks. In US sessions (pre-market, regular, after-hours, overnight) Bitget routes rToken orders to NASDAQ/NYSE, and Sounding refuses with `ROUTED_TO_US_MARKET`.
 
 ## Steps
 
@@ -44,7 +45,8 @@ Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in wo
 2. Read the trader's own taker fee with Agent Hub: `account_overview({ category: "SPOT", symbol })` returns `feeRate.takerFeeRate`; multiply by 10,000 for bps. If they stated a fee, use theirs.
 3. Call `sounding_prepare_order` with `symbol`, `side`, `amount` (buy: USDT, sell: shares), `ceilingBps` and `userFeeBps`.
 4. If `preparation.status` is `refused`:
-   - Show `reason`. Place no order.
+   - If `code` is `ROUTED_TO_US_MARKET`, tell the trader the order goes to the US market this session and Sounding has not priced it. Add no Sounding line to the card; the trader decides.
+   - Otherwise show `reason`. Place no order.
    - If there is a `proposal`, offer it as a new, smaller order with its `remainder` left unpriced. Prepare it again only if the trader chooses it.
 5. If `prepared`:
    - Preview with Agent Hub's `order` tool using exactly `preparation.order` plus `dryRun: true` (CLI: `preparation.command`). Change nothing.
@@ -55,6 +57,6 @@ Any order on an rToken (`R…USDT`, `isReality = yes`) the trader asks for in wo
 
 ## Never
 
-- Never send an order Sounding refused, or one that differs from `preparation.order`.
+- Never send an order Sounding refused on the book it walked, or one that differs from `preparation.order`.
 - Never present a refused order's cost as acceptable, or a proposal's remainder as filled.
 - Nothing here promises a fill: the answer holds for the book it read.

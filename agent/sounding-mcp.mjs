@@ -7,7 +7,7 @@ const BASE = (process.env.SOUNDING_URL ?? "https://sounding-zeta.vercel.app").re
 const TOOLS = [
   {
     name: "sounding_prepare_order",
-    description: "Before any Bitget rToken order: walks the live Bitget book at this exact size and returns the Agent Hub `order` arguments only if the all-in cost fits the trader's ceiling at their fee. Otherwise returns why not and, when one exists, the largest size that fits as a new choice. Send only the returned order.",
+    description: "Before a Bitget rToken order on a weekend or US holiday, when Bitget's own book is the market: walks that live book at this exact size and returns the Agent Hub `order` arguments only if the all-in cost fits the trader's ceiling at their fee. Otherwise returns why not and, when one exists, the largest size that fits as a new choice. Send only the returned order.",
     inputSchema: {
       type: "object",
       required: ["symbol", "side", "amount", "ceilingBps"],
@@ -40,7 +40,7 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   try { m = JSON.parse(line); } catch { return; }
   if (m.id === undefined) return;
   try {
-    if (m.method === "initialize") send({ id: m.id, result: { protocolVersion: m.params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "sounding", version: "0.5.0" } } });
+    if (m.method === "initialize") send({ id: m.id, result: { protocolVersion: m.params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "sounding", version: "0.6.0" } } });
     else if (m.method === "tools/list") send({ id: m.id, result: { tools: TOOLS } });
     else if (m.method === "tools/call") send({ id: m.id, result: await call(m.params.name, m.params.arguments ?? {}) });
     else if (m.method === "ping") send({ id: m.id, result: {} });
