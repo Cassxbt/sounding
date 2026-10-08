@@ -1,0 +1,8 @@
+# Agent Hub order path, recorded 2026-10-08 03:56Z
+
+The same three orders on rHIMS, on the live Bitget book (US overnight session), with a 40 bps ceiling and a stated 5 bps fee. The CLI used no keys.
+
+- `bgc-dry-run.jsonl`: Bitget Agent Hub CLI `@bitget-ai/bitget-agent-cli` 3.0.0, `bgc order --action place ... --dry-run`. Each returns a `wouldSend` preview: a 5,000-share market sell the visible book cannot fill, `side=hold qty=-5`, and a 50-share sell. A dry run is a local preview of whatever it is given; Bitget's server validates a real send. Agent Hub's own `pre_trade_check` prompt reads the ticker price, the balance and the positions, not the book at the order's size.
+- `sounding-prepare.txt`: Sounding's production `/api/prepare` on the same orders. The 5,000-share sell is refused with `INSUFFICIENT_VISIBLE_DEPTH`, and 192.4306 shares are offered as a new order; `hold`/`-5` is rejected as input; the 50-share sell is prepared (31.74 bps all-in, within 40), as the exact Agent Hub `order` arguments, bound to its receipt and signed (`signed: true`, `book: live`).
+- An agent passes the trader's own fee, read with Agent Hub's `account_overview`; a self-hosted server with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate` (recorded 2026-10-07 on the developer's machine: 5 bps taker, the same as Bitget's published promotional rToken rate).
+- Reproduce: `bgc order --action place --category SPOT --symbol RHIMSUSDT --side sell --orderType market --qty 5000 --dry-run`, and `POST /api/prepare {"symbol":"RHIMSUSDT","side":"sell","amount":"5000","ceilingBps":40,"userFeeBps":5,"mode":"live"}`. Live books move; the shape of each answer, not its exact figures, is what repeats.

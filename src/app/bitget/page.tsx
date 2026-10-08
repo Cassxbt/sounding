@@ -19,9 +19,9 @@ const NOT_USED = [
   { name: "GetAgent", why: "A research assistant across assets. Its published material shows no walk of a Bitget book at a given size, which is the one thing a decision here rests on." },
 ];
 
-/** The same three orders through Agent Hub's dry run and through Sounding, as recorded in evidence/agenthub-20261007. */
+/** The same three orders through Agent Hub's dry run and through Sounding, as recorded in evidence/agenthub-20261008. */
 function orderPath() {
-  const dir = join(process.cwd(), "evidence/agenthub-20261007");
+  const dir = join(process.cwd(), "evidence/agenthub-20261008");
   const hub = readFileSync(join(dir, "bgc-dry-run.jsonl"), "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { data: { wouldSend: Record<string, string> } }).data.wouldSend);
   const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; proposal?: { size: string; unit: string }; binding?: { allInBps: string; ceilingBps: number; fee: { bps: number; source: string } } } });
   return hub.map((h, i) => {
@@ -83,7 +83,7 @@ export default async function Bitget() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Recorded 2026-10-07 (evidence/agenthub-20261007). For agents: an MCP tool, <span className="mono">sounding_prepare_order</span>, and a skill in Agent Hub&rsquo;s own format that adds the at-size cost to its confirmation card and sends only the order Sounding prepared (<span className="mono">agent/</span> in the repository). The account fee was read with a read-only key on the developer&rsquo;s machine; this site holds no key.</p>
+          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Recorded 2026-10-07 (evidence/agenthub-20261008). For agents: an MCP tool, <span className="mono">sounding_prepare_order</span>, and a skill in Agent Hub&rsquo;s own format that adds the at-size cost to its confirmation card and sends only the order Sounding prepared (<span className="mono">agent/</span> in the repository). The account fee was read with a read-only key on the developer&rsquo;s machine; this site holds no key.</p>
         </section>
 
         <section className="border-t border-rule-soft py-20">

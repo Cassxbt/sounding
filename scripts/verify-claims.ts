@@ -22,8 +22,8 @@ async function recompute(): Promise<Record<string, string>> {
   const del = await deletionTest(), row = (id: string) => del.rows.find((r) => r.id === id)!.without;
   const para = JSON.parse(readFileSync("evidence/paraphrase-eval-v2-heldout/results.json", "utf8")).summary;
   const whole = JSON.parse(readFileSync("evidence/wholetask-eval-v2-heldout/results.json", "utf8")).summary;
-  const hub = readFileSync("evidence/agenthub-20261007/bgc-dry-run.jsonl", "utf8").trim().split("\n").filter((l) => JSON.parse(l).data?.wouldSend).length;
-  const ours = readFileSync("evidence/agenthub-20261007/sounding-prepare.txt", "utf8").trim().split("\n").filter((l) => l.includes('"status":"prepared"')).length;
+  const hub = readFileSync("evidence/agenthub-20261008/bgc-dry-run.jsonl", "utf8").trim().split("\n").filter((l) => JSON.parse(l).data?.wouldSend).length;
+  const ours = readFileSync("evidence/agenthub-20261008/sounding-prepare.txt", "utf8").trim().split("\n").filter((l) => l.includes('"status":"prepared"')).length;
   return {
     "lead.best-bid": `${allInFrom(((mid - bid) / mid) * 10000, fee, "sell").toFixed(2)} bps`,
     "lead.full-size": `${decidingRow(lead)!.allInBps} bps, ${decidingRow(lead)!.verdict === "WITHIN_CEILING_ON_THIS_SNAPSHOT" ? "within" : "over"} ${ceiling}`,
@@ -39,7 +39,7 @@ async function recompute(): Promise<Record<string, string>> {
     "deletion.qwen": row("qwen").headline,
     "eval.whole-task": `${whole.model.complete}/${whole.model.tasks} (${whole.model.critical} critical) vs ${whole.template.complete}/${whole.template.tasks} (${whole.template.critical} critical)`,
     "eval.reading": `${para.qwen.all.statedCorrect}/${para.qwen.all.statedFields} vs ${para.regex.all.statedCorrect}/${para.regex.all.statedFields}`,
-    "agenthub.dry-run-would-send": `${hub} of 3`,
+    "agenthub.dry-run-previews": `${hub} of 3`,
     "agenthub.sounding-prepared": `${ours} of 3`,
   };
 }

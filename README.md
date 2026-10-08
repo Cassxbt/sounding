@@ -21,7 +21,7 @@ Most execution tools answer one question: *what is the price?* Sounding answers 
 
 ## ▶ Demo
 
-A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size that fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run would send it; Sounding hands back no order. A size that fits comes back as the exact Agent Hub order, bound to a signed receipt.
+A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size that fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run previews it as given; Sounding hands back no order. A size that fits comes back as the exact Agent Hub order, bound to a signed receipt.
 
 Every frame is the live desk on Bitget's books. Recording: linked here at submission.
 
@@ -132,13 +132,13 @@ The model reads and explains. It never does the arithmetic, and it cannot pass a
 | Agent Hub, order path | `order` tool · `bgc order --action place` | nothing receives the checked order: the answer stays advice, and an agent left to Agent Hub alone sends what it is told |
 | Qwen on Bitget's S2 endpoint | `hackathon.bitgetops.com/v1` | the fallback reader cannot read "0.05%", "0.3%" or "before the 8th", and asks for limits already given |
 
-The first four rows are computed by the engine on every build (`src/lib/deletion.ts`); the build fails if a removal stops changing the answer. Agent Hub, recorded on 2026-10-07 on the live rHIMS book with a 40 bps ceiling (`evidence/agenthub-20261007`):
+The first four rows are computed by the engine on every build (`src/lib/deletion.ts`); the build fails if a removal stops changing the answer. Agent Hub, recorded on 2026-10-08 on the live rHIMS book with a 40 bps ceiling and a stated 5 bps fee (`evidence/agenthub-20261008`):
 
-| Order | Agent Hub dry run (`bgc` 3.0.0) | Sounding |
+| Order | Agent Hub dry run (`bgc` 3.0.0) | Sounding (`/api/prepare`, production) |
 |---|---|---|
-| sell 5000 | would send | refused: the visible book cannot fill it; 578.4334 sh offered as a new order |
-| side `hold`, qty `-5` | would send | rejected as input |
-| sell 50 | would send | prepared: 14.62 bps all-in at the account's own 5 bps fee, read through Agent Hub |
+| sell 5000 | previews it | refused, `INSUFFICIENT_VISIBLE_DEPTH`: the visible book cannot fill it; 192.4306 sh offered as a new order |
+| side `hold`, qty `-5` | previews it | rejected as input |
+| sell 50 | previews it | prepared: 31.74 bps all-in, within 40, as the exact Agent Hub order, signed |
 
 The fee is charged on the traded amount: buy `p + f + p·f/10⁴`, sell `p + f − p·f/10⁴`. A fee the trader states decides. An agent reads the trader's own fee with Agent Hub's `account_overview` and passes it in; a self-hosted Sounding with a read-only key reads its operator's fee through the SDK's `getAccountFeeRate`. Without either, Bitget's published 5 bps rToken rate and its 10 bps list rate are both priced, and an answer that differs between them is asked.
 
@@ -185,7 +185,7 @@ Every refusal is a code an agent can branch on, never prose alone.
 | `deletion.qwen` | Asked, not answered | Qwen withheld |
 | `eval.whole-task` | 28/30 (1 critical) vs 12/30 (3 critical) | blind set 2, Qwen vs baseline |
 | `eval.reading` | 142/151 vs 19/151 | blind set 2, limits read |
-| `agenthub.dry-run-would-send` | 3 of 3 | `bgc` dry run, recorded |
+| `agenthub.dry-run-previews` | 3 of 3 | `bgc` dry run, recorded |
 | `agenthub.sounding-prepared` | 1 of 3 | `/api/prepare`, recorded |
 <!-- SUMMARY:END -->
 
