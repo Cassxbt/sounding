@@ -15,7 +15,7 @@
 
 When Nasdaq is shut, Bitget's own rToken order book is the market, and its best quote prices only your first shares. Sounding answers the question that comes before you confirm: **what does your whole order cost, at your own fee?** It walks **Bitget**'s book at your full size, holds it to your fee and ceiling, and gives one answer, or a named refusal with the largest size that fits. For an AI agent trading through **Bitget Agent Hub 2.0**, it puts that cost on the confirmation card the trader approves, and hands back the exact order only when it fits.
 
-**[ Live desk ↗ ](https://sounding-zeta.vercel.app)** · **[ Judge it in 90 seconds ↗ ](#verify-it-yourself-in-90-seconds)** · **[ Take Bitget away ↗ ](https://sounding-zeta.vercel.app/bitget)** · **[ Proof ↗ ](https://sounding-zeta.vercel.app/proof)**
+**[ ▶ Demo video (3:09) ](https://youtu.be/qFiyIHfVlpI)** · **[ Live desk ↗ ](https://sounding-zeta.vercel.app)** · **[ Judge it in 90 seconds ↗ ](#verify-it-yourself-in-90-seconds)** · **[ Take Bitget away ↗ ](https://sounding-zeta.vercel.app/bitget)** · **[ Proof ↗ ](https://sounding-zeta.vercel.app/proof)**
 
 </div>
 
@@ -23,7 +23,7 @@ When Nasdaq is shut, Bitget's own rToken order book is the market, and its best 
 
 A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size whose average fits. At a 50 bps ceiling the full order fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run previews it as given; Sounding hands back no order, and offers the size it can send. An order that fits comes back as the exact Agent Hub order, a limit at the ceiling price, bound to a signed receipt.
 
-Every frame is the deployed desk on recorded weekend Bitget books. Recording: linked here at submission.
+**[Watch the demo on YouTube (3:09)](https://youtu.be/qFiyIHfVlpI).** Every frame is the deployed site on recorded weekend Bitget books, with Qwen 3.8 Max on Bitget's S2 endpoint; every terminal line is a production response recorded on 2026-10-08. Nothing was sent to the exchange.
 
 ## Contents
 
