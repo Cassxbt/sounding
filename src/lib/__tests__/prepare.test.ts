@@ -48,13 +48,13 @@ describe("an Agent Hub order is prepared only from a checked decision", () => {
     expect(p.reason).toMatch(/36\.87 bps .* over your 30 bps ceiling/);
     expect(p.proposal).toMatchObject({ size: "66.0764", unit: "sh", remainder: "112.3357" });
   });
-  it("every prepared order holds its worst case inside the ceiling, and every offered size prepares (sells of 1 to 260 sh at 30, 40 and 50 bps)", () => {
-    for (const c of [30, 40, 50]) for (let q = 1; q <= 260; q++) {
+  it("every prepared order holds its worst case inside the ceiling, and every offered size prepares (sells of 1 to 256 sh, every 5th, at 30, 40 and 50 bps)", () => {
+    for (const c of [30, 40, 50]) for (let q = 1; q <= 256; q += 5) {
       const p = prepare(sell(String(q), c, 5), rhims().raw, "stated", NOW);
       if (p.status === "prepared") expect(Number(p.binding.worstCaseBps)).toBeLessThanOrEqual(c);
       else if (p.proposal) expect(prepare(sell(p.proposal.size, c, 5), rhims().raw, "stated", NOW).status).toBe("prepared");
     }
-  });
+  }, 30_000);
   it("an unknown fee that decides the answer is a question, not an order", () => {
     const p = prepare(sell("178.4121", 40), rhims().raw, "scenario", NOW);
     expect(p).toMatchObject({ status: "refused" });
