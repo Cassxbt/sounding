@@ -23,10 +23,10 @@ const NOT_USED = [
 function orderPath() {
   const dir = join(process.cwd(), "evidence/agenthub-20261008");
   const hub = readFileSync(join(dir, "bgc-dry-run.jsonl"), "utf8").trim().split("\n").map((l) => (JSON.parse(l) as { data: { wouldSend: Record<string, string> } }).data.wouldSend);
-  const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; proposal?: { size: string; unit: string }; binding?: { allInBps: string; ceilingBps: number; fee: { bps: number; source: string } } } });
+  const ours = readFileSync(join(dir, "sounding-prepare.txt"), "utf8").trim().split("\n").map((l) => JSON.parse(l.split(" => ")[1]) as { error?: string; fee?: { bps: number; source: string }; preparation?: { status: string; reason?: string; order?: { price: string }; proposal?: { size: string; unit: string }; binding?: { allInBps: string; ceilingBps: number; fee: { bps: number; source: string } } } });
   return hub.map((h, i) => {
     const o = ours[i], p = o.preparation;
-    const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
+    const said = !p ? `rejected: ${o.error}` : p.status === "prepared" ? `prepared: ${p.binding!.allInBps} bps all-in at ${p.binding!.fee.bps} bps (${p.binding!.fee.source === "bitget_account" ? "the account's own fee, read through Agent Hub" : p.binding!.fee.source}), within ${p.binding!.ceilingBps}, as a limit IOC at ${p.order!.price}` : `refused: ${p.reason}${p.proposal ? `; ${p.proposal.size} ${p.proposal.unit} offered as a new order` : ""}`;
     return { order: `${h.side} ${h.qty} ${h.symbol}`, hub: "previews it", said, ok: p?.status === "prepared" };
   });
 }
@@ -67,11 +67,11 @@ export default async function Bitget() {
         </section>
 
         <section className="border-t border-rule-soft py-20">
-          <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">Agent Hub sends what it is told. Sounding decides what it is told.</h2>
-          <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-2">Bitget Agent Hub lets an AI agent trade a Bitget account: its flow is a dry run, a confirmation card naming pair, side and quantity, then the send. Its own <span className="mono">pre_trade_check</span> reads the ticker price, the balance and the positions; nothing in it walks the book at the order&rsquo;s size. Sounding sits at that step: the agent reads the trader&rsquo;s own fee with Agent Hub&rsquo;s <span className="mono">account_overview</span> and passes it in, Sounding walks the book at the full size, and hands back the exact Agent Hub order only when it fits, bound to its receipt. Anything else comes back as a reason. It is a check an agent chooses to run: it cannot stop a client that skips it, which is why the skill tells the agent to send only the order Sounding prepared.</p>
+          <h2 className="display max-w-3xl text-[40px] leading-[1.05] text-ink sm:text-[52px]">The card says what you are sending. Sounding adds what it costs.</h2>
+          <p className="mt-6 max-w-2xl text-[16px] leading-relaxed text-ink-2">Bitget Agent Hub lets an AI agent trade a Bitget account: its flow is a dry run, a confirmation card naming pair, side and quantity, then the send. Its own <span className="mono">pre_trade_check</span> reads the ticker price, the balance and the positions; nothing in it walks the book at the order&rsquo;s size. Sounding sits at that step: the agent reads the trader&rsquo;s own fee with Agent Hub&rsquo;s <span className="mono">account_overview</span> and passes it in, Sounding walks the book at the full size, and hands back the exact Agent Hub order only when it fits: a limit IOC at the deepest price it walked, bound to its receipt, so Bitget fills no share past that price. Anything else comes back as a reason. It is a check an agent chooses to run: it cannot stop a client that skips it, which is why the skill tells the agent to send only the order Sounding prepared.</p>
           <div className="mt-10 overflow-x-auto">
             <table className="w-full min-w-[640px] text-[14px]">
-              <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">order, live rHIMS book, 40 bps ceiling</th><th className="pb-3 font-normal">Agent Hub dry run (bgc 3.0.0)</th><th className="pb-3 font-normal">Sounding</th></tr></thead>
+              <thead><tr className="text-left text-[12px] text-ink-3"><th className="pb-3 font-normal">order, recorded Sunday rHIMS book, 40 bps ceiling</th><th className="pb-3 font-normal">Agent Hub dry run (bgc 3.0.0)</th><th className="pb-3 font-normal">Sounding</th></tr></thead>
               <tbody>
                 {path.map((r) => (
                   <tr key={r.order} className="border-t border-rule-soft align-top">
@@ -83,7 +83,7 @@ export default async function Bitget() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Recorded 2026-10-07 (evidence/agenthub-20261008). For agents: an MCP tool, <span className="mono">sounding_prepare_order</span>, and a skill in Agent Hub&rsquo;s own format that adds the at-size cost to its confirmation card and sends only the order Sounding prepared (<span className="mono">agent/</span> in the repository). The account fee was read with a read-only key on the developer&rsquo;s machine; this site holds no key.</p>
+          <p className="mt-4 max-w-3xl text-[13px] text-ink-3">Recorded 2026-10-08 (evidence/agenthub-20261008). On a weekday Bitget routes rToken orders to NASDAQ/NYSE, so Sounding prices them only on weekends and US holidays, when Bitget&rsquo;s own book is the market. For agents: an MCP tool, <span className="mono">sounding_prepare_order</span>, and a skill in Agent Hub&rsquo;s own format that adds the at-size cost to its confirmation card and sends only the order Sounding prepared (<span className="mono">agent/</span> in the repository). The account fee was read with a read-only key on the developer&rsquo;s machine; this site holds no key.</p>
         </section>
 
         <section className="border-t border-rule-soft py-20">

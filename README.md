@@ -13,7 +13,7 @@
 
 ### Walk the book at your size. The best quote never decides.
 
-Most execution tools answer one question: *what is the price?* Sounding answers the harder one: **what does your whole order cost, at your own fee, before you send it?** It walks **Bitget**'s rToken order book at your full size, holds it to your fee and ceiling, and gives one answer, or a named refusal with the largest size that fits. For an AI agent trading through **Bitget Agent Hub**, it hands back the exact order only when the order fits.
+When Nasdaq is shut, Bitget's own rToken order book is the market, and its best quote prices only your first shares. Sounding answers the question that comes before you confirm: **what does your whole order cost, at your own fee?** It walks **Bitget**'s book at your full size, holds it to your fee and ceiling, and gives one answer, or a named refusal with the largest size that fits. For an AI agent trading through **Bitget Agent Hub 2.0**, it puts that cost on the confirmation card the trader approves, and hands back the exact order only when it fits.
 
 **[ Live desk ↗ ](https://sounding-zeta.vercel.app)** · **[ Judge it in 90 seconds ↗ ](#verify-it-yourself-in-90-seconds)** · **[ Take Bitget away ↗ ](https://sounding-zeta.vercel.app/bitget)** · **[ Proof ↗ ](https://sounding-zeta.vercel.app/proof)**
 
@@ -23,7 +23,7 @@ Most execution tools answer one question: *what is the price?* Sounding answers 
 
 A trader asks to sell 178.4121 shares of rHIMS and keep it under 0.3%. The best bid says 17.48 bps; the full order walks five levels down the book to 36.87 bps and is refused, with 101.834 shares named as the size that fits. An AI agent tries an order the book cannot carry through Agent Hub, whose dry run previews it as given; Sounding hands back no order. A size that fits comes back as the exact Agent Hub order, bound to a signed receipt.
 
-Every frame is the live desk on Bitget's books. Recording: linked here at submission.
+Every frame is the deployed desk on recorded weekend Bitget books. Recording: linked here at submission.
 
 ## Contents
 
@@ -40,7 +40,7 @@ Every frame is the live desk on Bitget's books. Recording: linked here at submis
 
 ## The problem I set out to solve
 
-A quote prices the first few shares. An order is all of them. A trader, or an AI agent acting for one, looks at the best bid on a Bitget rToken, adds a fee, and sees a cost inside their limit. The order then walks down the book and fills worse. On one recorded Sunday, at Bitget's published 5 bps rToken fee, the best ask said yes and the full order said no for 28 of the 89 weekend-tradable names a 25,000 USDT buy could fill.
+On weekends and US holidays Bitget matches rToken orders on its own book, with market makers ([Bitget support](https://www.bitget.com/support/articles/12560603893695)), and its own [weekend guide](https://www.bitget.com/academy/does-bitget-allow-24-7-us-stock-trading-weekend-liquidity) tells traders to check order-book depth, use limit orders and split large orders. A quote prices the first few shares. An order is all of them. A trader, or an AI agent acting for one, looks at the best bid on a Bitget rToken, adds a fee, and sees a cost inside their limit. The order then walks down the book and fills worse. On one recorded Sunday, at Bitget's published 5 bps rToken fee, the best ask said yes and the full order said no for 28 of the 89 weekend-tradable names a 25,000 USDT buy could fill.
 
 Bitget's own agent stack has the same gap. Agent Hub's flow is a dry run, then a confirmation card naming pair, side, quantity and account, then the send. Its `pre_trade_check` reads the ticker price, the balance and the positions; nothing in the flow walks the book at the order's size. Its dry run previews whatever it is given: a 5,000-share rHIMS market sell the visible book cannot fill comes back as a ready preview.
 
